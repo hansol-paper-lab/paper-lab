@@ -2,7 +2,7 @@
 <html lang="ko"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>제지 실험 시뮬레이터 v80</title>
+<title>제지 실험 시뮬레이터 v81</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='1.5' y='1.5' width='21' height='21' rx='6' fill='%2315497c'/%3E%3Cpath d='M7.6 5.6h5.6l3.2 3.2v9.6H7.6z' fill='%23fff'/%3E%3Cpath d='M13.2 5.6v3.2h3.2z' fill='%23c3d6e8'/%3E%3Cpath d='M9.7 12.1h4.6M9.7 14.5h4.6M9.7 16.9h2.9' stroke='%23517ba5' stroke-width='1.25' stroke-linecap='round' fill='none'/%3E%3C/svg%3E">
 <meta name="theme-color" content="#15497c">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -1602,7 +1602,7 @@
     <div id="expbar"></div>
     <div class="tabs" id="tabs"></div>
     <div id="content"></div>
-    <div class="foot">입력 즉시 자동 저장 · <b>☁ Firebase 운영</b>: 실험·차수별 데이터 저장, 이미지는 Storage에 분리 · JSON 백업은 우측 상단 <b>⚙</b> · 스크린샷은 <b>Ctrl+V</b>로 어디서나 첨부 · <span class="vtag">v80 · 이미지 표시 수정</span></div>
+    <div class="foot">입력 즉시 자동 저장 · <b>☁ Firebase 운영</b>: 실험·차수별 데이터 저장, 이미지는 Storage에 분리 · JSON 백업은 우측 상단 <b>⚙</b> · 스크린샷은 <b>Ctrl+V</b>로 어디서나 첨부 · <span class="vtag">v81 · 첨부 통합</span></div>
   </div>
 
   <input type="file" id="fileInput" accept=".json,application/json" hidden="">
@@ -1783,7 +1783,7 @@ function rotateAttachment(id){ const p=curPlan(); const a=p&&(p.attach||[]).find
   im.onerror=()=>toast('회전 실패 — 이미지 형식을 확인해 주세요');
   im.src=a.data;
 }
-function addAttachment(dataURL,name,thumb,ar){ const p=curPlan(); if(!p){ toast('실험을 먼저 열어주세요'); return; } const loc=(appState&&appState.active&&appState.active.view==='result')?'result':'plan'; const th=thumb||dataURL; p.attach.push({id:uid('img'),loc,name:name||'스크린샷',ts:Date.now(),data:dataURL,thumb:th,ar:ar||1.4,kb:Math.round((dataURL.length+th.length)*0.75/1024),imageDirty:true}); const ok=persistNow(); render(); toast(ok?'🖼 이미지 첨부됨':'⚠ 저장 한도 초과 — 화면엔 있지만 저장은 안 됐어요. ⚙ JSON 백업 후 일부 삭제 권장'); }
+function addAttachment(dataURL,name,thumb,ar){ const p=curPlan(); if(!p){ toast('실험을 먼저 열어주세요'); return; } const loc='result'; const th=thumb||dataURL; p.attach.push({id:uid('img'),loc,name:name||'스크린샷',ts:Date.now(),data:dataURL,thumb:th,ar:ar||1.4,kb:Math.round((dataURL.length+th.length)*0.75/1024),imageDirty:true}); const ok=persistNow(); render(); toast(ok?'🖼 이미지 첨부됨':'⚠ 저장 한도 초과 — 화면엔 있지만 저장은 안 됐어요. ⚙ JSON 백업 후 일부 삭제 권장'); }
 function attTotalMB(){ let n=0; try{ root.experiments.forEach(x=>((x.state||{}).plans||[]).forEach(pl=>(pl.attach||[]).forEach(a=>{ n+=(+a.kb||0)/1024; }))); }catch(e){} return n; }
 const REMOTE_IMG_PLACEHOLDER='data:image/svg+xml;charset=utf-8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="800" height="520"><rect width="100%" height="100%" fill="#eef1f4"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#8494a4" font-family="sans-serif" font-size="28">이미지 불러오는 중</text></svg>');
 const REMOTE_IMG_FAIL='data:image/svg+xml;charset=utf-8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="800" height="520"><rect width="100%" height="100%" fill="#faedeb"/><text x="50%" y="46%" dominant-baseline="middle" text-anchor="middle" fill="#bd4a41" font-family="sans-serif" font-size="27">이미지를 불러오지 못했어요</text><text x="50%" y="58%" dominant-baseline="middle" text-anchor="middle" fill="#8494a4" font-family="sans-serif" font-size="22">눌러서 다시 시도</text></svg>');
@@ -1803,11 +1803,8 @@ function openMkPop(T){ _mkT=T; _mkOpenAt=performance.now(); const pop=$id('mkpop
   pop.style.left=Math.round(x)+'px'; pop.style.top=Math.round(y)+'px'; }
 function closeMkPop(){ const pop=$id('mkpop'); if(pop) pop.hidden=true; _mkT=null; }
 function attachCardHTML(loc){ const p=curPlan(); if(!p) return '';
-  if(!loc) loc=(appState&&appState.active&&appState.active.view==='result')?'result':'plan';
-  (p.attach||[]).forEach(a=>{ if(!a.loc) a.loc='result'; });
-  const _real=p.attach; p.attach=_real.filter(a=>a.loc===loc);
-  let _out=''; try{ _out=_attachCardRaw(); } finally { p.attach=_real; }
-  return _out.replace('첨부 이미지', loc==='result'?'첨부 이미지 — 결과':'첨부 이미지 — 설계');
+  (p.attach||[]).forEach(a=>{ if(a) a.loc='result'; });
+  return _attachCardRaw();
 }
 function _attachCardRaw(){ const p=curPlan(); if(!p) return '';
   const hi=(typeof window!=='undefined'&&window.innerWidth>=900);
@@ -2164,7 +2161,7 @@ function renderPlan(){
     <div class="scroll-wrap"><div class="scroller"><table class="grid colorgrid">${xh}${xb}</table></div></div>
     <div class="legend-mini">각 약품 하단 <b>총 필요량</b> = 모든 케이스 합산(미리 준비할 양) · 폰에서는 <b>제조 모드</b>로 탭하며 계량</div></section>`;
 
-  $id('content').innerHTML=lib+commentsCard(d)+batch+input+color+attachCardHTML();
+  $id('content').innerHTML=lib+commentsCard(d)+batch+input+color;
   const det=document.querySelector('details.lib'); if(det) det.addEventListener('toggle',()=>{libOpen=det.open;});
   recalc(); setupScrollShadows();
 }
@@ -2349,7 +2346,7 @@ function renderSheet(){
     c5body=`<div class="rtblwrap"><table class="casetbl rtbl summ"><thead><tr><th class="rcorner stickL">Case</th><th class="rcondh">조건 (약품 투입%)</th>${shd}</tr></thead><tbody>${srows}</tbody></table></div>`;
   }
   const c5=`<section class="card"><div class="chead"><span class="num">5</span><h2>결과 · 품질 데이터</h2><span class="desc">측정값 → 평균·범위 자동</span><span class="spacer"></span>${rInput?'<button class="btn sm" data-action="sh-addmetric">+ 항목</button>':''}${rSeg}</div><div class="rwrap">${c5body}</div></section>`;
-  $id('content').innerHTML=`<div class="sheetwrap">${c1+c2+commentsCard(d)+c3+c4+attachCardHTML()}</div>`;
+  $id('content').innerHTML=`<div class="sheetwrap">${c1+c2+commentsCard(d)+c3+c4}</div>`;
   if(typeof setupScrollShadows==='function') setupScrollShadows();
 }
 
