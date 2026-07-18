@@ -2,9 +2,12 @@
 <html lang="ko"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>제지 실험 시뮬레이터 v76</title>
+<title>제지 실험 시뮬레이터 v77</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='1.5' y='1.5' width='21' height='21' rx='6' fill='%2315497c'/%3E%3Cpath d='M7.6 5.6h5.6l3.2 3.2v9.6H7.6z' fill='%23fff'/%3E%3Cpath d='M13.2 5.6v3.2h3.2z' fill='%23c3d6e8'/%3E%3Cpath d='M9.7 12.1h4.6M9.7 14.5h4.6M9.7 16.9h2.9' stroke='%23517ba5' stroke-width='1.25' stroke-linecap='round' fill='none'/%3E%3C/svg%3E">
 <meta name="theme-color" content="#15497c">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin="">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
@@ -1024,7 +1027,9 @@
   tr.addrow td{padding:0;border-top:1px dashed var(--line2)}
   .addline{width:100%;border:none;background:transparent;color:var(--muted);font:700 11.5px var(--sans);padding:8px 10px;cursor:pointer;text-align:left}
   .addline:hover{color:var(--accent-d);background:var(--accent-soft)}
-  body[data-sync="none"] #cloudstat{display:none}
+  body[data-sync="none"] #cloudstat{display:inline-flex}
+  #syncwarn{margin:12px 0 0;padding:11px 14px;border:1.5px solid #e0bdb7;background:#fbeeec;color:#8c2f23;border-radius:11px;font:700 12.5px/1.6 var(--sans)}
+  #syncwarn b{color:#7a251b}
   body[data-sync="fb"] #savestat,body[data-sync="claude"] #savestat{display:none}
 
 
@@ -1595,7 +1600,7 @@
     <div id="expbar"></div>
     <div class="tabs" id="tabs"></div>
     <div id="content"></div>
-    <div class="foot">입력 즉시 자동 저장 · <b>☁ Firebase 운영</b>: 실험·차수별 데이터 저장, 이미지는 Storage에 분리 · JSON 백업은 우측 상단 <b>⚙</b> · 스크린샷은 <b>Ctrl+V</b>로 어디서나 첨부 · <span class="vtag">v76 · 양방향 동기화 수정</span></div>
+    <div class="foot">입력 즉시 자동 저장 · <b>☁ Firebase 운영</b>: 실험·차수별 데이터 저장, 이미지는 Storage에 분리 · JSON 백업은 우측 상단 <b>⚙</b> · 스크린샷은 <b>Ctrl+V</b>로 어디서나 첨부 · <span class="vtag">v77 · 연결상태 표시</span></div>
   </div>
 
   <input type="file" id="fileInput" accept=".json,application/json" hidden="">
@@ -3738,7 +3743,8 @@ document.addEventListener('paste',function(e){
   }
   toast('\ud83d\udccb '+n+'\uce78 \ubd99\uc5ec\ub123\uae30 \uc644\ub8cc');
 });
-function _syncFlag(){ try{ document.body.dataset.sync=(typeof syncMode==='function'?syncMode():'none'); }catch(_e){} }
+function syncBanner(){try{const off=(typeof syncMode==='function'&&syncMode()==='none'&&/^https?:$/.test(location.protocol));let el=document.getElementById('syncwarn');if(!off){if(el)el.remove();return;}if(!el){el=document.createElement('div');el.id='syncwarn';const w=document.querySelector('.wrap'),eb=document.getElementById('expbar');if(!w)return;w.insertBefore(el,eb||w.firstChild);}el.innerHTML='\u26A0 \uD300 \uC11C\uBC84\uC5D0 \uC5F0\uACB0\uB418\uC9C0 \uC54A\uC558\uC5B4\uC694 \u2014 \uC9C0\uAE08 \uBC14\uAFB8\uB294 \uB0B4\uC6A9\uC740 <b>\uD300\uC5D0 \uACF5\uC720\uB418\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4.</b><br>\uAD00\uB9AC\uC790\uC5D0\uAC8C \uC54C\uB824 \uC0C8 \uB9C1\uD06C(index.html \uC7AC\uBC30\uD3EC)\uB97C \uBC1B\uC544\uC8FC\uC138\uC694.';}catch(_e){}}
+function _syncFlag(){ try{ document.body.dataset.sync=(typeof syncMode==='function'?syncMode():'none'); if(typeof syncMode==='function'&&syncMode()==='none'){const el=document.getElementById('cloudstat');if(el){el.classList.remove('on','busy');el.classList.add('err');el.innerHTML='<i></i>\u2601 \uBBF8\uC5F0\uACB0 \u2014 \uACF5\uC720 \uC548 \uB428';}} syncBanner(); }catch(_e){} }
 _syncFlag(); setTimeout(_syncFlag,800);
 
 
@@ -3794,7 +3800,7 @@ function _pn(d,k,label){ var v=String(((d.planNotes||{})[k])||''); var open=_pnO
 
 /* ================= v46 end ================= */
 
-const _render66=render; render=function(){ _render66(); try{setTimeout(hydrateVisibleAttachmentThumbs,0);}catch(_e){} };
+const _render66=render; render=function(){ _render66(); try{setTimeout(hydrateVisibleAttachmentThumbs,0);}catch(_e){} try{_syncFlag();}catch(_e){} };
 
 try{ let _ls=null,_emb=null;
 try{const _s=localStorage.getItem(SAVE_KEY); if(_s)_ls=JSON.parse(_s);}catch(e){}
