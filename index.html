@@ -2,7 +2,7 @@
 <html lang="ko"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>제지 실험 시뮬레이터 v84</title>
+<title>제지 실험 시뮬레이터 v85</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='1.5' y='1.5' width='21' height='21' rx='6' fill='%2315497c'/%3E%3Cpath d='M7.6 5.6h5.6l3.2 3.2v9.6H7.6z' fill='%23fff'/%3E%3Cpath d='M13.2 5.6v3.2h3.2z' fill='%23c3d6e8'/%3E%3Cpath d='M9.7 12.1h4.6M9.7 14.5h4.6M9.7 16.9h2.9' stroke='%23517ba5' stroke-width='1.25' stroke-linecap='round' fill='none'/%3E%3C/svg%3E">
 <meta name="theme-color" content="#15497c">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -1603,7 +1603,7 @@
     <div id="expbar"></div>
     <div class="tabs" id="tabs"></div>
     <div id="content"></div>
-    <div class="foot">입력 즉시 자동 저장 · <b>☁ Firebase 운영</b>: 실험·차수별 데이터 저장, 이미지는 Storage에 분리 · JSON 백업은 우측 상단 <b>⚙</b> · 스크린샷은 <b>Ctrl+V</b>로 어디서나 첨부 · <span class="vtag">v84 · 서버 최적화</span></div>
+    <div class="foot">입력 즉시 자동 저장 · <b>☁ Firebase 운영</b>: 실험·차수별 데이터 저장, 이미지는 Storage에 분리 · JSON 백업은 우측 상단 <b>⚙</b> · 스크린샷은 <b>Ctrl+V</b>로 어디서나 첨부 · <span class="vtag">v85 · 서버 최적화 · 삭제 동기화</span></div>
   </div>
 
   <input type="file" id="fileInput" accept=".json,application/json" hidden="">
@@ -2925,13 +2925,13 @@ document.addEventListener('click',e=>{
   else if(a==='sh-metricrange'){const mid=btn.dataset.metric;const m=(d.metrics||[]).find(x=>x.id===mid);if(m){m.range=!m.range;render();}}
   else if(a==='att-add'){const f=$id('attfile'); if(f) f.click();}
   else if(a==='att-open'){const p=curPlan();const im=p&&p.attach.find(x=>x.id===btn.dataset.img);if(im)openAttachmentLightbox(im);}
-  else if(a==='att-del'){const p=curPlan(); if(p){ if(_bsel===btn.dataset.img)_bsel=null; const _di=p.attach.find(x=>x.id===btn.dataset.img); if(_di)queueImageDelete(_di); p.attach=p.attach.filter(x=>x.id!==btn.dataset.img); persistNow(); render(); toast('🗑 이미지 삭제 — Ctrl+Z로 복구'); }}
+  else if(a==='att-del'){const p=curPlan(); if(p){ if(_bsel===btn.dataset.img)_bsel=null; const _di=p.attach.find(x=>x.id===btn.dataset.img); if(_di){queueImageDelete(_di);_tombAtt(p,_di.id);} p.attach=p.attach.filter(x=>x.id!==btn.dataset.img); persistNow(); render(); toast('🗑 이미지 삭제 — Ctrl+Z로 복구'); }}
   else if(a==='lb-close'){$id('lightbox').classList.remove('show');}
   else if(a==='lb-zoom'){$id('lbimg').classList.toggle('zoom');}
   else if(a==='att-mode'){root.attMode=btn.dataset.m; persistNow(); render();}
   else if(a==='att-size'){root.attSize=btn.dataset.s; persistNow(); render();}
   else if(a==='att-sc'){const p=curPlan(); const im=p&&p.attach.find(x=>x.id===btn.dataset.img); if(im){ im.sc=!im.sc; if(!im.scores)im.scores={}; persistNow(); render(); }}
-  else if(a==='lb-del'){const p=curPlan(); const iid=$id('lightbox').dataset.img; if(p&&iid){ const _di=p.attach.find(x=>x.id===iid); if(_di)queueImageDelete(_di); p.attach=p.attach.filter(x=>x.id!==iid); } $id('lightbox').classList.remove('show'); persistNow(); render(); toast('이미지 삭제');}
+  else if(a==='lb-del'){const p=curPlan(); const iid=$id('lightbox').dataset.img; if(p&&iid){ const _di=p.attach.find(x=>x.id===iid); if(_di){queueImageDelete(_di);_tombAtt(p,_di.id);} p.attach=p.attach.filter(x=>x.id!==iid); } $id('lightbox').classList.remove('show'); persistNow(); render(); toast('이미지 삭제');}
   else if(a==='att-rot'){ rotateAttachment(btn.dataset.img); }
   else if(a==='lb-rot'){ rotateAttachment($id('lightbox').dataset.img); }
   else if(a==='undo'){doUndo();}
@@ -3086,6 +3086,7 @@ let _delImgPaths=new Set(),_delImgPrefixes=new Set();
 function _imgPrefix(exId,plId){return 'teams/'+_safeKey(FB_CFG.team)+'/images/'+_safeKey(exId)+(plId?'/'+_safeKey(plId):'')+'/';}
 function queueImageDelete(a){if(!fbConfigReady()||!a)return;if(a.fullPath)_delImgPaths.add(a.fullPath);if(a.thumbPath)_delImgPaths.add(a.thumbPath);}
 function queueImagePrefixDelete(pf){if(!fbConfigReady()||!pf)return;_delImgPrefixes.add(pf);}
+function _tombAtt(pl,id){if(!pl||!id)return;if(!pl.delAtt||typeof pl.delAtt!=='object')pl.delAtt={};pl.delAtt[id]=Date.now();const ks=Object.keys(pl.delAtt);if(ks.length>500){ks.sort((a,b)=>pl.delAtt[a]-pl.delAtt[b]);ks.slice(0,ks.length-500).forEach(k=>delete pl.delAtt[k]);}}
 async function fbStorageListPrefix(prefix){const tok=await fbToken();let names=[],pt='';do{const u='https://firebasestorage.googleapis.com/v0/b/'+encodeURIComponent(FB_CFG.storageBucket)+'/o?maxResults=1000&prefix='+encodeURIComponent(prefix)+(pt?'&pageToken='+encodeURIComponent(pt):'');const r=await fetch(u,{headers:{Authorization:'Bearer '+tok},cache:'no-store'});if(!r.ok)throw new Error('STORAGE LIST '+r.status);const j=await r.json().catch(()=>({}));(j.items||[]).forEach(it=>{if(it&&it.name)names.push(it.name);});pt=j.nextPageToken||'';}while(pt);return names;}
 async function fbStorageDeletePrefix(prefix){const names=await fbStorageListPrefix(prefix);for(const nm of names){try{await fbStorageDelete(nm);}catch(e){}}}
 async function _flushImageDeletes(){let g=0;while((_delImgPaths.size||_delImgPrefixes.size)&&g++<5){for(const p of Array.from(_delImgPaths)){_delImgPaths.delete(p);try{await fbStorageDelete(p);}catch(e){}}for(const pf of Array.from(_delImgPrefixes)){_delImgPrefixes.delete(pf);try{await fbStorageDeletePrefix(pf);}catch(e){}}}}
@@ -3134,8 +3135,14 @@ function _mergePlanInto(loc,rem){try{
       if(rv&&typeof rv==='object'){ const ov=O[a]||(O[a]={}); Object.keys(rv).forEach(b=>{ const cur=ov[b]; if(cur==null||String(cur).trim()==='') ov[b]=rv[b]; }); }
       else { const cur=O[a]; if(cur==null||String(cur).trim()==='') O[a]=rv; } });
   });
-  const ra=(rem&&rem.attach)||[]; const oa=Array.isArray(loc.attach)?loc.attach:(loc.attach=[]);
-  const have=new Set(oa.map(x=>x&&x.id)); ra.forEach(x=>{ if(x&&x.id&&!have.has(x.id)) oa.push(x); });
+  const rt=(rem&&rem.delAtt&&typeof rem.delAtt==='object')?rem.delAtt:{};
+  const lt=(loc.delAtt&&typeof loc.delAtt==='object')?loc.delAtt:(loc.delAtt={});
+  let oa=Array.isArray(loc.attach)?loc.attach:(loc.attach=[]);
+  if(Object.keys(rt).length){ oa=loc.attach=oa.filter(x=>!(x&&x.id&&rt[x.id])); }
+  const ra=(rem&&rem.attach)||[];
+  const have=new Set(oa.map(x=>x&&x.id));
+  ra.forEach(x=>{ if(x&&x.id&&!have.has(x.id)&&!lt[x.id]) oa.push(x); });
+  Object.keys(rt).forEach(k=>{ if(lt[k]==null) lt[k]=rt[k]; });
 }catch(e){}}
 async function fbSaveExperiment(ex){if(!ex)return;if(!ex.updatedAt)ex.updatedAt=Date.now();const id=ex.id,known=(ex._knownPlanIds instanceof Set)?ex._knownPlanIds:new Set();const current=((ex.state||{}).plans||[]),curIds=new Set(current.map(p=>p.id));const full=_dirtyFull.has(id)||!known.size;const dirty=_dirtyPlans.get(id)||new Set();let write=[];if(full){write=current.filter(p=>!known.has(p.id)||dirty.has(p.id));if(!known.size)write=current.slice();for(const old of known)if(!curIds.has(old)){await fbDb('experiments/'+encodeURIComponent(id)+'/plans/'+encodeURIComponent(old),'DELETE');queueImagePrefixDelete(_imgPrefix(id,old));}}else write=current.filter(p=>dirty.has(p.id));let _mgd=false;for(const pl of write){await preparePlanAttachments(ex,pl);try{if(pl.syncedAt){const rAt=await fbDb('experiments/'+encodeURIComponent(id)+'/plans/'+encodeURIComponent(pl.id)+'/updatedAt','GET');if(rAt&&(+rAt||0)!==(+pl.syncedAt||0)){const rem=await fbDb('experiments/'+encodeURIComponent(id)+'/plans/'+encodeURIComponent(pl.id),'GET');if(rem){_mergePlanInto(pl,rem);_mgd=true;}}}}catch(_e){}pl.updatedAt=Date.now();await fbDb('experiments/'+encodeURIComponent(id)+'/plans/'+encodeURIComponent(pl.id),'PUT',_cleanPlan(pl,false));pl.syncedAt=pl.updatedAt;}if(_mgd){try{toast('👥 다른 사람의 입력을 함께 반영했어요');if(root.screen==='sim')render();}catch(_e){}}await fbDb('experiments/'+encodeURIComponent(id)+'/meta','PUT',_meta(ex));await fbDb('summaries/'+encodeURIComponent(id),'PUT',_summary(ex));ex.planSyncedAt=+ex.updatedAt||0;_setRemoteFlags(ex,Array.from(curIds));_dirtyPlans.delete(id);_dirtyMeta.delete(id);_dirtyFull.delete(id);}
 async function fbLoadExperiment(id){const meta=await fbDb('experiments/'+encodeURIComponent(id)+'/meta','GET');if(!meta)throw new Error('NOT_FOUND');const po=await fbDb('experiments/'+encodeURIComponent(id)+'/plans','GET')||{};const order=(meta.planOrder||[]).map(x=>x.id),ids=order.length?order:Object.keys(po);const plans=ids.map(k=>po[k]).filter(Boolean);plans.forEach(p=>{if(p)p.syncedAt=+p.updatedAt||0;});const ex=Object.assign({},meta);delete ex.planOrder;const sm=ex.stateMeta||{};delete ex.stateMeta;ex.state=Object.assign({},sm,{plans});if(!ex.state.active)ex.state.active={plan:Math.max(0,plans.length-1),view:'plan'};ex.planSyncedAt=+ex.updatedAt||0;_setRemoteFlags(ex,ids);return ex;}
