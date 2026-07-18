@@ -2,7 +2,7 @@
 <html lang="ko"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>제지 실험 시뮬레이터 v81</title>
+<title>제지 실험 시뮬레이터 v83</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='1.5' y='1.5' width='21' height='21' rx='6' fill='%2315497c'/%3E%3Cpath d='M7.6 5.6h5.6l3.2 3.2v9.6H7.6z' fill='%23fff'/%3E%3Cpath d='M13.2 5.6v3.2h3.2z' fill='%23c3d6e8'/%3E%3Cpath d='M9.7 12.1h4.6M9.7 14.5h4.6M9.7 16.9h2.9' stroke='%23517ba5' stroke-width='1.25' stroke-linecap='round' fill='none'/%3E%3C/svg%3E">
 <meta name="theme-color" content="#15497c">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -1112,18 +1112,19 @@
   .btn.icon{border-radius:9px}
 
   /* ── 탭: 1줄 = 차수, 2줄 = 세부(계획·데이터 입력·결과 리포트) ── */
-  .tabs{flex-direction:column;align-items:flex-start;gap:9px;padding:15px 0 4px}
+  .tabs{flex-direction:column;align-items:flex-start;gap:8px;padding:16px 0 18px}
+  .tabs:empty{padding:0}
   .tabrounds{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
-  .rdpill{display:inline-flex;align-items:center;gap:7px;padding:7px 14px;border:1px solid var(--line2);border-radius:999px;background:#fff;font-family:var(--mono);font-size:12px;font-weight:700;color:var(--ink2);cursor:pointer;user-select:none;line-height:1.2;transition:.12s}
+  .rdpill{display:inline-flex;align-items:center;gap:7px;padding:8px 16px;border:1px solid var(--line2);border-radius:999px;background:#fff;font-family:var(--mono);font-size:12.5px;font-weight:700;color:var(--ink2);cursor:pointer;user-select:none;line-height:1.2;transition:.12s}
   .rdpill:hover{border-color:#9fb4c9;color:var(--ink)}
   .rdpill.on{background:var(--slate);border-color:var(--slate);color:#fff;box-shadow:0 2px 7px rgba(38,49,61,.24)}
   .rdx{border:none;background:transparent;color:#9fb0c1;font-size:10px;cursor:pointer;padding:1px 2px;margin:-1px -4px -1px 0;border-radius:5px;line-height:1}
   .rdx:hover{background:rgba(255,255,255,.18);color:#ffb1a8}
-  .rdadd{border:1.4px dashed #c3cedb;background:transparent;border-radius:999px;padding:6.5px 13px;font-size:12px;font-weight:700;color:var(--ink2);cursor:pointer;line-height:1.2}
+  .rdadd{border:1.4px dashed #c3cedb;background:transparent;border-radius:999px;padding:7.5px 15px;font-size:12px;font-weight:700;color:var(--ink2);cursor:pointer;line-height:1.2}
   .rdadd:hover{border-color:var(--accent);color:var(--accent-d);background:#fff}
-  .tabviews{display:flex;align-items:stretch;margin-left:22px;border:1px solid var(--line2);border-radius:10px;background:#fff;overflow:hidden;box-shadow:0 1px 2px rgba(23,35,46,.04);position:relative}
-  .tabviews::before{content:'';position:absolute;left:-14px;top:-10px;width:12px;height:26px;border-left:1.5px solid #ccd6e0;border-bottom:1.5px solid #ccd6e0;border-radius:0 0 0 7px;pointer-events:none}
-  .tab.tv{display:inline-flex;align-items:center;padding:9px 17px;font-size:12.5px;font-weight:700;color:var(--ink2);cursor:pointer;user-select:none;border-right:1px solid var(--line);line-height:1.2}
+  .tabviews{display:flex;align-items:stretch;margin-left:0;border:1px solid var(--line2);border-radius:9px;background:#f7f9fb;overflow:hidden;box-shadow:none;position:relative}
+  .tabviews::before{display:none}
+  .tab.tv{display:inline-flex;align-items:center;padding:6px 13px;font-size:11.5px;font-weight:700;color:var(--ink2);cursor:pointer;user-select:none;border-right:1px solid var(--line2);line-height:1.2}
   .tab.tv:last-child{border-right:none}
   .tab.tv:hover{background:#f2f6fa;color:var(--ink)}
   .tab.tv.active{background:var(--accent);color:#fff}
@@ -1602,7 +1603,7 @@
     <div id="expbar"></div>
     <div class="tabs" id="tabs"></div>
     <div id="content"></div>
-    <div class="foot">입력 즉시 자동 저장 · <b>☁ Firebase 운영</b>: 실험·차수별 데이터 저장, 이미지는 Storage에 분리 · JSON 백업은 우측 상단 <b>⚙</b> · 스크린샷은 <b>Ctrl+V</b>로 어디서나 첨부 · <span class="vtag">v81 · 첨부 통합</span></div>
+    <div class="foot">입력 즉시 자동 저장 · <b>☁ Firebase 운영</b>: 실험·차수별 데이터 저장, 이미지는 Storage에 분리 · JSON 백업은 우측 상단 <b>⚙</b> · 스크린샷은 <b>Ctrl+V</b>로 어디서나 첨부 · <span class="vtag">v83 · 탭 여백</span></div>
   </div>
 
   <input type="file" id="fileInput" accept=".json,application/json" hidden="">
