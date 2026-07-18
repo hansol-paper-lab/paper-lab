@@ -2,7 +2,7 @@
 <html lang="ko"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>제지 실험 시뮬레이터 v78</title>
+<title>제지 실험 시뮬레이터 v79</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='1.5' y='1.5' width='21' height='21' rx='6' fill='%2315497c'/%3E%3Cpath d='M7.6 5.6h5.6l3.2 3.2v9.6H7.6z' fill='%23fff'/%3E%3Cpath d='M13.2 5.6v3.2h3.2z' fill='%23c3d6e8'/%3E%3Cpath d='M9.7 12.1h4.6M9.7 14.5h4.6M9.7 16.9h2.9' stroke='%23517ba5' stroke-width='1.25' stroke-linecap='round' fill='none'/%3E%3C/svg%3E">
 <meta name="theme-color" content="#15497c">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -826,6 +826,7 @@
   .attsc th:last-child,.attsc td:last-child{border-right:none}
   .attsc td input{width:100%;border:none;outline:none;background:transparent;text-align:center;font:700 12.5px var(--mono);padding:6px 2px;color:var(--ink)}
   .attsc td input::placeholder{color:#d0cec6}
+  .atterr{font:600 11px var(--mono);color:#bd4a41;background:#faedeb;padding:5px 8px;border-top:1px solid #eed2cd;word-break:break-all;text-align:left}
   /* ===== 결과 차트 ===== */
   .rcharts{margin-top:18px}
   .rch-h{font-size:14px;font-weight:800;color:var(--ink);margin:0 2px 9px}
@@ -1601,7 +1602,7 @@
     <div id="expbar"></div>
     <div class="tabs" id="tabs"></div>
     <div id="content"></div>
-    <div class="foot">입력 즉시 자동 저장 · <b>☁ Firebase 운영</b>: 실험·차수별 데이터 저장, 이미지는 Storage에 분리 · JSON 백업은 우측 상단 <b>⚙</b> · 스크린샷은 <b>Ctrl+V</b>로 어디서나 첨부 · <span class="vtag">v78 · 동시편집 보호</span></div>
+    <div class="foot">입력 즉시 자동 저장 · <b>☁ Firebase 운영</b>: 실험·차수별 데이터 저장, 이미지는 Storage에 분리 · JSON 백업은 우측 상단 <b>⚙</b> · 스크린샷은 <b>Ctrl+V</b>로 어디서나 첨부 · <span class="vtag">v79 · 이미지 진단</span></div>
   </div>
 
   <input type="file" id="fileInput" accept=".json,application/json" hidden="">
@@ -1630,6 +1631,8 @@
     
     
     <button class="set-it" data-action="fb-setup">☁ 팀 서버 연결 설정</button>
+    <button class="set-it" data-action="img-test">🔧 이미지 서버 점검</button>
+    <button class="set-it" data-action="img-fix">⬆ 이미지 서버로 올리기</button>
     <button class="set-it" data-action="set-shortcuts">⌨ 단축키 안내</button>
     <div class="set-sec localonly">자동 백업 (하루 1회 · 최근 3개 보관)</div>
     <div id="backuplist" class="localonly"></div>
@@ -1784,7 +1787,8 @@ function addAttachment(dataURL,name,thumb,ar){ const p=curPlan(); if(!p){ toast(
 function attTotalMB(){ let n=0; try{ root.experiments.forEach(x=>((x.state||{}).plans||[]).forEach(pl=>(pl.attach||[]).forEach(a=>{ n+=(+a.kb||0)/1024; }))); }catch(e){} return n; }
 const REMOTE_IMG_PLACEHOLDER='data:image/svg+xml;charset=utf-8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="800" height="520"><rect width="100%" height="100%" fill="#eef1f4"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#8494a4" font-family="sans-serif" font-size="28">이미지 불러오는 중</text></svg>');
 const REMOTE_IMG_FAIL='data:image/svg+xml;charset=utf-8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="800" height="520"><rect width="100%" height="100%" fill="#faedeb"/><text x="50%" y="46%" dominant-baseline="middle" text-anchor="middle" fill="#bd4a41" font-family="sans-serif" font-size="27">이미지를 불러오지 못했어요</text><text x="50%" y="58%" dominant-baseline="middle" text-anchor="middle" fill="#8494a4" font-family="sans-serif" font-size="22">눌러서 다시 시도</text></svg>');
-function attSrc(im,full){ if(!im) return REMOTE_IMG_PLACEHOLDER; if(full&&im.data) return im.data; if(im.thumb) return im.thumb; if(im.data) return im.data; if(im._imgErr||!(im.thumbPath||im.fullPath)) return REMOTE_IMG_FAIL; return REMOTE_IMG_PLACEHOLDER; }
+const REMOTE_IMG_NOUP='data:image/svg+xml;charset=utf-8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="800" height="520"><rect width="100%" height="100%" fill="#faf2da"/><text x="50%" y="46%" dominant-baseline="middle" text-anchor="middle" fill="#8f6a10" font-family="sans-serif" font-size="26">서버에 올라가지 않은 이미지예요</text><text x="50%" y="58%" dominant-baseline="middle" text-anchor="middle" fill="#8494a4" font-family="sans-serif" font-size="21">⚙ → 이미지 서버 점검을 눌러보세요</text></svg>');
+function attSrc(im,full){ if(!im) return REMOTE_IMG_PLACEHOLDER; if(full&&im.data) return im.data; if(im.thumb) return im.thumb; if(im.data) return im.data; if(im._imgErr) return REMOTE_IMG_FAIL; if(!(im.thumbPath||im.fullPath)) return REMOTE_IMG_NOUP; return REMOTE_IMG_PLACEHOLDER; }
 function mkScaled(img,src,MAX,Q){ try{ const w=img.width||0,h=img.height||0; if(!(w&&h)) return src; const sc=Math.min(1,MAX/Math.max(w,h)); const cv=document.createElement('canvas'); cv.width=Math.max(1,Math.round(w*sc)); cv.height=Math.max(1,Math.round(h*sc)); cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height); const j=cv.toDataURL('image/jpeg',Q); return (j&&j.indexOf('data:image')===0)?j:src; }catch(e){ return src; } }
 function processImageFile(file){ if(!file) return; const rd=new FileReader(); rd.onload=()=>{ const src=rd.result; const img=new Image(); img.onload=()=>{ const full=mkScaled(img,src,1800,.86); const th=mkScaled(img,src,560,.72); const ar=(img.width&&img.height)?(img.width/img.height):1.4; addAttachment(full,(file.name&&!/^image\.(png|jpe?g)$/i.test(file.name))?file.name:'스크린샷',th,ar); }; img.onerror=()=>addAttachment(src,file.name||'이미지'); img.src=src; }; rd.readAsDataURL(file); }
 let _mkT=null; let _pickSel=new Set();
@@ -1829,7 +1833,7 @@ function _attachCardRaw(){ const p=curPlan(); if(!p) return '';
     const big=hi&&(sz==='c1'||sz==='c2');
     bodyHtml=`<div class="attcols ${sz==='c1'?'n1':(sz==='c2'?'n2':'n3')}">${p.attach.map(im=>{
       const scT=im.sc?`<div class="attsc"><table><tr>${cases.map(c=>`<th>${escT(c.name)}</th>`).join('')}</tr><tr>${cases.map(c=>`<td><input data-role="ascore" data-img="${im.id}" data-case="${c.id}" value="${escA((im.scores||{})[c.id]||'')}" placeholder="-"></td>`).join('')}</tr></table></div>`:'';
-      return `<figure class="attL" draggable="true" data-attdrag="${im.id}"><div class="attL-h"><input class="attTitle" data-role="atitle" data-img="${im.id}" value="${escA(im.title||'')}" placeholder="제목 (예: Dry-pick)"><button class="rotb" data-action="att-rot" data-img="${im.id}" title="90° 회전">↻</button><button class="rotb" data-action="att-anno" data-img="${im.id}" title="주석 — 형광펜·동그라미·글자">✎</button><button class="scbtn ${im.sc?'on':''}" data-action="att-sc" data-img="${im.id}" title="케이스별 점수표 켜기/끄기">점수</button><button class="att-x2" data-action="att-open" data-img="${im.id}" title="전체화면">⤢</button><button class="att-x2 del" data-action="att-del" data-img="${im.id}" title="삭제">✕</button></div>${scT}<img src="${attSrc(im,big)}" alt="" loading="lazy" draggable="false" data-action="att-open" data-img="${im.id}"></figure>`;
+      return `<figure class="attL" draggable="true" data-attdrag="${im.id}"><div class="attL-h"><input class="attTitle" data-role="atitle" data-img="${im.id}" value="${escA(im.title||'')}" placeholder="제목 (예: Dry-pick)"><button class="rotb" data-action="att-rot" data-img="${im.id}" title="90° 회전">↻</button><button class="rotb" data-action="att-anno" data-img="${im.id}" title="주석 — 형광펜·동그라미·글자">✎</button><button class="scbtn ${im.sc?'on':''}" data-action="att-sc" data-img="${im.id}" title="케이스별 점수표 켜기/끄기">점수</button><button class="att-x2" data-action="att-open" data-img="${im.id}" title="전체화면">⤢</button><button class="att-x2 del" data-action="att-del" data-img="${im.id}" title="삭제">✕</button></div>${scT}<img src="${attSrc(im,big)}" alt="" loading="lazy" draggable="false" data-action="att-open" data-img="${im.id}">${im._imgErr?`<div class="atterr">${escT(im._imgErr)}</div>`:''}</figure>`;
     }).join('')}</div>`;
   }
   return `<section class="card attcard"><div class="chead"><span class="num">📎</span><h2>첨부 이미지</h2>${meter}<span class="spacer"></span>${sizeSeg}${modeSeg}<button class="btn sm" data-action="att-add">+ 이미지</button></div>${bodyHtml}</section>`; }
@@ -3141,6 +3145,55 @@ const names=Array.from(new Set(here.map(x=>String(x.n||'팀원'))));
 el.style.display='inline-flex';el.className='savestat'+(same?' err':' on');el.innerHTML='<i></i>👥 '+names.join(', ')+(same?' · 같은 차수':'');
 el.title=same?(names.join(', ')+'님이 지금 이 차수를 함께 보고 있어요 — 같은 칸을 동시에 고치지 마세요'):(names.join(', ')+'님이 같은 실험을 보고 있어요');
 }catch(e){}}
+async function storageSelfTest(){
+  const L=[];
+  L.push('bucket = '+(FB_CFG.storageBucket||'(없음)'));
+  L.push('team   = '+(FB_CFG.team||'(없음)'));
+  if(!fbConfigReady()){alert('🔧 점검\n\n서버 설정이 없습니다.');return;}
+  if(!FB_AUTH.refreshToken&&!FB_AUTH.idToken){gateShow('점검하려면 먼저 입장해 주세요.');return;}
+  const p='teams/'+_safeKey(FB_CFG.team)+'/_selftest/t'+Date.now()+'.txt';
+  let upOk=false;
+  try{ await fbStorageUpload(p,new Blob(['ok'],{type:'text/plain'})); L.push('업로드 ✔ 성공'); upOk=true; }
+  catch(e){ L.push('업로드 ✘ '+String((e&&e.message)||e)); }
+  if(upOk){
+    try{ const b=await fbStorageGet(p); const t=await b.text(); L.push('다운로드 '+(t==='ok'?'✔ 성공':'✘ 내용 불일치')); }
+    catch(e){ L.push('다운로드 ✘ '+String((e&&e.message)||e)); }
+    try{ await fbStorageDelete(p); L.push('삭제 ✔ 성공'); }catch(e){ L.push('삭제 ✘ '+String((e&&e.message)||e)); }
+  }
+  let n=0,noPath=0,hasData=0,err=0,e1='';
+  try{ (root.experiments||[]).forEach(x=>(((x.state||{}).plans)||[]).forEach(pl=>((pl.attach||[]).forEach(a=>{ if(!a)return; n++; if(!(a.fullPath||a.thumbPath)){noPath++; if(a.data||a.thumb)hasData++;} if(a._imgErr){err++; if(!e1)e1=a._imgErr;} })))); }catch(e){}
+  L.push('');
+  L.push('첨부 '+n+'개 / 서버경로 없음 '+noPath+'개 (그중 내 기기에 원본 있음 '+hasData+'개) / 불러오기 실패 '+err+'개');
+  if(e1)L.push('첫 실패 사유: '+e1);
+  L.push('');
+  if(!upOk) L.push('→ Storage 규칙이 게시되지 않았거나 버킷 이름이 다릅니다.');
+  else if(noPath&&hasData) L.push('→ 원본이 이 기기에 있으니 아래 [이미지 서버로 올리기]를 누르세요.');
+  else if(noPath) L.push('→ 원본이 사라진 첨부입니다. 삭제 후 다시 첨부해 주세요.');
+  else if(err) L.push('→ 위 실패 사유를 알려주세요.');
+  else L.push('→ 이상 없음.');
+  try{console.log('IMG SELFTEST\n'+L.join('\n'));}catch(e){}
+  alert('🔧 이미지 서버 점검\n\n'+L.join('\n'));
+}
+async function reuploadAllImages(){
+  if(!fbConfigReady()||(!FB_AUTH.refreshToken&&!FB_AUTH.idToken)){toast('먼저 입장해 주세요');return;}
+  cloudStat('busy','☁ 이미지 올리는 중…');
+  let ok=0,fail=0;
+  try{
+    for(const ex of (root.experiments||[])){
+      const pls=((ex.state||{}).plans)||[]; let touched=false;
+      for(const pl of pls){
+        const need=(pl.attach||[]).some(a=>a&&(a.data||a.thumb)&&!(a.fullPath&&a.thumbPath));
+        if(!need)continue;
+        try{ await preparePlanAttachments(ex,pl); await fbDb('experiments/'+encodeURIComponent(ex.id)+'/plans/'+encodeURIComponent(pl.id),'PUT',_cleanPlan(pl,false)); pl.syncedAt=+pl.updatedAt||Date.now(); ok++; touched=true; }
+        catch(e){ fail++; }
+      }
+      if(touched){ try{ await fbDb('experiments/'+encodeURIComponent(ex.id)+'/meta','PUT',_meta(ex)); await fbDb('summaries/'+encodeURIComponent(ex.id),'PUT',_summary(ex)); }catch(e){} }
+    }
+  }catch(e){}
+  cloudStat(fail?'err':'on',fail?'☁ 일부 실패':'☁ 이미지 업로드 완료');
+  toast(fail?('이미지 업로드 '+ok+'건 성공 · '+fail+'건 실패'):('✅ 이미지 '+ok+'개 차수 업로드 완료'));
+  render();
+}
 function cloudInit(){if(!fbConfigReady()){cloudStat('err','☁ Firebase 설정 필요');return;}if(!FB_AUTH.refreshToken&&!FB_AUTH.idToken){cloudStat('err','☁ 로그인 필요');return;}cloudStat('busy','☁ 팀 데이터 확인 중…');cloudLoadSummaries(false).then(()=>cloudStat('on','☁ 연결됨')).catch(()=>{cloudStat('err','☁ 로그인/권한 확인');if(!FB_AUTH.refreshToken&&!FB_AUTH.idToken)gateShow('세션이 만료됐어요 — 팀 비밀번호를 다시 입력해 주세요.');});clearInterval(_pollT);presencePing();presenceRead();_pollT=setInterval(()=>{if(document.visibilityState==='visible'){presencePing();presenceRead();if(!_editingNow())cloudLoadSummaries(true).catch(()=>{});}},25000);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&!_editingNow())cloudLoadSummaries(true).catch(()=>{});else if(document.visibilityState==='hidden')cloudFlush(true);});}
 /* ================= 팀 비밀번호 게이트 (v73) =================
    팀원은 Firebase 계정·가입 없이 공유 비밀번호 1개로 입장.
@@ -3183,7 +3236,7 @@ async function fbSave(){const msg=$id('fbmsg');FB_CFG.databaseURL=_normDb($id('f
 function fbOff(){FB_CFG={databaseURL:'',apiKey:'',storageBucket:'',team:'paperlab'};FB_BASE='';_clearAuth();try{localStorage.removeItem(FB_CFG_KEY);localStorage.removeItem('soocho_fb_url');}catch(e){}const msg=$id('fbmsg');if(msg)msg.textContent='연결 설정을 지웠습니다.';cloudStat('err','☁ Firebase 설정 필요');toast('Firebase 연결 해제');}
 function fbLogout(){_clearAuth();const msg=$id('fbmsg');if(msg)msg.textContent='로그아웃되었습니다.';cloudStat('err','☁ 로그인 필요');toast('로그아웃');}
 document.addEventListener('input',function(e){const t=e.target,ro=(t&&t.dataset)?t.dataset.role:null;if(ro==='homeq'){_homeQ=t.value;const L=$id('loglist');if(L)L.innerHTML=homeListHTML();}else if(ro==='eowner'||ro==='enote'){const ex=root.experiments.find(x=>x&&x.id===t.dataset.e);if(ex){if(ro==='eowner')ex.owner=t.value;else{ex.note=t.value;ex.noteEdited=true;}ex.updatedAt=Date.now();_dirtyMeta.add(ex.id);scheduleSave();}}});
-document.addEventListener('click',function(e){const b=(e.target&&e.target.closest)?e.target.closest('[data-action]'):null;if(!b)return;const a=b.dataset.action;if(a==='exp-more'){const eid=b.dataset.e;_homeOpen[eid]=!_homeOpen[eid];const L=$id('loglist');if(L)L.innerHTML=homeListHTML();}else if(a==='exp-status'){const ex=root.experiments.find(x=>x&&x.id===b.dataset.e);if(ex){ex.status=b.dataset.st;ex.updatedAt=Date.now();_dirtyMeta.add(ex.id);scheduleSave();const L=$id('loglist');if(L)L.innerHTML=homeListHTML();}}else if(a==='home-filter'){_homeType=b.dataset.t||'all';document.querySelectorAll('.hchip').forEach(c=>c.classList.toggle('on',c.dataset.t===_homeType));const L=$id('loglist');if(L)L.innerHTML=homeListHTML();}else if(a==='cloud-sync'){if(!fbConfigReady())fbOpen();else if(!FB_AUTH.refreshToken&&!FB_AUTH.idToken)gateShow();else cloudSync(false);}else if(a==='fb-setup')fbOpen();else if(a==='fb-save')fbSave();else if(a==='fb-cancel'){const ov=$id('fbov');if(ov)ov.style.display='none';}else if(a==='fb-off')fbOff();else if(a==='fb-logout')fbLogout();else if(a==='fb-migrate')askConfirm('현재 파일의 모든 실험과 이미지를 Firebase 운영 구조로 이관할까요? 같은 ID의 서버 데이터는 현재 파일 기준으로 갱신됩니다.',fbMigrateRun);});
+document.addEventListener('click',function(e){const b=(e.target&&e.target.closest)?e.target.closest('[data-action]'):null;if(!b)return;const a=b.dataset.action;if(a==='exp-more'){const eid=b.dataset.e;_homeOpen[eid]=!_homeOpen[eid];const L=$id('loglist');if(L)L.innerHTML=homeListHTML();}else if(a==='exp-status'){const ex=root.experiments.find(x=>x&&x.id===b.dataset.e);if(ex){ex.status=b.dataset.st;ex.updatedAt=Date.now();_dirtyMeta.add(ex.id);scheduleSave();const L=$id('loglist');if(L)L.innerHTML=homeListHTML();}}else if(a==='home-filter'){_homeType=b.dataset.t||'all';document.querySelectorAll('.hchip').forEach(c=>c.classList.toggle('on',c.dataset.t===_homeType));const L=$id('loglist');if(L)L.innerHTML=homeListHTML();}else if(a==='cloud-sync'){if(!fbConfigReady())fbOpen();else if(!FB_AUTH.refreshToken&&!FB_AUTH.idToken)gateShow();else cloudSync(false);}else if(a==='img-test'){const m=$id('setmenu'),bk=$id('menuback');if(m)m.hidden=true;if(bk)bk.hidden=true;storageSelfTest();}else if(a==='img-fix'){const m=$id('setmenu'),bk=$id('menuback');if(m)m.hidden=true;if(bk)bk.hidden=true;reuploadAllImages();}else if(a==='fb-setup')fbOpen();else if(a==='fb-save')fbSave();else if(a==='fb-cancel'){const ov=$id('fbov');if(ov)ov.style.display='none';}else if(a==='fb-off')fbOff();else if(a==='fb-logout')fbLogout();else if(a==='fb-migrate')askConfirm('현재 파일의 모든 실험과 이미지를 Firebase 운영 구조로 이관할까요? 같은 ID의 서버 데이터는 현재 파일 기준으로 갱신됩니다.',fbMigrateRun);});
 document.addEventListener('keydown',function(e){if(e.key==='Escape'){const ov=$id('fbov');if(ov&&ov.style.display!=='none')ov.style.display='none';}});
 /* ================================================================ */
 
