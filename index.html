@@ -2,7 +2,7 @@
 <html lang="ko"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>제지 실험 시뮬레이터 v98</title>
+<title>제지 실험 시뮬레이터 v99</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='1.5' y='1.5' width='21' height='21' rx='6' fill='%2315497c'/%3E%3Cpath d='M7.6 5.6h5.6l3.2 3.2v9.6H7.6z' fill='%23fff'/%3E%3Cpath d='M13.2 5.6v3.2h3.2z' fill='%23c3d6e8'/%3E%3Cpath d='M9.7 12.1h4.6M9.7 14.5h4.6M9.7 16.9h2.9' stroke='%23517ba5' stroke-width='1.25' stroke-linecap='round' fill='none'/%3E%3C/svg%3E">
 <meta name="theme-color" content="#15497c">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -1672,7 +1672,7 @@
     <div id="expbar"></div>
     <div class="tabs" id="tabs"></div>
     <div id="content"></div>
-    <div class="foot">입력 즉시 자동 저장 · <b>☁ Firebase 운영</b>: 실험·차수별 데이터 저장, 이미지는 Storage에 분리 · JSON 백업은 우측 상단 <b>⚙</b> · 스크린샷은 <b>Ctrl+V</b>로 어디서나 첨부 · <span class="vtag">v98 · 이미지 다중복구·DB 이중백업</span></div>
+    <div class="foot">입력 즉시 자동 저장 · <b>☁ Firebase 운영</b>: 실험·차수별 데이터 저장, 이미지는 Storage에 분리 · JSON 백업은 우측 상단 <b>⚙</b> · 스크린샷은 <b>Ctrl+V</b>로 어디서나 첨부 · <span class="vtag">v99 · Storage 토큰 자동복구·DB 이중백업</span></div>
   </div>
 
   <input type="file" id="fileInput" accept=".json,application/json" hidden="">
@@ -3235,6 +3235,23 @@ async function _attachmentUrlData(a,full){
     add(a.fullUrl);
   }
   for(const u of urls){try{return await _fetchImageDataUrl(u);}catch(e){errs.push(_shortImgErr(e));}}
+  /* Storage 파일을 같은 경로로 다시 올리면 기존 다운로드 토큰 URL이 403이 될 수 있다.
+     저장된 URL이 한 번이라도 실패하면 현재 객체 메타데이터의 토큰을 다시 받아 재시도한다. */
+  const p=full?a.fullPath:(a.thumbPath||a.fullPath);
+  if(p){
+    if(full)delete a.fullUrl;
+    else if(a.thumbPath&&p===a.thumbPath)delete a.thumbUrl;
+    else delete a.fullUrl;
+    try{
+      const fresh=await fbStorageTok(p);
+      if(full||!a.thumbPath||p===a.fullPath)a.fullUrl=fresh;
+      else a.thumbUrl=fresh;
+      const data=await _fetchImageDataUrl(fresh);
+      delete a._imgErr;
+      _queueRecoveredImageBackup(a);
+      return data;
+    }catch(e){errs.push('현재 토큰 재발급 '+_shortImgErr(e));}
+  }
   throw new Error(errs.filter(Boolean).join(' / ')||'표시용 이미지 주소 다운로드 실패');
 }
 function _cleanAtt(a,local){const x=JSON.parse(JSON.stringify(a||{}));delete x._loading;delete x._fullLoading;delete x._urlLoading;delete x._furlLoading;delete x._backupQueued;delete x._imgErr;delete x.imageDirty;/* 로컬 저장공간에는 썸네일만, Firebase RTDB에는 원본 복구본까지 유지 */if(local&&x.fullPath&&!x.pendUpload)delete x.data;return x;}
@@ -3290,7 +3307,7 @@ async function ensureAttachmentFull(a){
 }
 async function hydratePlanThumbs(pl){if(!pl)return;await Promise.all((pl.attach||[]).map(a=>ensureAttachmentThumb(a).catch(()=>null)));}
 async function hydratePlanFull(pl){if(!pl)return;await Promise.all((pl.attach||[]).map(a=>ensureAttachmentFull(a).catch(()=>null)));}
-function releaseExperimentImages(ex){/* v98: 동기화·실험 전환 뒤에도 회전/엑셀용 이미지 캐시 유지 */}
+function releaseExperimentImages(ex){/* v99: 동기화·실험 전환 뒤에도 회전/엑셀용 이미지 캐시 유지 */}
 async function hydrateAllKnownImages(){for(const ex of (root.experiments||[])){if(ex.remoteOnly||!((ex.state||{}).plans||[]).length){try{const full=await fbLoadExperiment(ex.id);_carryExperimentImages(ex,full);Object.assign(ex,full);}catch(e){continue;}}for(const pl of ((ex.state||{}).plans||[]))await hydratePlanFull(pl);}}
 async function hydrateVisibleAttachmentThumbs(){if(_thumbBusy||root.screen!=='sim'||!curPlan()||!fbConfigReady()||!FB_AUTH.refreshToken)return;const miss=(curPlan().attach||[]).filter(a=>a&&!a.thumb&&!a.thumbUrl&&!a.fullUrl&&!a._imgErr&&(a.thumbPath||a.fullPath));if(!miss.length)return;_thumbBusy=true;let ch=false;try{await Promise.all(miss.map(async a=>{try{await ensureAttachmentUrl(a);}catch(e){}ch=true;}));
   const nothumb=(curPlan().attach||[]).filter(a=>a&&!a.thumb&&!a._imgErr&&(a.thumbPath||a.fullPath));
