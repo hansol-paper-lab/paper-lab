@@ -2,7 +2,7 @@
 <html lang="ko"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>제지 실험 시뮬레이터 v89</title>
+<title>제지 실험 시뮬레이터 v90</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='1.5' y='1.5' width='21' height='21' rx='6' fill='%2315497c'/%3E%3Cpath d='M7.6 5.6h5.6l3.2 3.2v9.6H7.6z' fill='%23fff'/%3E%3Cpath d='M13.2 5.6v3.2h3.2z' fill='%23c3d6e8'/%3E%3Cpath d='M9.7 12.1h4.6M9.7 14.5h4.6M9.7 16.9h2.9' stroke='%23517ba5' stroke-width='1.25' stroke-linecap='round' fill='none'/%3E%3C/svg%3E">
 <meta name="theme-color" content="#15497c">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -1649,7 +1649,7 @@
     <div id="expbar"></div>
     <div class="tabs" id="tabs"></div>
     <div id="content"></div>
-    <div class="foot">입력 즉시 자동 저장 · <b>☁ Firebase 운영</b>: 실험·차수별 데이터 저장, 이미지는 Storage에 분리 · JSON 백업은 우측 상단 <b>⚙</b> · 스크린샷은 <b>Ctrl+V</b>로 어디서나 첨부 · <span class="vtag">v89 · 엑셀 이미지 복구</span></div>
+    <div class="foot">입력 즉시 자동 저장 · <b>☁ Firebase 운영</b>: 실험·차수별 데이터 저장, 이미지는 Storage에 분리 · JSON 백업은 우측 상단 <b>⚙</b> · 스크린샷은 <b>Ctrl+V</b>로 어디서나 첨부 · <span class="vtag">v90 · 엑셀 로딩 3중화</span></div>
   </div>
 
   <input type="file" id="fileInput" accept=".json,application/json" hidden="">
@@ -3263,7 +3263,7 @@ async function openExperimentByIndex(i){const ex=root.experiments[i];if(!ex)retu
 async function openAttachmentLightbox(im){if(!im)return;let _src=im.data;if(!_src){try{delete im._imgErr;_src=await ensureAttachmentFullUrl(im);}catch(e){const m=String((e&&e.message)||e);im._imgErr=m;try{console.error('IMG FAIL',im.fullPath,m);}catch(_e){}toast('이미지 실패: '+_imgErrTxt(m));try{if(root.screen==='sim')render();}catch(_e){}return;}}const li=$id('lbimg');li.classList.remove('zoom');li.src=_src;$id('lbname').textContent=(im.title||im.name)+' · '+new Date(im.ts).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});$id('lightbox').dataset.img=im.id;$id('lightbox').classList.add('show');try{annoDecorate();}catch(e){}}
 async function exportReportHtmlCloud(){try{await hydratePlanFull(curPlan());const ex=EXP();download((ex.name||'실험')+'_결과_'+ymd()+'.html',buildReportDoc(),'text/html;charset=utf-8');toast('⬇ 리포트 HTML 저장됨');}catch(e){toast('내보내기 실패');}}
 async function exportReportPdfCloud(){try{await hydratePlanFull(curPlan());const doc=buildReportDoc().replace('</body>','<scr'+'ipt>window.onload=function(){setTimeout(function(){window.print();},300);};</scr'+'ipt></body>');const win=window.open('','_blank');if(!win)toast('팝업 차단을 해제해 주세요');else{win.document.open();win.document.write(doc);win.document.close();toast('인쇄창에서 PDF로 저장 선택');}}catch(e){toast('PDF 열기 실패');}}
-async function exportXlsxReportCloud(){try{await hydratePlanFull(curPlan());return exportXlsxReport();}catch(e){toast('이미지를 불러오지 못했어요');}}
+async function exportXlsxReportCloud(){try{await hydratePlanFull(curPlan());}catch(e){}try{return await exportXlsxReport();}catch(e){toast('\u26a0 \uc5d1\uc140 \uc624\ub958: '+((e&&e.message)||e));}}
 async function fbMigrateRun(){if(!fbConfigReady())return fbOpen();if(!FB_AUTH.refreshToken&&!FB_AUTH.idToken){gateShow();toast('먼저 팀 비밀번호로 입장해 주세요');return;}cloudStat('busy','☁ 기존 데이터 이관 중…');try{let n=0;for(const ex of (root.experiments||[])){if(ex.remoteOnly)continue;const ids=((ex.state||{}).plans||[]).map(p=>p.id);for(const pl of ((ex.state||{}).plans||[])){await preparePlanAttachments(ex,pl);await fbDb('experiments/'+encodeURIComponent(ex.id)+'/plans/'+encodeURIComponent(pl.id),'PUT',_cleanPlan(pl,false));}await fbDb('experiments/'+encodeURIComponent(ex.id)+'/meta','PUT',_meta(ex));await fbDb('summaries/'+encodeURIComponent(ex.id),'PUT',_summary(ex));_setRemoteFlags(ex,ids);n++;cloudStat('busy','☁ 이관 중 '+n+'/'+root.experiments.length);}toast('✅ 기존 데이터 '+n+'개 이관 완료');await cloudLoadSummaries(true);cloudStat('on','☁ 이관 완료');}catch(e){cloudStat('err','☁ 이관 실패');toast('이관 실패 — 설정·권한·Storage를 확인해 주세요');}}
 const _presId=Math.random().toString(36).slice(2,10);
 async function presencePing(){if(!fbConfigReady()||(!FB_AUTH.refreshToken&&!FB_AUTH.idToken))return;try{const ex=(root.screen==='sim')?EXP():null;const pl=(root.screen==='sim')?curPlan():null;await fbDb('presence/'+_presId,'PUT',{n:whoAmI()||'팀원',e:ex?ex.id:'',p:pl?pl.id:'',at:Date.now()});}catch(e){}}
@@ -3559,8 +3559,10 @@ function openAnno(id){
 
 /* ---- 엑셀(.xlsx) 리포트 ---- */
 let _xlP=null;
+function _loadScript(u){return new Promise(function(res,rej){var sc=document.createElement('script');sc.src=u;sc.onload=function(){res();};sc.onerror=function(){rej(new Error(u));};document.head.appendChild(sc);});}
 function ensureExcelJS(){ if(window.ExcelJS) return Promise.resolve(); if(_xlP) return _xlP;
-  _xlP=new Promise(function(res,rej){ const sc=document.createElement('script'); sc.src='https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js'; sc.onload=function(){res();}; sc.onerror=function(){_xlP=null;rej(new Error('load'));}; document.head.appendChild(sc); });
+  var urls=['https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js','https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js','https://unpkg.com/exceljs@4.4.0/dist/exceljs.min.js'];
+  _xlP=(async function(){ var last=''; for(var i=0;i<urls.length;i++){ try{ await _loadScript(urls[i]); if(window.ExcelJS) return; }catch(e){ last=String((e&&e.message)||''); } } _xlP=null; throw new Error('모듈 주소가 모두 차단됨 ('+last.replace(/^https?:\/\//,'').split('/')[0]+' 등) — 광고차단 앱·사내망 차단 확인'); })();
   return _xlP; }
 async function _xlsxCardPng(a,cs,widthPx,hasScore,title){
   let url=null,im=null;
@@ -3664,7 +3666,7 @@ async function exportXlsxReport(){
   const ex=(typeof EXP==='function')?EXP():null;
   if(!ex||!appState){ toast('\uc2e4\ud5d8\uc744 \uc5f0 \uc0c1\ud0dc\uc5d0\uc11c \uc0ac\uc6a9\ud560 \uc218 \uc788\uc5b4\uc694'); return; }
   toast('\ud83d\udce5 \uc5d1\uc140 \ub9ac\ud3ec\ud2b8 \uc0dd\uc131 \uc911\u2026');
-  try{ await ensureExcelJS(); }catch(e){ toast('\u26a0 \uc5d1\uc140 \ubaa8\ub4c8\uc744 \ubabb \ubd88\ub7ec\uc654\uc5b4\uc694 \u2014 \uc778\ud130\ub137 \uc5f0\uacb0 \ud655\uc778'); return; }
+  try{ await ensureExcelJS(); }catch(e){ toast('\u26a0 \uc5d1\uc140 \ubaa8\ub4c8 \ub85c\ub529 \uc2e4\ud328: '+((e&&e.message)||e)); return; }
   try{ await (ex.type==='sheet'?_buildXlsxSheet(ex):_buildXlsx(ex)); toast('\ud83d\udce5 \uc5d1\uc140 \ub9ac\ud3ec\ud2b8 \uc800\uc7a5\ub428'); }
   catch(e){ toast('\u26a0 \uc5d1\uc140 \uc0dd\uc131 \uc624\ub958: '+((e&&e.message)||e)); }
 }
