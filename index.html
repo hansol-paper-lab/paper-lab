@@ -2,7 +2,7 @@
 <html lang="ko"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>제지 실험 시뮬레이터 v94</title>
+<title>제지 실험 시뮬레이터 v95</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='1.5' y='1.5' width='21' height='21' rx='6' fill='%2315497c'/%3E%3Cpath d='M7.6 5.6h5.6l3.2 3.2v9.6H7.6z' fill='%23fff'/%3E%3Cpath d='M13.2 5.6v3.2h3.2z' fill='%23c3d6e8'/%3E%3Cpath d='M9.7 12.1h4.6M9.7 14.5h4.6M9.7 16.9h2.9' stroke='%23517ba5' stroke-width='1.25' stroke-linecap='round' fill='none'/%3E%3C/svg%3E">
 <meta name="theme-color" content="#15497c">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -1616,6 +1616,29 @@
 .frtbl .del-x{flex:none;opacity:.3;transition:opacity .12s}
 .frtbl tr:hover .del-x{opacity:1}
 @media(max-width:640px){ .frtbl{min-width:520px} }
+/* v95 — 섹션 헤더 우측 정렬 */
+#content .ggh .gghw{display:flex;align-items:center;gap:6px;width:100%}
+#content .ggh .gsp{flex:1 1 auto}
+/* v95 — 픽커 섹션 구분 */
+.mlpick-h.sub{margin-top:5px;border-top:1px dashed #e2e8ee;padding-top:7px;color:#5a6b7c}
+.mlpick-it small.mls{color:#7a8794;background:#eef2f6;border-radius:5px;padding:1px 6px;font-size:10.5px;font-weight:700}
+/* v95 — 기타실험 조건표(그리드) : 전역 표 CSS와 무관 */
+#content .frgrid{display:grid;gap:1px;background:var(--line2,#d9e2ea);border:1px solid var(--line2,#d9e2ea);border-radius:9px;overflow:hidden}
+#content .frgrid .frg{background:#fff;margin:0;display:flex;flex-direction:column;justify-content:center;min-width:0}
+#content .frgrid .frg-corner{background:var(--slate,#2b3947);color:#dfe8f0;align-items:center;justify-content:center;font:800 12px var(--sans);letter-spacing:.02em;padding:10px 8px;text-align:center}
+#content .frgrid .frg-case{background:#f4f8fb;padding:7px 8px 8px;gap:2px}
+#content .frgrid .frg-rowh{background:#f7fafc;padding:5px 8px}
+#content .frgrid .frg-cell{padding:0}
+#content .frgrid .frrw{display:flex;align-items:center;gap:4px;width:100%}
+#content .frgrid input{border:none!important;background:transparent!important;box-shadow:none!important;outline:none!important;width:100%;min-width:0;margin:0;box-sizing:border-box;font:600 13px var(--sans);color:var(--ink);padding:5px 4px;border-radius:0}
+#content .frgrid input.frcname{flex:1;font:800 14px var(--sans);text-align:center}
+#content .frgrid input.frcnote{font:500 12px var(--sans);color:var(--ink2);text-align:center}
+#content .frgrid input.frname{flex:1;font:700 13px var(--sans);text-align:left}
+#content .frgrid .frg-cell input{text-align:center;font-size:13.5px;padding:10px 6px}
+#content .frgrid input::placeholder{color:#b9c4cf;font-weight:600}
+#content .frgrid .frg:focus-within{box-shadow:inset 0 0 0 2px var(--accent)!important}
+#content .frgrid .del-x{flex:none;opacity:.35}
+#content .frgrid .frg:hover .del-x{opacity:1}
 /* v86 — 측정값 라이브러리 픽커 */
 .mlpick{position:fixed;z-index:400;background:#fff;border:1px solid #c3cedb;border-radius:12px;box-shadow:0 12px 34px rgba(20,40,60,.18);padding:6px;max-height:60vh;overflow:auto}
 .mlpick-h{font:800 11.5px var(--sans);color:var(--muted);padding:6px 8px 4px}
@@ -1649,7 +1672,7 @@
     <div id="expbar"></div>
     <div class="tabs" id="tabs"></div>
     <div id="content"></div>
-    <div class="foot">입력 즉시 자동 저장 · <b>☁ Firebase 운영</b>: 실험·차수별 데이터 저장, 이미지는 Storage에 분리 · JSON 백업은 우측 상단 <b>⚙</b> · 스크린샷은 <b>Ctrl+V</b>로 어디서나 첨부 · <span class="vtag">v94 · 사진 업로드 무중단(경유)</span></div>
+    <div class="foot">입력 즉시 자동 저장 · <b>☁ Firebase 운영</b>: 실험·차수별 데이터 저장, 이미지는 Storage에 분리 · JSON 백업은 우측 상단 <b>⚙</b> · 스크린샷은 <b>Ctrl+V</b>로 어디서나 첨부 · <span class="vtag">v96 · 엑셀 이미지 복구 · URL 폴백</span></div>
   </div>
 
   <input type="file" id="fileInput" accept=".json,application/json" hidden="">
@@ -1812,13 +1835,15 @@ let _bdrag=null,_bzTop=10,_bsel=null;
 function _rot90Data(src){ return new Promise((res,rej)=>{ const im=new Image(); im.onload=()=>{ try{ const w0=im.naturalWidth||im.width||1,h0=im.naturalHeight||im.height||1; const c=document.createElement('canvas'); c.width=h0; c.height=w0; const ctx=c.getContext('2d'); if(!ctx) return rej(new Error('ctx')); ctx.translate(h0,0); ctx.rotate(Math.PI/2); ctx.drawImage(im,0,0); const nd=c.toDataURL('image/jpeg',.88); if(!nd||nd.length<200) return rej(new Error('enc')); res(nd); }catch(e){ rej(e); } }; im.onerror=()=>rej(new Error('img')); im.src=src; }); }
 function _mkThumbFrom(src){ return new Promise(res=>{ const t=new Image(); t.onload=()=>{ try{ const tw=t.naturalWidth||t.width||1, th0=t.naturalHeight||t.height||1; const sc=Math.min(1,560/Math.max(tw,th0)); const c2=document.createElement('canvas'); c2.width=Math.max(1,Math.round(tw*sc)); c2.height=Math.max(1,Math.round(th0*sc)); const x2=c2.getContext('2d'); if(!x2) return res(null); x2.drawImage(t,0,0,c2.width,c2.height); res(c2.toDataURL('image/jpeg',.74)); }catch(e){ res(null); } }; t.onerror=()=>res(null); t.src=src; }); }
 function _rotMarks90(a){ try{ (a.marks||[]).forEach(m=>{ if(m.pts) m.pts=m.pts.map(p=>[1-p[1],p[0]]); if(typeof m.x==='number'&&typeof m.y==='number'){ const nx=1-m.y; m.y=m.x; m.x=nx; } }); }catch(e){} }
-async function _applyRot90(a){ const nd=await _rot90Data(a.data); a.data=nd; const nt=await _mkThumbFrom(nd); a.thumb=(nt&&nt.length>=200)?nt:nd; a.imageDirty=true; a.ar=(a.ar&&a.ar>0)?(1/a.ar):a.ar; _rotMarks90(a); a.kb=Math.round((a.data.length+(a.thumb||'').length)*0.75/1024); }
+const _recentFull=new Map();
+function _rememberFull(id,d){ try{ if(!id||!d)return; _recentFull.set(id,{data:d,ts:Date.now()}); if(_recentFull.size>24){ const k=_recentFull.keys().next().value; _recentFull.delete(k); } }catch(e){} }
+async function _applyRot90(a){ const nd=await _rot90Data(a.data); a.data=nd; const nt=await _mkThumbFrom(nd); a.thumb=(nt&&nt.length>=200)?nt:nd; a.imageDirty=true; a.ar=(a.ar&&a.ar>0)?(1/a.ar):a.ar; _rotMarks90(a); a.kb=Math.round((a.data.length+(a.thumb||'').length)*0.75/1024); _rememberFull(a.id,a.data); }
 function rotateAttachment(id){ const p=curPlan(); const a=p&&(p.attach||[]).find(x=>x.id===id); if(!a) return;
   if(a.data){ _applyRot90(a).then(()=>{ const lb=$id('lightbox'); if(lb&&lb.classList.contains('show')&&lb.dataset.img===id){ const li=$id('lbimg'); if(li) li.src=a.data; } persistNow(); render(); toast('↻ 90° 회전'); }).catch(()=>toast('회전 실패 — 이미지 형식을 확인해 주세요')); return; }
-  if(a.fullPath){ ensureAttachmentFull(a).then(()=>rotateAttachment(id)).catch(()=>{ a.pendRot=((((+a.pendRot)||0)+90)%360); if(!a.pendRot){ delete a.pendRot; toast('회전 예약 취소됨'); } else { toast('📐 회전 '+a.pendRot+'° 예약됨 — 사진 서버가 열리는 기기(폰 등)에서 이 실험을 열면 자동 적용돼요'); } persistNow(); render(); }); return; }
+  if(a.fullPath||a.fullUrl){ const rc=_recentFull.get(a.id); if(rc&&(Date.now()-rc.ts)<1800000){ a.data=rc.data; rotateAttachment(id); return; } ensureAttachmentFull(a).then(()=>rotateAttachment(id)).catch(e=>toast('원본을 못 받아 회전할 수 없어요 — '+String((e&&e.message)||e))); return; }
   toast('이미지 원본이 없어요');
 }
-function addAttachment(dataURL,name,thumb,ar){ const p=curPlan(); if(!p){ toast('실험을 먼저 열어주세요'); return; } const loc='result'; const th=thumb||dataURL; p.attach.push({id:uid('img'),loc,name:name||'스크린샷',ts:Date.now(),data:dataURL,thumb:th,ar:ar||1.4,kb:Math.round((dataURL.length+th.length)*0.75/1024),imageDirty:true}); const ok=persistNow(); render(); toast(ok?'🖼 이미지 첨부됨':'⚠ 저장 한도 초과 — 화면엔 있지만 저장은 안 됐어요. ⚙ JSON 백업 후 일부 삭제 권장'); }
+function addAttachment(dataURL,name,thumb,ar){ const p=curPlan(); if(!p){ toast('실험을 먼저 열어주세요'); return; } const loc='result'; const th=thumb||dataURL; const _nid=uid('img'); _rememberFull(_nid,dataURL); p.attach.push({id:_nid,loc,name:name||'스크린샷',ts:Date.now(),data:dataURL,thumb:th,ar:ar||1.4,kb:Math.round((dataURL.length+th.length)*0.75/1024),imageDirty:true}); const ok=persistNow(); render(); toast(ok?'🖼 이미지 첨부됨':'⚠ 저장 한도 초과 — 화면엔 있지만 저장은 안 됐어요. ⚙ JSON 백업 후 일부 삭제 권장'); }
 function attTotalMB(){ let n=0; try{ root.experiments.forEach(x=>((x.state||{}).plans||[]).forEach(pl=>(pl.attach||[]).forEach(a=>{ n+=(+a.kb||0)/1024; }))); }catch(e){} return n; }
 const REMOTE_IMG_PLACEHOLDER='data:image/svg+xml;charset=utf-8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="800" height="520"><rect width="100%" height="100%" fill="#eef1f4"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#8494a4" font-family="sans-serif" font-size="28">이미지 불러오는 중</text></svg>');
 const REMOTE_IMG_FAIL='data:image/svg+xml;charset=utf-8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="800" height="520"><rect width="100%" height="100%" fill="#faedeb"/><text x="50%" y="46%" dominant-baseline="middle" text-anchor="middle" fill="#bd4a41" font-family="sans-serif" font-size="27">이미지를 불러오지 못했어요</text><text x="50%" y="58%" dominant-baseline="middle" text-anchor="middle" fill="#8494a4" font-family="sans-serif" font-size="22">눌러서 다시 시도</text></svg>');
@@ -1865,7 +1890,7 @@ function _attachCardRaw(){ const p=curPlan(); if(!p) return '';
     const big=hi&&(sz==='c1'||sz==='c2');
     bodyHtml=`<div class="attcols ${sz==='c1'?'n1':(sz==='c2'?'n2':'n3')}">${p.attach.map(im=>{
       const scT=im.sc?`<div class="attsc"><table><tr>${cases.map(c=>`<th>${escT(c.name)}</th>`).join('')}</tr><tr>${cases.map(c=>`<td><input data-role="ascore" data-img="${im.id}" data-case="${c.id}" value="${escA((im.scores||{})[c.id]||'')}" placeholder="-"></td>`).join('')}</tr></table></div>`:'';
-      return `<figure class="attL" draggable="true" data-attdrag="${im.id}"><div class="attL-h"><input class="attTitle" data-role="atitle" data-img="${im.id}" value="${escA(im.title||'')}" placeholder="제목 (예: Dry-pick)"><button class="rotb" data-action="att-rot" data-img="${im.id}" title="90° 회전">↻</button><button class="rotb" data-action="att-anno" data-img="${im.id}" title="주석 — 형광펜·동그라미·글자">✎</button><button class="scbtn ${im.sc?'on':''}" data-action="att-sc" data-img="${im.id}" title="케이스별 점수표 켜기/끄기">점수</button><button class="att-x2" data-action="att-open" data-img="${im.id}" title="전체화면">⤢</button><button class="att-x2 del" data-action="att-del" data-img="${im.id}" title="삭제">✕</button></div>${scT}<img src="${attSrc(im,big)}" alt="" loading="lazy" draggable="false" data-action="att-open" data-img="${im.id}">${im.pendUpload?`<div class="atterr" style="color:#1e5a7a;background:#e9f4fb;border-top-color:#cfe6f5">⬆ 원본이 데이터서버에 임시 저장됨 — 폰 등에서 열면 사진서버로 이동</div>`:''}${im.pendRot?`<div class="atterr" style="color:#7a5d1e;background:#fdf6e0;border-top-color:#efe3bd">↻ 회전 ${im.pendRot}° 대기 — 폰에서 이 실험을 열면 적용</div>`:''}${im._imgErr?`<div class="atterr">${escT(_imgErrTxt(im._imgErr))}</div>`:''}</figure>`;
+      return `<figure class="attL" draggable="true" data-attdrag="${im.id}"><div class="attL-h"><input class="attTitle" data-role="atitle" data-img="${im.id}" value="${escA(im.title||'')}" placeholder="제목 (예: Dry-pick)"><button class="rotb" data-action="att-rot" data-img="${im.id}" title="90° 회전">↻</button><button class="rotb" data-action="att-anno" data-img="${im.id}" title="주석 — 형광펜·동그라미·글자">✎</button><button class="scbtn ${im.sc?'on':''}" data-action="att-sc" data-img="${im.id}" title="케이스별 점수표 켜기/끄기">점수</button><button class="att-x2" data-action="att-open" data-img="${im.id}" title="전체화면">⤢</button><button class="att-x2 del" data-action="att-del" data-img="${im.id}" title="삭제">✕</button></div>${scT}<img src="${attSrc(im,big)}" alt="" loading="lazy" draggable="false" data-action="att-open" data-img="${im.id}">${im.pendUpload?`<div class="atterr" style="color:#1e5a7a;background:#e9f4fb;border-top-color:#cfe6f5">⬆ 원본이 데이터서버에 임시 저장됨 — 폰 등에서 열면 사진서버로 이동</div>`:''}${im._imgErr?`<div class="atterr">${escT(_imgErrTxt(im._imgErr))}</div>`:''}</figure>`;
     }).join('')}</div>`;
   }
   return `<section class="card attcard"><div class="chead"><span class="num">📎</span><h2>첨부 이미지</h2>${meter}<span class="spacer"></span>${sizeSeg}${modeSeg}<button class="btn sm" data-action="att-add">+ 이미지</button></div>${bodyHtml}</section>`; }
@@ -2111,7 +2136,7 @@ function renderPlan(){
   lib+=`<div class="libcard"><details class="lib" data-mlib ${_mlibOpen?'open':''}>
     <summary><span class="chev">▶</span><span class="ic">⟟</span><span class="tt">측정값 라이브러리 · 단위/소수점</span>
       <span class="sd">여기 등록한 이름을 결과 항목에 쓰면 단위·소수점이 자동 적용</span></summary>
-    <div class="libbody"><table class="libgrid mlib"><thead><tr><th>항목명</th><th>단위</th><th>소수점</th><th></th></tr></thead><tbody>${(root.metricLib||[]).map(li=>`<tr><td><input data-role="mlibname" data-id="${li.id}" value="${escA(li.name||'')}" placeholder="예: 점도"></td><td><input data-role="mlibunit" data-id="${li.id}" value="${escA(li.unit||'')}" placeholder="예: cPs"></td><td><select data-role="mlibdec" data-id="${li.id}">${['','0','1','2','3'].map(v=>`<option value="${v}" ${String(li.dec==null?'':li.dec)===v?'selected':''}>${v===''?'자동':v+'자리'}</option>`).join('')}</select></td><td class="lib-del"><button class="x" data-action="mlib-del" data-id="${li.id}">삭제</button></td></tr>`).join('')||`<tr><td colspan="4" class="libhint">아직 없음 — 아래에서 등록</td></tr>`}</tbody></table><div class="libadd"><button class="btn ghost sm" data-action="mlib-add">＋ 측정 항목 등록</button></div></div></details></div>`;
+    <div class="libbody"><table class="libgrid mlib"><thead><tr><th>항목명</th><th>단위</th><th>섹션</th><th>소수점</th><th></th></tr></thead><tbody>${(root.metricLib||[]).map(li=>`<tr><td><input data-role="mlibname" data-id="${li.id}" value="${escA(li.name||'')}" placeholder="예: 점도"></td><td><input data-role="mlibunit" data-id="${li.id}" value="${escA(li.unit||'')}" placeholder="예: cPs"></td><td><input data-role="mlibsec" data-id="${li.id}" value="${escA(li.sec||'')}" placeholder="예: 백지품질"></td><td><select data-role="mlibdec" data-id="${li.id}">${['','0','1','2','3'].map(v=>`<option value="${v}" ${String(li.dec==null?'':li.dec)===v?'selected':''}>${v===''?'자동':v+'자리'}</option>`).join('')}</select></td><td class="lib-del"><button class="x" data-action="mlib-del" data-id="${li.id}">삭제</button></td></tr>`).join('')||`<tr><td colspan="5" class="libhint">아직 없음 — 아래에서 등록</td></tr>`}</tbody></table><div class="libadd"><button class="btn ghost sm" data-action="mlib-add">＋ 측정 항목 등록</button></div></div></details></div>`;
 
   let bh=`<thead><tr><th class="corner stickL">배합 (pt)</th>`;
   d.cases.forEach(cs=>{
@@ -2216,7 +2241,7 @@ function renderResult(){
     const head=`<tr><th class="rcorner">항목</th><th class="runit">단위 · Δ</th>${cs.map(c=>`<th class="${ctrls.includes(c.id)?'ctrlh':''}">${escT(c.name)}</th>`).join('')}${memoTh2}</tr>`;
     let rows='';
     G.forEach(g=>{ const gm=M.filter(m=>m.g===g.id);
-      rows+=`<tr class="ggh"><td colspan="${cs.length+2+(mOn?1:0)}"><input class="gname" data-role="cgname" data-g="${g.id}" value="${escA(g.name)}"><button class="btn ghost sm" data-action="co-addmetric" data-g="${g.id}">+ 항목</button><button class="btn ghost sm" data-action="co-addnote" data-g="${g.id}">+ 비고 행</button><button class="btn ghost sm" data-action="co-memo">${mOn?'비고 열 ✓':'+ 비고 열'}</button>${G.length>1?`<button class="del-x" data-action="co-delgroup" data-g="${g.id}" title="그룹 삭제(항목 포함)">✕</button>`:''}</td></tr>`;
+      rows+=`<tr class="ggh"><td colspan="${cs.length+2+(mOn?1:0)}"><div class="gghw"><input class="gname" data-role="cgname" data-g="${g.id}" value="${escA(g.name)}"><span class="gsp"></span><button class="btn ghost sm" data-action="co-addmetric" data-g="${g.id}">+ 항목</button><button class="btn ghost sm" data-action="co-addnote" data-g="${g.id}">+ 비고 행</button><button class="btn ghost sm" data-action="co-memo">${mOn?'비고 열 ✓':'+ 비고 열'}</button>${G.length>1?`<button class="del-x" data-action="co-delgroup" data-g="${g.id}" title="그룹 삭제(항목 포함)">✕</button>`:''}</div></td></tr>`;
       gm.forEach(m=>{ if(m.kind==='note'){ rows+=`<tr class="dragrow" data-mrow="${m.id}" data-g="${g.id}"><th class="rmth"><div class="rmw"><input class="rmname2" list="mlibdl" data-role="cmname" data-m="${m.id}" value="${escA(m.name)}"><span class="dragh" data-drag="cm" data-metric="${m.id}" data-g="${g.id}" title="끌어서 순서 변경">⠿</span><button class="del-x" data-action="co-delmetric" data-m="${m.id}" title="삭제">✕</button></div></th><td class="runit"></td><td class="rcell notewide" colspan="${cs.length+(mOn?1:0)}"><input data-role="cnoterow" data-m="${m.id}" value="${escA(m.txt||'')}" ></td></tr>`; return; }
       rows+=`<tr class="dragrow" data-mrow="${m.id}" data-g="${g.id}"><th class="rmth"><div class="rmw"><input class="rmname2" list="mlibdl" data-role="cmname" data-m="${m.id}" value="${escA(m.name)}"><span class="dragh" data-drag="cm" data-metric="${m.id}" data-g="${g.id}" title="끌어서 순서 변경">⠿</span><button class="del-x" data-action="co-delmetric" data-m="${m.id}" title="항목 삭제">✕</button></div></th><td class="runit"><input class="rmunit2" data-role="cmunit" data-m="${m.id}" value="${escA(m.unit||'')}" placeholder="단위"><button class="dtog ${m.delta?'on':''}" data-action="co-mdelta" data-m="${m.id}" title="결과 리포트에 기준 대비 증감 표시">Δ</button></td>${cs.map(c=>`<td class="rcell ${ctrls.includes(c.id)?'ctrlc':''}"><input data-role="cres" data-case="${c.id}" data-m="${m.id}" value="${escA(((d.rresults[c.id]||{})[m.id])||'')}"></td>`).join('')}${mOn?`<td class="rcell memoc2"><input data-role="crmemo" data-m="${m.id}" value="${escA((d.rmemos||{})[m.id]||'')}"></td>`:''}</tr>`; });
     });
@@ -2279,13 +2304,13 @@ function normalizeFree(d){
 }
 function renderFreePlan(){
   const d=normalizeFree(D()); const cs=d.cases;
-  const head=`<thead><tr><th class="frcorner">조건 ＼ 케이스</th>${cs.map(c=>`<th class="frcase"><div class="frrw"><input class="frcname" data-role="casename" data-case="${c.id}" value="${escA(c.name)}" placeholder="케이스명">${cs.length>1?`<button class="del-x" data-action="fr-delcase" data-case="${c.id}" title="케이스 삭제">✕</button>`:''}</div><input class="frcnote" data-role="casenote" data-case="${c.id}" value="${escA(c.note||'')}" placeholder="목적·비고"></th>`).join('')}</tr></thead>`;
-  const condRows=`<tbody>${(d.conds||[]).map(r=>`<tr><th class="frrowh"><div class="frrw"><input class="frname" data-role="frcond" data-c="${r.id}" value="${escA(r.name||'')}" placeholder="조건 (예: 온도)"><button class="del-x" data-action="fr-delcond" data-c="${r.id}" title="조건 삭제">✕</button></div></th>${cs.map(c=>`<td class="frcell"><input data-role="frcondv" data-c="${r.id}" data-case="${c.id}" value="${escA((r.vals||{})[c.id]||'')}" placeholder="—"></td>`).join('')}</tr>`).join('')}</tbody>`;
+  const head=`<div class="frg frg-corner">조건 ＼ 케이스</div>${cs.map(c=>`<div class="frg frg-case"><div class="frrw"><input class="frcname" data-role="casename" data-case="${c.id}" value="${escA(c.name)}" placeholder="케이스명">${cs.length>1?`<button class="del-x" data-action="fr-delcase" data-case="${c.id}" title="케이스 삭제">✕</button>`:''}</div><input class="frcnote" data-role="casenote" data-case="${c.id}" value="${escA(c.note||'')}" placeholder="목적·비고"></div>`).join('')}`;
+  const condRows=(d.conds||[]).map(r=>`<div class="frg frg-rowh"><div class="frrw"><input class="frname" data-role="frcond" data-c="${r.id}" value="${escA(r.name||'')}" placeholder="조건 (예: 온도)"><button class="del-x" data-action="fr-delcond" data-c="${r.id}" title="조건 삭제">✕</button></div></div>${cs.map(c=>`<div class="frg frg-cell"><input data-role="frcondv" data-c="${r.id}" data-case="${c.id}" value="${escA((r.vals||{})[c.id]||'')}" placeholder="—"></div>`).join('')}`).join('');
   $id('content').innerHTML=`<div class="sheetwrap">
   <section class="card"><div class="chead"><span class="num">1</span><h2>실험 개요</h2></div>
     <textarea class="fr-pp" data-role="frpurpose" placeholder="실험 목적·배경·방법을 자유롭게 적어두세요">${escT(d.purpose||'')}</textarea></section>
   <section class="card"><div class="chead"><span class="num">2</span><h2>조건표</h2><span class="spacer"></span><button class="btn ghost sm" data-action="fr-addcase">+ 케이스</button><button class="btn ghost sm" data-action="fr-addcond">+ 조건 항목</button></div>
-    <div class="scroll-wrap"><div class="scroller"><table class="frtbl"><colgroup><col style="width:170px">${cs.map(()=>'<col>').join('')}</colgroup>${head}${condRows}</table></div></div>
+    <div class="scroll-wrap"><div class="scroller"><div class="frgrid" style="grid-template-columns:170px repeat(${cs.length},minmax(132px,1fr));min-width:${170+cs.length*140}px">${head}${condRows}</div></div></div>
     <p class="hint">케이스 = 비교할 샘플·조건. 측정값 입력은 위 <b>결과</b> 탭 — 코팅 실험과 같은 표를 그대로 씁니다.</p></section>
   ${commentsCard(d)}</div>`+attachCardHTML();
   if(typeof setupScrollShadows==='function') setupScrollShadows();
@@ -2605,7 +2630,7 @@ function buildCoatReport(d){
 
 function attachDocHTML(){
   try{
-    const _at=(curPlan().attach||[]); _at.forEach(a=>{ if(a&&!a.loc) a.loc='result'; }); const att=_at.filter(a=>a&&(a.data||a.thumb||a.fullPath||a.thumbPath)&&a.loc==='result');
+    const _at=(curPlan().attach||[]); _at.forEach(a=>{ if(a&&!a.loc) a.loc='result'; }); const att=_at.filter(a=>a&&(a.data||a.thumb||a.fullPath||a.thumbPath||a.fullUrl||a.thumbUrl)&&a.loc==='result');
     if(!att.length) return '';
     const d=D(); const cs=(d&&d.cases)||[];
     const scoreOn=a=>!!(a&&a.sc)||!!(a&&a.scores&&cs.some(c=>String(a.scores[c.id]==null?'':a.scores[c.id]).trim()!==''));
@@ -3182,10 +3207,33 @@ async function fbStorageDeletePrefix(prefix){const names=await fbStorageListPref
 async function _flushImageDeletes(){let g=0;while((_delImgPaths.size||_delImgPrefixes.size)&&g++<5){for(const p of Array.from(_delImgPaths)){_delImgPaths.delete(p);try{await fbStorageDelete(p);}catch(e){}}for(const pf of Array.from(_delImgPrefixes)){_delImgPrefixes.delete(pf);try{await fbStorageDeletePrefix(pf);}catch(e){}}}}
 function dataUrlBlob(s){const a=String(s||'').split(','),m=/data:([^;]+)/.exec(a[0]||''),bin=atob(a[1]||''),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return new Blob([u],{type:(m&&m[1])||'image/jpeg'});}
 function blobDataUrl(b){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(b);});}
+function _shortImgErr(e){const s=String((e&&e.message)||e||'이미지 다운로드 실패');return s.length>220?s.slice(0,220)+'…':s;}
+async function _fetchImageDataUrl(u){
+  if(!u)throw new Error('IMAGE URL 없음');
+  const r=await fetch(u,{method:'GET',mode:'cors',credentials:'omit',cache:'no-store'});
+  if(!r.ok)throw new Error('IMAGE URL GET '+r.status);
+  const b=await r.blob();
+  if(!b||!b.size)throw new Error('IMAGE URL 빈 응답');
+  return blobDataUrl(b);
+}
+async function _attachmentUrlData(a,full){
+  const urls=[],errs=[];
+  const add=u=>{u=String(u||'').trim();if(u&&urls.indexOf(u)<0)urls.push(u);};
+  if(full){
+    add(a.fullUrl);
+    if(!a.fullUrl&&a.fullPath){try{add(await ensureAttachmentFullUrl(a));}catch(e){errs.push(_shortImgErr(e));}}
+  }else{
+    add(a.thumbUrl);
+    if(!a.thumbUrl&&(a.thumbPath||a.fullPath)){try{add(await ensureAttachmentUrl(a));}catch(e){errs.push(_shortImgErr(e));}}
+    add(a.fullUrl);
+  }
+  for(const u of urls){try{return await _fetchImageDataUrl(u);}catch(e){errs.push(_shortImgErr(e));}}
+  throw new Error(errs.filter(Boolean).join(' / ')||'표시용 이미지 주소 다운로드 실패');
+}
 function _cleanAtt(a,local){const x=JSON.parse(JSON.stringify(a||{}));delete x._loading;delete x._fullLoading;delete x._urlLoading;delete x._furlLoading;delete x._imgErr;delete x.imageDirty;if(x.pendUpload&&!x.fullPath){/* 원본 임시 경유: data 유지 */}else if(!(local&&!x.fullPath)){delete x.data;}if(local&&x.thumbPath){delete x.thumb;}return x;}
 function _cleanPlan(p,local){const x=JSON.parse(JSON.stringify(p||{}));if(!local)delete x.syncedAt;x.attach=(p&&p.attach||[]).map(a=>_cleanAtt(a,local));return x;}
 function cleanExperiment(ex,local){const x=JSON.parse(JSON.stringify(ex||{}));if(x.state&&Array.isArray(x.state.plans))x.state.plans=(ex.state.plans||[]).map(p=>_cleanPlan(p,local));delete x.remoteOnly;delete x._remoteLoaded;delete x._knownPlanIds;return x;}
-function cleanRootForLocal(r){const x={experiments:(r.experiments||[]).map(e=>cleanExperiment(e,true)),activeExp:r.activeExp||0,screen:r.screen||'home',trash:r.trash||{},metricLib:r.metricLib||[],attMode:r.attMode,attSize:r.attSize,schemaVersion:2};return x;}
+function cleanRootForLocal(r){const x={experiments:(r.experiments||[]).map(e=>cleanExperiment(e,true)),activeExp:r.activeExp||0,screen:r.screen||'home',trash:r.trash||{},metricLib:r.metricLib||[],_mlibAt:(+r._mlibAt)||0,attMode:r.attMode,attSize:r.attSize,schemaVersion:2};return x;}
 function _summary(ex){let np='';try{np=expNoteText(ex);}catch(e){np=String(ex.notePreview||ex.note||'');}const st=(ex.state||{}),ap=st.active||{};return {id:ex.id,name:ex.name||'',type:ex.type||'coat',date:ex.date||'',updatedAt:+ex.updatedAt||Date.now(),status:ex.status||'run',owner:ex.owner||'',note:ex.note||'',noteEdited:!!ex.noteEdited,notePreview:String(np||'').slice(0,1200),prog:+ex.prog||0,activePlan:+ap.plan||0,activeView:ap.view||'plan',planCount:(st.plans||[]).length,updatedBy:whoAmI()||''};}
 function _meta(ex){const x=cleanExperiment(ex,false),plans=((x.state||{}).plans)||[];const sm=Object.assign({},x.state||{});delete sm.plans;delete x.state;x.stateMeta=sm;x.planOrder=plans.map(p=>({id:p.id,label:p.label||'',updatedAt:+p.updatedAt||0}));return x;}
 function _setRemoteFlags(ex,ids){try{Object.defineProperty(ex,'_remoteLoaded',{value:true,writable:true,configurable:true});Object.defineProperty(ex,'_knownPlanIds',{value:new Set(ids||[]),writable:true,configurable:true});}catch(e){ex._remoteLoaded=true;ex._knownPlanIds=new Set(ids||[]);}delete ex.remoteOnly;return ex;}
@@ -3214,18 +3262,35 @@ async function ensureAttachmentFullUrl(a){if(!a)return null;if(a.fullUrl)return 
  if(a._furlLoading)return a._furlLoading;
  a._furlLoading=(async()=>{try{const u=await fbStorageTok(a.fullPath);a.fullUrl=u;delete a._imgErr;return u;}
   catch(e){a._imgErr=String((e&&e.message)||e);throw e;}finally{delete a._furlLoading;}})();return a._furlLoading;}
-async function ensureAttachmentThumb(a){if(!a||a.thumb||a._loading)return a&&a.thumb;const p=a.thumbPath||a.fullPath;if(!p)return null;a._loading=true;try{a.thumb=await blobDataUrl(await fbStorageGet(p));delete a._imgErr;return a.thumb;}catch(e){a._imgErr=String((e&&e.message)||e);throw e;}finally{delete a._loading;}}
-async function ensureAttachmentFull(a){if(!a)return null;if(a.data)return a.data;if(!a.fullPath)throw new Error('NO_IMAGE');if(a._fullLoading)return a._fullLoading;a._fullLoading=(async()=>{try{a.data=await blobDataUrl(await fbStorageGet(a.fullPath));delete a._imgErr;return a.data;}finally{delete a._fullLoading;}})();return a._fullLoading;}
+async function ensureAttachmentThumb(a){
+  if(!a||a.thumb)return a&&a.thumb;if(a._loading)return a._loading;
+  const p=a.thumbPath||a.fullPath, hasUrl=!!(a.thumbUrl||a.fullUrl);
+  if(!p&&!hasUrl)return null;
+  a._loading=(async()=>{const errs=[];try{
+    if(hasUrl||p){try{a.thumb=await _attachmentUrlData(a,false);delete a._imgErr;return a.thumb;}catch(e){errs.push(_shortImgErr(e));}}
+    if(p){try{a.thumb=await blobDataUrl(await fbStorageGet(p));delete a._imgErr;return a.thumb;}catch(e){errs.push(_shortImgErr(e));}}
+    throw new Error(errs.filter(Boolean).join(' / ')||'썸네일 원본 없음');
+  }catch(e){a._imgErr=_shortImgErr(e);throw e;}finally{delete a._loading;}})();return a._loading;
+}
+async function ensureAttachmentFull(a){
+  if(!a)return null;if(a.data)return a.data;if(a._fullLoading)return a._fullLoading;
+  const p=a.fullPath, hasUrl=!!a.fullUrl;
+  if(!p&&!hasUrl)throw new Error('원본 경로·주소 없음');
+  a._fullLoading=(async()=>{const errs=[];try{
+    if(hasUrl||p){try{a.data=await _attachmentUrlData(a,true);delete a._imgErr;return a.data;}catch(e){errs.push(_shortImgErr(e));}}
+    if(p){try{a.data=await blobDataUrl(await fbStorageGet(p));delete a._imgErr;return a.data;}catch(e){errs.push(_shortImgErr(e));}}
+    throw new Error(errs.filter(Boolean).join(' / ')||'이미지 원본 다운로드 실패');
+  }catch(e){a._imgErr=_shortImgErr(e);throw e;}finally{delete a._fullLoading;}})();return a._fullLoading;
+}
 async function hydratePlanThumbs(pl){if(!pl)return;await Promise.all((pl.attach||[]).map(a=>ensureAttachmentThumb(a).catch(()=>null)));}
 async function hydratePlanFull(pl){if(!pl)return;await Promise.all((pl.attach||[]).map(a=>ensureAttachmentFull(a).catch(()=>null)));}
-function releaseExperimentImages(ex){try{for(const pl of (((ex||{}).state||{}).plans||[]))for(const a of (pl.attach||[])){if(a.fullPath)delete a.data;if(a.thumbPath)delete a.thumb;}}catch(e){}}
+function releaseExperimentImages(ex){try{for(const pl of (((ex||{}).state||{}).plans||[]))for(const a of (pl.attach||[])){if(a.fullPath||a.fullUrl)delete a.data;if(a.thumbPath||a.thumbUrl)delete a.thumb;}}catch(e){}}
 async function hydrateAllKnownImages(){for(const ex of (root.experiments||[])){if(ex.remoteOnly||!((ex.state||{}).plans||[]).length){try{const full=await fbLoadExperiment(ex.id);Object.assign(ex,full);}catch(e){continue;}}for(const pl of ((ex.state||{}).plans||[]))await hydratePlanFull(pl);}}
 async function hydrateVisibleAttachmentThumbs(){if(_thumbBusy||root.screen!=='sim'||!curPlan()||!fbConfigReady()||!FB_AUTH.refreshToken)return;const miss=(curPlan().attach||[]).filter(a=>a&&!a.thumb&&!a.thumbUrl&&!a.fullUrl&&!a._imgErr&&(a.thumbPath||a.fullPath));if(!miss.length)return;_thumbBusy=true;let ch=false;try{await Promise.all(miss.map(async a=>{try{await ensureAttachmentUrl(a);}catch(e){}ch=true;}));
   const nothumb=(curPlan().attach||[]).filter(a=>a&&!a.thumb&&!a._imgErr&&(a.thumbPath||a.fullPath));
   let backed=false;
   for(const a of nothumb){ try{ await ensureAttachmentThumb(a); backed=true; }catch(e){} }
-  const pend=(curPlan().attach||[]).filter(a=>a&&a.pendRot&&(a.data||a.fullPath));
-  for(const a of pend){ try{ if(!a.data) await ensureAttachmentFull(a); let n=((((+a.pendRot)||0)/90)|0)%4; while(n-->0){ await _applyRot90(a); } delete a.pendRot; backed=true; toast('↻ 예약된 회전 적용됨: '+(a.name||'사진')); }catch(e){} }
+  (curPlan().attach||[]).forEach(a=>{ if(a&&a.pendRot) delete a.pendRot; });
   if((curPlan().attach||[]).some(a=>a&&a.pendUpload&&a.data)) backed=true;
   if(backed){ ch=true; try{ markCurrentDirty(); scheduleCloudPush(); }catch(_e){} }}finally{_thumbBusy=false;}if(ch&&root.screen==='sim')render();}
 function markCurrentDirty(){if(!fbConfigReady())return;if(root.screen==='sim'){const ex=EXP();if(!ex)return;ex.updatedAt=Date.now();_dirtyMeta.add(ex.id);const pl=curPlan();if(pl){pl.updatedAt=ex.updatedAt;if(!_dirtyPlans.has(ex.id))_dirtyPlans.set(ex.id,new Set());_dirtyPlans.get(ex.id).add(pl.id);}}else{(root.experiments||[]).forEach(ex=>{if(!ex.remoteOnly)_dirtyMeta.add(ex.id);});}}
@@ -3251,21 +3316,22 @@ function _mergePlanInto(loc,rem){try{
 async function fbSaveExperiment(ex){if(!ex)return;if(!ex.updatedAt)ex.updatedAt=Date.now();const id=ex.id,known=(ex._knownPlanIds instanceof Set)?ex._knownPlanIds:new Set();const current=((ex.state||{}).plans||[]),curIds=new Set(current.map(p=>p.id));const full=_dirtyFull.has(id)||!known.size;const dirty=_dirtyPlans.get(id)||new Set();let write=[];if(full){write=current.filter(p=>!known.has(p.id)||dirty.has(p.id));if(!known.size)write=current.slice();for(const old of known)if(!curIds.has(old)){await fbDb('experiments/'+encodeURIComponent(id)+'/plans/'+encodeURIComponent(old),'DELETE');queueImagePrefixDelete(_imgPrefix(id,old));}}else write=current.filter(p=>dirty.has(p.id));let _mgd=false;for(const pl of write){await preparePlanAttachments(ex,pl);try{if(pl.syncedAt){const rAt=await fbDb('experiments/'+encodeURIComponent(id)+'/plans/'+encodeURIComponent(pl.id)+'/updatedAt','GET');if(rAt&&(+rAt||0)!==(+pl.syncedAt||0)){const rem=await fbDb('experiments/'+encodeURIComponent(id)+'/plans/'+encodeURIComponent(pl.id),'GET');if(rem){_mergePlanInto(pl,rem);_mgd=true;}}}}catch(_e){}pl.updatedAt=Date.now();await fbDb('experiments/'+encodeURIComponent(id)+'/plans/'+encodeURIComponent(pl.id),'PUT',_cleanPlan(pl,false));pl.syncedAt=pl.updatedAt;}if(_mgd){try{toast('👥 다른 사람의 입력을 함께 반영했어요');if(root.screen==='sim')render();}catch(_e){}}await fbDb('experiments/'+encodeURIComponent(id)+'/meta','PUT',_meta(ex));await fbDb('summaries/'+encodeURIComponent(id),'PUT',_summary(ex));ex.planSyncedAt=+ex.updatedAt||0;_setRemoteFlags(ex,Array.from(curIds));_dirtyPlans.delete(id);_dirtyMeta.delete(id);_dirtyFull.delete(id);}
 async function fbLoadExperiment(id){const meta=await fbDb('experiments/'+encodeURIComponent(id)+'/meta','GET');if(!meta)throw new Error('NOT_FOUND');const po=await fbDb('experiments/'+encodeURIComponent(id)+'/plans','GET')||{};const order=(meta.planOrder||[]).map(x=>x.id),ids=order.length?order:Object.keys(po);const plans=ids.map(k=>po[k]).filter(Boolean);plans.forEach(p=>{if(p)p.syncedAt=+p.updatedAt||0;});const ex=Object.assign({},meta);delete ex.planOrder;const sm=ex.stateMeta||{};delete ex.stateMeta;ex.state=Object.assign({},sm,{plans});if(!ex.state.active)ex.state.active={plan:Math.max(0,plans.length-1),view:'plan'};ex.planSyncedAt=+ex.updatedAt||0;_setRemoteFlags(ex,ids);return ex;}
 function _remoteStub(s){const ex={id:s.id,name:s.name||'',type:s.type||'coat',date:s.date||'',updatedAt:+s.updatedAt||0,status:s.status||'run',owner:s.owner||'',note:s.note||'',noteEdited:!!s.noteEdited,notePreview:s.notePreview||'',prog:+s.prog||0,remoteOnly:true,state:{active:{plan:+s.activePlan||0,view:s.activeView||'plan'},plans:[]}};try{Object.defineProperty(ex,'_remoteLoaded',{value:false,writable:true,configurable:true});}catch(e){}return ex;}
-async function cloudLoadSummaries(silent){const o=await fbDb('summaries','GET')||{};const list=Object.keys(o).map(k=>o[k]).filter(Boolean);const by=new Map((root.experiments||[]).map(e=>[e.id,e]));const remoteIds=new Set();for(const s of list){remoteIds.add(s.id);const ex=by.get(s.id);if(!ex){root.experiments.push(_remoteStub(s));continue;}const _dty=_dirtyMeta.has(ex.id)||_dirtyFull.has(ex.id)||_dirtyPlans.has(ex.id);const _act=(root.screen==='sim'&&EXP()&&EXP().id===ex.id);const _stale=(+s.updatedAt||0)!==(+ex.planSyncedAt||0);if(!_dty){if(_act&&_stale&&!_editingNow()){try{const fresh=await fbLoadExperiment(ex.id);const i=root.experiments.indexOf(ex);root.experiments[i]=fresh;root.activeExp=i;appState=fresh.state;try{render();hydrateVisibleAttachmentThumbs();}catch(_e){}}catch(e){}}else if((+s.updatedAt||0)>(+ex.updatedAt||0)){Object.assign(ex,{name:s.name,type:s.type,date:s.date,updatedAt:s.updatedAt,status:s.status,owner:s.owner,note:s.note,noteEdited:s.noteEdited,notePreview:s.notePreview,prog:s.prog});}}}
+async function cloudLoadSummaries(silent){try{ const _ml=await fbDb('settings/metricLib','GET'); if(_ml&&Array.isArray(_ml.items)&&(+_ml.updatedAt||0)>((+root._mlibAt)||0)){ root.metricLib=_ml.items; root._mlibAt=(+_ml.updatedAt)||Date.now(); try{_mlibFill();}catch(_e){} try{persistNow();}catch(_e){} } }catch(_e){}
+  const o=await fbDb('summaries','GET')||{};const list=Object.keys(o).map(k=>o[k]).filter(Boolean);const by=new Map((root.experiments||[]).map(e=>[e.id,e]));const remoteIds=new Set();for(const s of list){remoteIds.add(s.id);const ex=by.get(s.id);if(!ex){root.experiments.push(_remoteStub(s));continue;}const _dty=_dirtyMeta.has(ex.id)||_dirtyFull.has(ex.id)||_dirtyPlans.has(ex.id);const _act=(root.screen==='sim'&&EXP()&&EXP().id===ex.id);const _stale=(+s.updatedAt||0)!==(+ex.planSyncedAt||0);if(!_dty){if(_act&&_stale&&!_editingNow()){try{const fresh=await fbLoadExperiment(ex.id);const i=root.experiments.indexOf(ex);root.experiments[i]=fresh;root.activeExp=i;appState=fresh.state;try{render();hydrateVisibleAttachmentThumbs();}catch(_e){}}catch(e){}}else if((+s.updatedAt||0)>(+ex.updatedAt||0)){Object.assign(ex,{name:s.name,type:s.type,date:s.date,updatedAt:s.updatedAt,status:s.status,owner:s.owner,note:s.note,noteEdited:s.noteEdited,notePreview:s.notePreview,prog:s.prog});}}}
   const activeId=(root.screen==='sim'&&EXP())?EXP().id:null;
   root.experiments=(root.experiments||[]).filter(ex=>{const known=(ex.remoteOnly||ex._remoteLoaded===true);const dirty=_dirtyMeta.has(ex.id)||_dirtyFull.has(ex.id)||_dirtyPlans.has(ex.id);return !(known&&!remoteIds.has(ex.id)&&!dirty);});
   if(activeId){const ni=root.experiments.findIndex(e=>e.id===activeId);if(ni>=0)root.activeExp=ni;else{root.screen='home';appState=null;root.activeExp=Math.max(0,root.experiments.length-1);}}
   if(!list.length&&(root.experiments||[]).some(e=>!e.remoteOnly)&&!silent)toast('☁ 서버가 비어 있어요 — 설정에서 기존 데이터 이관을 눌러주세요');
   if(root.screen==='home')render();return list;}
 function _editingNow(){const el=document.activeElement;return !!(el&&(el.tagName==='INPUT'||el.tagName==='TEXTAREA'));}
-async function cloudFlush(silent){if(!fbConfigReady()){cloudStat('err','☁ Firebase 설정 필요');return;}if(!FB_AUTH.refreshToken&&!FB_AUTH.idToken){cloudStat('err','☁ 로그인 필요');return;}if(_csBusy){_csQueued=true;return;}_csBusy=true;if(!silent)cloudStat('busy','☁ 저장 중…');try{for(const id of Array.from(_deletedRemote)){await fbDb('summaries/'+encodeURIComponent(id),'DELETE');await fbDb('experiments/'+encodeURIComponent(id),'DELETE');_deletedRemote.delete(id);}const ids=new Set([..._dirtyMeta,..._dirtyFull,..._dirtyPlans.keys()]);for(const id of ids){const ex=(root.experiments||[]).find(e=>e.id===id);if(ex)await fbSaveExperiment(ex);}await _flushImageDeletes();const t=new Date();cloudStat('on','☁ '+(whoAmI()?whoAmI()+' · ':'')+String(t.getHours()).padStart(2,'0')+':'+String(t.getMinutes()).padStart(2,'0'));}catch(e){if(String(e.message).indexOf('LOGIN_REQUIRED')>=0)cloudStat('err','☁ 로그인 필요');else cloudStat('err','☁ 저장 실패 — 눌러 재시도');}finally{_csBusy=false;if(_csQueued){_csQueued=false;setTimeout(()=>cloudFlush(true),800);}}}
+async function cloudFlush(silent){if(!fbConfigReady()){cloudStat('err','☁ Firebase 설정 필요');return;}if(!FB_AUTH.refreshToken&&!FB_AUTH.idToken){cloudStat('err','☁ 로그인 필요');return;}if(_csBusy){_csQueued=true;return;}_csBusy=true;if(!silent)cloudStat('busy','☁ 저장 중…');try{for(const id of Array.from(_deletedRemote)){await fbDb('summaries/'+encodeURIComponent(id),'DELETE');await fbDb('experiments/'+encodeURIComponent(id),'DELETE');_deletedRemote.delete(id);}const ids=new Set([..._dirtyMeta,..._dirtyFull,..._dirtyPlans.keys()]);for(const id of ids){const ex=(root.experiments||[]).find(e=>e.id===id);if(ex)await fbSaveExperiment(ex);}if(_mlibDirty){ try{ await fbDb('settings/metricLib','PUT',{items:root.metricLib||[],updatedAt:(+root._mlibAt)||Date.now()}); _mlibDirty=false; }catch(e){} }await _flushImageDeletes();const t=new Date();cloudStat('on','☁ '+(whoAmI()?whoAmI()+' · ':'')+String(t.getHours()).padStart(2,'0')+':'+String(t.getMinutes()).padStart(2,'0'));}catch(e){if(String(e.message).indexOf('LOGIN_REQUIRED')>=0)cloudStat('err','☁ 로그인 필요');else cloudStat('err','☁ 저장 실패 — 눌러 재시도');}finally{_csBusy=false;if(_csQueued){_csQueued=false;setTimeout(()=>cloudFlush(true),800);}}}
 async function cloudSync(silent){if(syncMode()==='claude'){cloudStat('on','☁ 로컬 공유 모드');return;}try{await cloudFlush(true);if(!_editingNow())await cloudLoadSummaries(!!silent);if(!silent&&root.screen==='sim'&&EXP()&&!_editingNow()){const ex=EXP();if(!_dirtyMeta.has(ex.id)&&!_dirtyFull.has(ex.id)&&!_dirtyPlans.has(ex.id)){try{const fresh=await fbLoadExperiment(ex.id);const i=root.experiments.indexOf(ex);if(i>=0){root.experiments[i]=fresh;root.activeExp=i;appState=fresh.state;render();hydrateVisibleAttachmentThumbs();}}catch(_e){}}}if(!silent)toast('☁ 최신 내용으로 동기화됨');}catch(e){if(String(e.message).indexOf('LOGIN_REQUIRED')>=0)cloudStat('err','☁ 로그인 필요');else cloudStat('err','☁ 연결 실패');}}
 function scheduleCloudPush(){if(syncMode()==='none')return;clearTimeout(_cpushT);if(syncMode()==='fb')cloudStat('busy','☁ 저장 대기…');_cpushT=setTimeout(()=>cloudFlush(true),1800);}
 async function openExperimentByIndex(i){const ex=root.experiments[i];if(!ex)return;try{if(root.screen==='sim'&&EXP()&&EXP().id!==ex.id)releaseExperimentImages(EXP());}catch(e){}const _hasLocal=!!((ex.state||{}).plans||[]).length;const _dty=_dirtyMeta.has(ex.id)||_dirtyFull.has(ex.id)||_dirtyPlans.has(ex.id);const _stale=fbConfigReady()&&!_dty&&((+ex.planSyncedAt||0)!==(+ex.updatedAt||0));if(ex.remoteOnly||ex._remoteLoaded===false||!_hasLocal||_stale){if(!fbConfigReady()){fbOpen();toast('먼저 Firebase 연결 설정이 필요해요');return;}if(!FB_AUTH.refreshToken&&!FB_AUTH.idToken){gateShow();toast('팀 비밀번호 입력 후 열 수 있어요');return;}cloudStat('busy','☁ 최신 내용 불러오는 중…');try{const full=await fbLoadExperiment(ex.id);root.experiments[i]=full;root.activeExp=i;appState=full.state;root.screen='sim';render();hydrateVisibleAttachmentThumbs();cloudStat('on','☁ 연결됨');return;}catch(e){if(!_hasLocal){toast('실험을 불러오지 못했어요');cloudStat('err','☁ 불러오기 실패');return;}cloudStat('err','☁ 최신 내용 확인 실패 — 저장된 내용 표시');}}root.activeExp=i;appState=ex.state;root.screen='sim';if(!appState.active||typeof appState.active!=='object')appState.active={plan:Math.max(0,(appState.plans||[]).length-1),view:'plan'};const mx=Math.max(0,(appState.plans||[]).length-1);appState.active.plan=Math.max(0,Math.min(mx,+appState.active.plan||0));if(appState.active.view!=='plan'&&appState.active.view!=='result')appState.active.view='plan';render();hydrateVisibleAttachmentThumbs();}
 async function openAttachmentLightbox(im){if(!im)return;let _src=im.data;if(!_src){try{delete im._imgErr;_src=await ensureAttachmentFullUrl(im);}catch(e){const m=String((e&&e.message)||e);im._imgErr=m;try{console.error('IMG FAIL',im.fullPath,m);}catch(_e){}toast('이미지 실패: '+_imgErrTxt(m));try{if(root.screen==='sim')render();}catch(_e){}return;}}const li=$id('lbimg');li.classList.remove('zoom');li.src=_src;$id('lbname').textContent=(im.title||im.name)+' · '+new Date(im.ts).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});$id('lightbox').dataset.img=im.id;$id('lightbox').classList.add('show');try{annoDecorate();}catch(e){}}
 async function exportReportHtmlCloud(){try{await hydratePlanFull(curPlan());const ex=EXP();download((ex.name||'실험')+'_결과_'+ymd()+'.html',buildReportDoc(),'text/html;charset=utf-8');toast('⬇ 리포트 HTML 저장됨');}catch(e){toast('내보내기 실패');}}
 async function exportReportPdfCloud(){try{await hydratePlanFull(curPlan());const doc=buildReportDoc().replace('</body>','<scr'+'ipt>window.onload=function(){setTimeout(function(){window.print();},300);};</scr'+'ipt></body>');const win=window.open('','_blank');if(!win)toast('팝업 차단을 해제해 주세요');else{win.document.open();win.document.write(doc);win.document.close();toast('인쇄창에서 PDF로 저장 선택');}}catch(e){toast('PDF 열기 실패');}}
-async function exportXlsxReportCloud(){try{await hydratePlanFull(curPlan());}catch(e){}try{return await exportXlsxReport();}catch(e){toast('\u26a0 \uc5d1\uc140 \uc624\ub958: '+((e&&e.message)||e));}}
+async function exportXlsxReportCloud(){try{return await exportXlsxReport();}catch(e){toast('\u26a0 \uc5d1\uc140 \uc624\ub958: '+((e&&e.message)||e));}}
 async function fbMigrateRun(){if(!fbConfigReady())return fbOpen();if(!FB_AUTH.refreshToken&&!FB_AUTH.idToken){gateShow();toast('먼저 팀 비밀번호로 입장해 주세요');return;}cloudStat('busy','☁ 기존 데이터 이관 중…');try{let n=0;for(const ex of (root.experiments||[])){if(ex.remoteOnly)continue;const ids=((ex.state||{}).plans||[]).map(p=>p.id);for(const pl of ((ex.state||{}).plans||[])){await preparePlanAttachments(ex,pl);await fbDb('experiments/'+encodeURIComponent(ex.id)+'/plans/'+encodeURIComponent(pl.id),'PUT',_cleanPlan(pl,false));}await fbDb('experiments/'+encodeURIComponent(ex.id)+'/meta','PUT',_meta(ex));await fbDb('summaries/'+encodeURIComponent(ex.id),'PUT',_summary(ex));_setRemoteFlags(ex,ids);n++;cloudStat('busy','☁ 이관 중 '+n+'/'+root.experiments.length);}toast('✅ 기존 데이터 '+n+'개 이관 완료');await cloudLoadSummaries(true);cloudStat('on','☁ 이관 완료');}catch(e){cloudStat('err','☁ 이관 실패');toast('이관 실패 — 설정·권한·Storage를 확인해 주세요');}}
 const _presId=Math.random().toString(36).slice(2,10);
 async function presencePing(){if(!fbConfigReady()||(!FB_AUTH.refreshToken&&!FB_AUTH.idToken))return;try{const ex=(root.screen==='sim')?EXP():null;const pl=(root.screen==='sim')?curPlan():null;await fbDb('presence/'+_presId,'PUT',{n:whoAmI()||'팀원',e:ex?ex.id:'',p:pl?pl.id:'',at:Date.now()});}catch(e){}}
@@ -3395,8 +3461,8 @@ function drawMarksOn(ctx,marks,W,H){
     ctx.restore(); });
 }
 async function annoComposite(att,maxW){
-  if(!att.data&&att.fullPath){ try{ await ensureAttachmentFull(att); }catch(_e){} }
-  if(!att.data&&!att.thumb&&(att.thumbPath||att.fullPath)){ try{ await ensureAttachmentThumb(att); }catch(_e){} }
+  if(!att.data&&(att.fullPath||att.fullUrl)){ try{ await ensureAttachmentFull(att); }catch(_e){} }
+  if(!att.data&&!att.thumb&&(att.thumbPath||att.fullPath||att.thumbUrl||att.fullUrl)){ try{ await ensureAttachmentThumb(att); }catch(_e){} }
   const _base=att.data||att.thumb;
   if(!_base) throw new Error('IMG UNAVAILABLE');
   const _srcSig=(att.fullPath||'')+'|'+_base.length+'|'+_base.slice(-48);
@@ -3526,7 +3592,7 @@ function _anSave(){ if(!_an) return; const ov=$id('annov');
   try{scheduleSave();}catch(_e){} render(); toast('\u270e \uc8fc\uc11d \uc800\uc7a5\ub428'); }
 function openAnno(id){
   const att=_findAtt(id); if(!att){ toast('\uc774\ubbf8\uc9c0\ub97c \ucc3e\uc744 \uc218 \uc5c6\uc5b4\uc694'); return; }
-  if(!att.data&&att.fullPath){ ensureAttachmentFull(att).then(()=>openAnno(id)).catch(()=>toast('이미지를 불러오지 못했어요')); return; }
+  if(!att.data&&(att.fullPath||att.fullUrl)){ ensureAttachmentFull(att).then(()=>openAnno(id)).catch(e=>toast('이미지를 불러오지 못했어요 — '+_shortImgErr(e))); return; }
   let ov=$id('annov');
   if(!ov){
     document.body.insertAdjacentHTML('beforeend',
@@ -3575,7 +3641,7 @@ function ensureExcelJS(){ if(window.ExcelJS) return Promise.resolve(); if(_xlP) 
   return _xlP; }
 async function _xlsxCardPng(a,cs,widthPx,hasScore,title){
   let url=null,im=null;
-  try{ url=await annoComposite(a,1800); im=await _loadImg(url); }catch(_e){ im=null; }
+  try{ url=await annoComposite(a,1800); im=await _loadImg(url); }catch(e){ throw new Error((title||a.title||a.name||'이미지')+' 카드 생성 실패: '+_shortImgErr(e)); }
   const W=Math.max(220,Math.round(widthPx));
   const showScore=true;
   const titleH=32, scoreHeadH=showScore?26:0, scoreValH=showScore?30:0, imageH=Math.round(W*3/4);
@@ -3618,14 +3684,19 @@ async function _xlsxCardPng(a,cs,widthPx,hasScore,title){
 }
 async function _xlsxImages(wb,ws,cs,plan,r,NC,colW,C,bAll,colBase){
   const _at=(plan.attach||[]); _at.forEach(a=>{ if(a&&!a.loc) a.loc='result'; });
-  const _cand=_at.filter(a=>a&&(a.data||a.thumb||a.fullPath||a.thumbPath)&&a.loc==='result');
+  const _cand=_at.filter(a=>a&&a.loc==='result');
+  const _failed=[];
   for(const a of _cand){
-    if(!a.data&&a.fullPath){ try{ await ensureAttachmentFull(a); }catch(_e){} }
-    if(!a.data&&!a.thumb&&(a.thumbPath||a.fullPath)){ try{ await ensureAttachmentThumb(a); }catch(_e){} }
+    let last=null;
+    if(!a.data&&(a.fullPath||a.fullUrl)){ try{ await ensureAttachmentFull(a); }catch(e){last=e;} }
+    if(!a.data&&!a.thumb&&(a.thumbPath||a.fullPath||a.thumbUrl||a.fullUrl)){ try{ await ensureAttachmentThumb(a); }catch(e){last=e;} }
+    if(!a.data&&!a.thumb)_failed.push({a:a,e:last||new Error('원본 경로·주소 없음')});
   }
   const atts=_cand.filter(a=>a.data||a.thumb);
-  try{ const _sub=_cand.filter(a=>!a.data&&a.thumb).length, _dead=_cand.length-atts.length;
-    if(_sub||_dead) toast('⚠ 사진 '+_cand.length+'장 중 원본 '+(_sub+_dead)+'장 실패 (축소본 대체 '+_sub+' · 제외 '+_dead+') — 사내망의 사진서버 차단 여부 확인'); }catch(_e){}
+  if(_failed.length){
+    const f=_failed[0], nm=String((f.a&&((f.a.title||f.a.name)))||'이미지');
+    throw new Error('첨부 이미지 '+_failed.length+'장을 불러오지 못해 저장을 중단했습니다. ['+nm+'] '+_shortImgErr(f.e)+' · ⚙ → 이미지 서버 점검을 실행해 주세요.');
+  }
   if(!atts.length) return r;
   ws.mergeCells(r,1,r,NC); const hc=ws.getCell(r,1); hc.value='첨부 이미지 ('+atts.length+'장)';
   hc.font={bold:true,size:11,color:{argb:C.gink}}; hc.fill={type:'pattern',pattern:'solid',fgColor:{argb:C.ghead}}; hc.border=bAll; hc.alignment={vertical:'middle'}; ws.getRow(r).height=20; r++;
@@ -3679,7 +3750,7 @@ async function exportXlsxReport(){
   toast('\ud83d\udce5 \uc5d1\uc140 \ub9ac\ud3ec\ud2b8 \uc0dd\uc131 \uc911\u2026');
   try{ await ensureExcelJS(); }catch(e){ toast('\u26a0 \uc5d1\uc140 \ubaa8\ub4c8 \ub85c\ub529 \uc2e4\ud328: '+((e&&e.message)||e)); return; }
   try{ await (ex.type==='sheet'?_buildXlsxSheet(ex):_buildXlsx(ex)); toast('\ud83d\udce5 \uc5d1\uc140 \ub9ac\ud3ec\ud2b8 \uc800\uc7a5\ub428'); }
-  catch(e){ toast('\u26a0 \uc5d1\uc140 \uc0dd\uc131 \uc624\ub958: '+((e&&e.message)||e)); }
+  catch(e){ const m=String((e&&e.message)||e); toast('\u26a0 \uc5d1\uc140 \uc0dd\uc131 \uc624\ub958: '+m); if(/\ucca8\ubd80 \uc774\ubbf8\uc9c0|\uce74\ub4dc \uc0dd\uc131|IMAGE/i.test(m)){try{alert('\uc5d1\uc140 \uc774\ubbf8\uc9c0 \ub0b4\ubcf4\ub0b4\uae30 \uc2e4\ud328\n\n'+m);}catch(_e){}} }
 }
 function _xlsxComments(ws,d,r,NC){
   const list=(d.comments||[]).filter(c=>String(c.title||'').trim()||String(c.body||'').trim());
@@ -3991,6 +4062,8 @@ _syncFlag(); setTimeout(_syncFlag,800);
 /* ---- v50: \uce21\uc815\uac12 \ub77c\uc774\ube0c\ub7ec\ub9ac \u00b7 \uc18c\uc218\uc810 \uac15\uc81c ---- */
 var _mlibOpen=false;
 if(!Array.isArray(root.metricLib)) root.metricLib=[];
+var _mlibDirty=false;
+function _mlibTouch(){ root._mlibAt=Date.now(); _mlibDirty=true; }
 document.addEventListener('toggle',function(e){ var dt=e.target; if(dt&&dt.matches&&dt.matches('details[data-mlib]')) _mlibOpen=dt.open; },true);
 function _mlibFind(name){ name=String(name||'').trim(); if(!name) return null; return (root.metricLib||[]).find(function(li){return String(li.name||'').trim()===name;})||null; }
 function _mlibApply(m,t){ var li=_mlibFind(t.value); if(!li) return;
@@ -4010,9 +4083,13 @@ function _metricAddDirect(mode,g){ var d=D();
   persistNow(); render(); }
 function _metricPick(btn,mode,g){
   var lib=(root.metricLib||[]).filter(function(li){return String(li.name||'').trim();});
+  var curName=''; try{ if(mode==='coat'&&g){ var _gg=(D().rgroups||[]).find(function(x){return x.id===g;}); curName=String((_gg&&_gg.name)||'').trim(); } }catch(e){}
+  var pri=curName?lib.filter(function(li){return String(li.sec||'').trim()===curName;}):[];
+  var rest=lib.filter(function(li){return pri.indexOf(li)<0;});
+  lib=pri.concat(rest);
   _mlpickClose();
   var p=document.createElement('div'); p.id='mlpick'; p.className='mlpick';
-  p.innerHTML=(lib.length?'<div class="mlpick-h">측정값 라이브러리에서 선택 — 단위·소수점 자동 적용</div>':'<div class="mlpick-h" style="color:#a3562a">측정값 라이브러리가 비어 있어요 — ⚙ 설정 › 측정값 라이브러리에 등록하면 여기서 클릭으로 골라 넣을 수 있어요</div>')+lib.map(function(li,i){return '<button class="mlpick-it" data-mlp="'+i+'">'+escT(li.name)+(li.unit?' <small>'+escT(li.unit)+'</small>':'')+((li.dec!=null&&li.dec!=='')?' <small class="mld">.'+escT(String(li.dec))+'</small>':'')+'</button>';}).join('')+'<button class="mlpick-it free" data-mlp="free">＋ 직접 입력</button>';
+  p.innerHTML=(lib.length?'<div class="mlpick-h">측정값 라이브러리 — 단위·소수점·섹션 자동 적용</div>':'<div class="mlpick-h" style="color:#a3562a">측정값 라이브러리가 비어 있어요 — ⚙ 설정 › 측정값 라이브러리에 등록하면 여기서 클릭으로 골라 넣을 수 있어요</div>')+lib.map(function(li,i){var pre=''; if(pri.length&&i===0)pre='<div class="mlpick-h sub">'+escT(curName)+' 지정</div>'; else if(pri.length&&rest.length&&i===pri.length)pre='<div class="mlpick-h sub">다른 섹션·미지정</div>'; return pre+'<button class="mlpick-it" data-mlp="'+i+'">'+escT(li.name)+(li.unit?' <small>'+escT(li.unit)+'</small>':'')+((li.dec!=null&&li.dec!=='')?' <small class="mld">.'+escT(String(li.dec))+'</small>':'')+((li.sec&&String(li.sec).trim()&&String(li.sec).trim()!==curName)?' <small class="mls">'+escT(li.sec)+'</small>':'')+'</button>';}).join('')+'<button class="mlpick-it free" data-mlp="free">＋ 직접 입력</button>';
   document.body.appendChild(p);
   var r=btn.getBoundingClientRect(); var pw=Math.min(300,window.innerWidth-16);
   p.style.width=pw+'px';
@@ -4021,7 +4098,7 @@ function _metricPick(btn,mode,g){
   p.addEventListener('click',function(ev){var b=ev.target.closest('.mlpick-it'); if(!b)return; ev.stopPropagation();
     var d=D(); if(b.dataset.mlp==='free'){_metricAddDirect(mode,g);}else{var li=lib[+b.dataset.mlp]; var dec=(li.dec==null||li.dec==='')?null:+li.dec;
       if(mode==='sheet'){ if(!Array.isArray(d.metrics))d.metrics=[]; d.metrics.push({id:uid('m'),name:li.name,unit:li.unit||'',dec:dec}); }
-      else { d.rmetrics.push({id:uid('m'),name:li.name,unit:li.unit||'',g:g,dec:dec}); }
+      else { var gT=g; try{ var sn=String(li.sec||'').trim(); if(sn){ var mg=(d.rgroups||[]).find(function(x){return String(x.name||'').trim()===sn;}); if(mg) gT=mg.id; } }catch(e){} d.rmetrics.push({id:uid('m'),name:li.name,unit:li.unit||'',g:gT,dec:dec}); if(gT!==g){ try{ var gn=((d.rgroups||[]).find(function(x){return x.id===gT;})||{}).name||''; toast('→ \''+gn+'\' 섹션에 추가됨'); }catch(e){} } }
       persistNow(); render(); toast('항목 추가: '+li.name);}
     _mlpickClose();});
   setTimeout(function(){ var h=function(ev){ if(!ev.target.closest||!ev.target.closest('#mlpick')){ _mlpickClose(); document.removeEventListener('click',h); } }; document.addEventListener('click',h); },0);
@@ -4029,15 +4106,15 @@ function _metricPick(btn,mode,g){
 document.addEventListener('click',function(e){
   var b=(e.target&&e.target.closest)?e.target.closest('[data-action]'):null; if(!b) return;
   var a=b.dataset.action;
-  if(a==='mlib-add'){ if(!Array.isArray(root.metricLib)) root.metricLib=[]; root.metricLib.push({id:uid('ml'),name:'',unit:'',dec:null}); try{scheduleSave();}catch(_e){} render(); }
-  else if(a==='mlib-del'){ root.metricLib=root.metricLib.filter(function(x){return x.id!==b.dataset.id;}); try{scheduleSave();}catch(_e){} render(); }
+  if(a==='mlib-add'){ if(!Array.isArray(root.metricLib)) root.metricLib=[]; root.metricLib.push({id:uid('ml'),name:'',unit:'',dec:null,sec:''}); _mlibTouch(); try{scheduleSave();}catch(_e){} render(); }
+  else if(a==='mlib-del'){ root.metricLib=root.metricLib.filter(function(x){return x.id!==b.dataset.id;}); _mlibTouch(); try{scheduleSave();}catch(_e){} render(); }
 });
 document.addEventListener('input',function(e){
   var t=e.target; if(!t||!t.dataset) return; var ro=t.dataset.role;
-  if(ro!=='mlibname'&&ro!=='mlibunit'&&ro!=='mlibdec') return;
+  if(ro!=='mlibname'&&ro!=='mlibunit'&&ro!=='mlibdec'&&ro!=='mlibsec') return;
   var li=(root.metricLib||[]).find(function(x){return x.id===t.dataset.id;}); if(!li) return;
-  if(ro==='mlibname')li.name=t.value; else if(ro==='mlibunit')li.unit=t.value; else li.dec=(t.value==='')?null:+t.value;
-  _mlibFill(); try{scheduleSave();}catch(_e){}
+  if(ro==='mlibname')li.name=t.value; else if(ro==='mlibunit')li.unit=t.value; else if(ro==='mlibsec')li.sec=t.value; else li.dec=(t.value==='')?null:+t.value;
+  _mlibFill(); _mlibTouch(); try{scheduleSave();}catch(_e){}
 });
 document.addEventListener('change',function(e){
   var t=e.target; if(!t||!t.dataset) return; var ro=t.dataset.role;
@@ -4154,4 +4231,5 @@ document.addEventListener('pointerdown',e=>{ try{ const mp=$id('mkpop'); if(mp&&
 try{ _lastSnap=JSON.stringify(root); const _localSnap=JSON.stringify(typeof cleanRootForLocal==='function'?cleanRootForLocal(root):root); const bk='soocho_backup_'+(new Date().toISOString().slice(0,10)); if(!localStorage.getItem(bk)) localStorage.setItem(bk,_localSnap); const ks=Object.keys(localStorage).filter(k=>k.indexOf('soocho_backup_')===0).sort(); while(ks.length>3) localStorage.removeItem(ks.shift()); }catch(e){}
 updateUndoUI();
 (function(){ const pal=$id('palette'); if(!pal) return; pal.addEventListener('click',e=>{ if(e.target===pal){ palClose(); return; } if(e.target.closest&&e.target.closest('.pal-it')) setTimeout(palClose,0); }); const q=$id('palq'); q.addEventListener('input',()=>palRender(q.value)); q.addEventListener('keydown',e=>{ if(e.key==='ArrowDown'){e.preventDefault();palSel(_palIdx+1);} else if(e.key==='ArrowUp'){e.preventDefault();palSel(_palIdx-1);} else if(e.key==='Enter'){e.preventDefault();const el=$id('pallist').querySelector('.pal-it.sel');if(el)el.click();} else if(e.key==='Escape'){palClose();} }); const sm=$id('setmenu'); if(sm) sm.addEventListener('click',e=>{ if(e.target.closest&&e.target.closest('.set-it')) setTimeout(()=>{ /* keep open only for backup list refresh cases */ },0); }); })(); }catch(err){const c=document.getElementById('content');if(c)c.innerHTML='<div style="padding:22px;color:#b0524e;font-size:13px;line-height:1.6">화면을 그리는 중 오류가 났어요.<br><b>'+((err&&err.message)||err)+'</b><br><br>이 메시지를 캡처해서 알려주시면 고칠게요.</div>';}
+;try{setTimeout(function(){try{ensureExcelJS().catch(function(){});}catch(e){}},2500);}catch(e){}
 </script></body></html>
