@@ -2,7 +2,7 @@
 <html lang="ko"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>제지 실험 시뮬레이터 v97</title>
+<title>제지 실험 시뮬레이터 v98</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='1.5' y='1.5' width='21' height='21' rx='6' fill='%2315497c'/%3E%3Cpath d='M7.6 5.6h5.6l3.2 3.2v9.6H7.6z' fill='%23fff'/%3E%3Cpath d='M13.2 5.6v3.2h3.2z' fill='%23c3d6e8'/%3E%3Cpath d='M9.7 12.1h4.6M9.7 14.5h4.6M9.7 16.9h2.9' stroke='%23517ba5' stroke-width='1.25' stroke-linecap='round' fill='none'/%3E%3C/svg%3E">
 <meta name="theme-color" content="#15497c">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -1672,7 +1672,7 @@
     <div id="expbar"></div>
     <div class="tabs" id="tabs"></div>
     <div id="content"></div>
-    <div class="foot">입력 즉시 자동 저장 · <b>☁ Firebase 운영</b>: 실험·차수별 데이터 저장, 이미지는 Storage에 분리 · JSON 백업은 우측 상단 <b>⚙</b> · 스크린샷은 <b>Ctrl+V</b>로 어디서나 첨부 · <span class="vtag">v97 · Firebase 이미지 인증·엑셀 복구</span></div>
+    <div class="foot">입력 즉시 자동 저장 · <b>☁ Firebase 운영</b>: 실험·차수별 데이터 저장, 이미지는 Storage에 분리 · JSON 백업은 우측 상단 <b>⚙</b> · 스크린샷은 <b>Ctrl+V</b>로 어디서나 첨부 · <span class="vtag">v98 · 이미지 다중복구·DB 이중백업</span></div>
   </div>
 
   <input type="file" id="fileInput" accept=".json,application/json" hidden="">
@@ -1840,7 +1840,8 @@ function _rememberFull(id,d){ try{ if(!id||!d)return; _recentFull.set(id,{data:d
 async function _applyRot90(a){ const nd=await _rot90Data(a.data); a.data=nd; const nt=await _mkThumbFrom(nd); a.thumb=(nt&&nt.length>=200)?nt:nd; a.imageDirty=true; a.ar=(a.ar&&a.ar>0)?(1/a.ar):a.ar; _rotMarks90(a); a.kb=Math.round((a.data.length+(a.thumb||'').length)*0.75/1024); _rememberFull(a.id,a.data); }
 function rotateAttachment(id){ const p=curPlan(); const a=p&&(p.attach||[]).find(x=>x.id===id); if(!a) return;
   if(a.data){ _applyRot90(a).then(()=>{ const lb=$id('lightbox'); if(lb&&lb.classList.contains('show')&&lb.dataset.img===id){ const li=$id('lbimg'); if(li) li.src=a.data; } persistNow(); render(); toast('↻ 90° 회전'); }).catch(()=>toast('회전 실패 — 이미지 형식을 확인해 주세요')); return; }
-  if(a.fullPath||a.fullUrl){ const rc=_recentFull.get(a.id); if(rc&&(Date.now()-rc.ts)<1800000){ a.data=rc.data; rotateAttachment(id); return; } ensureAttachmentFull(a).then(()=>rotateAttachment(id)).catch(e=>toast('원본을 못 받아 회전할 수 없어요 — '+String((e&&e.message)||e))); return; }
+  if(a.thumb){a.data=a.thumb;rotateAttachment(id);return;}
+  if(a.fullPath||a.fullUrl||a.thumbPath||a.thumbUrl){ const rc=_recentFull.get(a.id); if(rc&&(Date.now()-rc.ts)<1800000){ a.data=rc.data; rotateAttachment(id); return; } ensureAttachmentFull(a).then(()=>rotateAttachment(id)).catch(async e=>{try{const t=a.thumb||await ensureAttachmentThumb(a);if(t){a.data=t;rotateAttachment(id);return;}}catch(_e){}toast('이미지를 못 받아 회전할 수 없어요 — '+String((e&&e.message)||e));}); return; }
   toast('이미지 원본이 없어요');
 }
 function addAttachment(dataURL,name,thumb,ar){ const p=curPlan(); if(!p){ toast('실험을 먼저 열어주세요'); return; } const loc='result'; const th=thumb||dataURL; const _nid=uid('img'); _rememberFull(_nid,dataURL); p.attach.push({id:_nid,loc,name:name||'스크린샷',ts:Date.now(),data:dataURL,thumb:th,ar:ar||1.4,kb:Math.round((dataURL.length+th.length)*0.75/1024),imageDirty:true}); const ok=persistNow(); render(); toast(ok?'🖼 이미지 첨부됨':'⚠ 저장 한도 초과 — 화면엔 있지만 저장은 안 됐어요. ⚙ JSON 백업 후 일부 삭제 권장'); }
@@ -3194,28 +3195,33 @@ async function fbToken(){if(FB_AUTH.idToken&&Date.now()<FB_AUTH.expiresAt)return
 async function fbDb(path,method,body){const tok=await fbToken();const base=FB_CFG.databaseURL+'/teams/'+encodeURIComponent(_safeKey(FB_CFG.team));const url=base+(path?'/'+path.replace(/^\/+|\/+$/g,''):'')+'.json?auth='+encodeURIComponent(tok);const opt={method:method||'GET',cache:'no-store',headers:{}};if(body!==undefined){opt.headers['Content-Type']='application/json';opt.body=JSON.stringify(body);}const r=await fetch(url,opt);if(!r.ok){if(r.status===401||r.status===403){_clearAuth();throw new Error('LOGIN_REQUIRED');}throw new Error('DB '+r.status);}if((method||'GET')==='DELETE')return null;const t=await r.text();return (!t||t==='null')?null:JSON.parse(t);}
 function _storageUrl(path,media){const b='https://firebasestorage.googleapis.com/v0/b/'+encodeURIComponent(FB_CFG.storageBucket);return media?(b+'/o/'+encodeURIComponent(path)+'?alt=media'):(b+'/o?uploadType=media&name='+encodeURIComponent(path));}
 function _storageMetaUrl(path){return 'https://firebasestorage.googleapis.com/v0/b/'+encodeURIComponent(FB_CFG.storageBucket)+'/o/'+encodeURIComponent(path);}
-function _storageAuth(tok,extra){return Object.assign({Authorization:'Firebase '+tok},extra||{});}
-async function fbStorageUpload(path,blob){const tok=await fbToken();const r=await fetch(_storageUrl(path,false),{method:'POST',headers:_storageAuth(tok,{'Content-Type':blob.type||'image/jpeg'}),body:blob});if(!r.ok)throw new Error('STORAGE UP '+r.status);return r.json().catch(()=>({}));}
-async function fbStorageGet(path){const url=_storageUrl(path,true);let r=await fetch(url,{headers:_storageAuth(await fbToken()),cache:'force-cache'});if(!r.ok){let tok='';try{tok=await fbRefresh();}catch(e){}if(tok)r=await fetch(url,{headers:_storageAuth(tok),cache:'no-store'});}if(!r.ok)throw new Error('STORAGE GET '+r.status);return r.blob();}
-async function fbStorageDelete(path){if(!path)return;const tok=await fbToken();const r=await fetch(_storageMetaUrl(path),{method:'DELETE',headers:_storageAuth(tok)});if(!r.ok&&r.status!==404)throw new Error('STORAGE DEL '+r.status);}
+function _storageAuth(tok,extra,scheme){return Object.assign({Authorization:(scheme||'Firebase')+' '+tok},extra||{});}
+async function _storageFetch(url,opt,tok){const errs=[],accept=((opt||{})._accept||[]),base=Object.assign({},opt||{});delete base._accept;for(const scheme of ['Firebase','Bearer']){try{const init=Object.assign({},base,{headers:_storageAuth(tok,base.headers,scheme)});const r=await fetch(url,init);if(r.ok||accept.indexOf(r.status)>=0)return r;errs.push(scheme+' HTTP '+r.status);}catch(e){errs.push(scheme+' '+_shortImgErr(e));}}throw new Error(errs.join(' / ')||'STORAGE NETWORK');}
+function _xhrStorageBlob(url,tok,scheme){return new Promise((res,rej)=>{try{const x=new XMLHttpRequest();x.open('GET',url,true);x.responseType='blob';x.timeout=25000;x.setRequestHeader('Authorization',(scheme||'Firebase')+' '+tok);x.onload=()=>{if(x.status>=200&&x.status<300&&x.response&&x.response.size)res(x.response);else rej(new Error((scheme||'Firebase')+' XHR '+x.status));};x.onerror=()=>rej(new Error((scheme||'Firebase')+' XHR 네트워크 실패'));x.ontimeout=()=>rej(new Error((scheme||'Firebase')+' XHR 시간 초과'));x.send();}catch(e){rej(e);}});}
+async function fbStorageUpload(path,blob){const tok=await fbToken();const r=await _storageFetch(_storageUrl(path,false),{method:'POST',headers:{'Content-Type':blob.type||'image/jpeg'},body:blob},tok);return r.json().catch(()=>({}));}
+async function fbStorageGet(path){const url=_storageUrl(path,true);let tok=await fbToken(),last=null;for(let n=0;n<2;n++){try{const r=await _storageFetch(url,{method:'GET',cache:n?'reload':'no-store'},tok);const b=await r.blob();if(b&&b.size)return b;last=new Error('STORAGE GET 빈 응답');}catch(e){last=e;}for(const scheme of ['Firebase','Bearer']){try{return await _xhrStorageBlob(url,tok,scheme);}catch(e){last=e;}}try{const d=await _fetchImageDataUrl(url+'&auth='+encodeURIComponent(tok));return dataUrlBlob(d);}catch(e){last=e;}try{tok=await fbRefresh();}catch(e){break;}}throw last||new Error('STORAGE GET 실패');}
+async function fbStorageDelete(path){if(!path)return;const tok=await fbToken();await _storageFetch(_storageMetaUrl(path),{method:'DELETE',_accept:[404]},tok);}
 let _delImgPaths=new Set(),_delImgPrefixes=new Set();
 function _imgPrefix(exId,plId){return 'teams/'+_safeKey(FB_CFG.team)+'/images/'+_safeKey(exId)+(plId?'/'+_safeKey(plId):'')+'/';}
 function queueImageDelete(a){if(!fbConfigReady()||!a)return;if(a.fullPath)_delImgPaths.add(a.fullPath);if(a.thumbPath)_delImgPaths.add(a.thumbPath);}
 function queueImagePrefixDelete(pf){if(!fbConfigReady()||!pf)return;_delImgPrefixes.add(pf);}
 function _tombAtt(pl,id){if(!pl||!id)return;if(!pl.delAtt||typeof pl.delAtt!=='object')pl.delAtt={};pl.delAtt[id]=Date.now();const ks=Object.keys(pl.delAtt);if(ks.length>500){ks.sort((a,b)=>pl.delAtt[a]-pl.delAtt[b]);ks.slice(0,ks.length-500).forEach(k=>delete pl.delAtt[k]);}}
-async function fbStorageListPrefix(prefix){const tok=await fbToken();let names=[],pt='';do{const u='https://firebasestorage.googleapis.com/v0/b/'+encodeURIComponent(FB_CFG.storageBucket)+'/o?maxResults=1000&prefix='+encodeURIComponent(prefix)+(pt?'&pageToken='+encodeURIComponent(pt):'');const r=await fetch(u,{headers:_storageAuth(tok),cache:'no-store'});if(!r.ok)throw new Error('STORAGE LIST '+r.status);const j=await r.json().catch(()=>({}));(j.items||[]).forEach(it=>{if(it&&it.name)names.push(it.name);});pt=j.nextPageToken||'';}while(pt);return names;}
+async function fbStorageListPrefix(prefix){const tok=await fbToken();let names=[],pt='';do{const u='https://firebasestorage.googleapis.com/v0/b/'+encodeURIComponent(FB_CFG.storageBucket)+'/o?maxResults=1000&prefix='+encodeURIComponent(prefix)+(pt?'&pageToken='+encodeURIComponent(pt):'');const r=await _storageFetch(u,{method:'GET',cache:'no-store'},tok);const j=await r.json().catch(()=>({}));(j.items||[]).forEach(it=>{if(it&&it.name)names.push(it.name);});pt=j.nextPageToken||'';}while(pt);return names;}
 async function fbStorageDeletePrefix(prefix){const names=await fbStorageListPrefix(prefix);for(const nm of names){try{await fbStorageDelete(nm);}catch(e){}}}
 async function _flushImageDeletes(){let g=0;while((_delImgPaths.size||_delImgPrefixes.size)&&g++<5){for(const p of Array.from(_delImgPaths)){_delImgPaths.delete(p);try{await fbStorageDelete(p);}catch(e){}}for(const pf of Array.from(_delImgPrefixes)){_delImgPrefixes.delete(pf);try{await fbStorageDeletePrefix(pf);}catch(e){}}}}
 function dataUrlBlob(s){const a=String(s||'').split(','),m=/data:([^;]+)/.exec(a[0]||''),bin=atob(a[1]||''),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return new Blob([u],{type:(m&&m[1])||'image/jpeg'});}
 function blobDataUrl(b){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(b);});}
 function _shortImgErr(e){const s=String((e&&e.message)||e||'이미지 다운로드 실패');return s.length>220?s.slice(0,220)+'…':s;}
+function _xhrImageDataUrl(u){return new Promise((res,rej)=>{try{const x=new XMLHttpRequest();x.open('GET',u,true);x.responseType='blob';x.withCredentials=false;x.onload=()=>{if(x.status>=200&&x.status<300&&x.response&&x.response.size)blobDataUrl(x.response).then(res,rej);else rej(new Error('XHR '+x.status));};x.onerror=()=>rej(new Error('XHR 네트워크 실패'));x.ontimeout=()=>rej(new Error('XHR 시간 초과'));x.timeout=25000;x.send();}catch(e){rej(e);}});}
+function _canvasImageDataUrl(u){return new Promise((res,rej)=>{try{const im=new Image();im.crossOrigin='anonymous';im.referrerPolicy='no-referrer';im.onload=()=>{try{const iw=im.naturalWidth||im.width||1,ih=im.naturalHeight||im.height||1,sc=Math.min(1,2000/Math.max(iw,ih));const c=document.createElement('canvas');c.width=Math.max(1,Math.round(iw*sc));c.height=Math.max(1,Math.round(ih*sc));const x=c.getContext('2d');if(!x)throw new Error('CANVAS 없음');x.drawImage(im,0,0,c.width,c.height);const d=c.toDataURL('image/jpeg',.9);if(!d||d.length<200)throw new Error('CANVAS 빈 이미지');res(d);}catch(e){rej(e);}};im.onerror=()=>rej(new Error('IMG 직접 로드 실패'));im.src=u+(u.indexOf('?')>=0?'&':'?')+'_paperlab='+Date.now();}catch(e){rej(e);}});}
 async function _fetchImageDataUrl(u){
   if(!u)throw new Error('IMAGE URL 없음');
-  const r=await fetch(u,{method:'GET',mode:'cors',credentials:'omit',cache:'no-store'});
-  if(!r.ok)throw new Error('IMAGE URL GET '+r.status);
-  const b=await r.blob();
-  if(!b||!b.size)throw new Error('IMAGE URL 빈 응답');
-  return blobDataUrl(b);
+  if(/^data:image\//i.test(u))return u;
+  const errs=[];
+  try{const r=await fetch(u,{method:'GET',mode:'cors',credentials:'omit',cache:'reload'});if(!r.ok)throw new Error('FETCH HTTP '+r.status);const b=await r.blob();if(!b||!b.size)throw new Error('FETCH 빈 응답');return await blobDataUrl(b);}catch(e){errs.push(_shortImgErr(e));}
+  try{return await _xhrImageDataUrl(u);}catch(e){errs.push(_shortImgErr(e));}
+  try{return await _canvasImageDataUrl(u);}catch(e){errs.push(_shortImgErr(e));}
+  throw new Error(errs.filter(Boolean).join(' / ')||'IMAGE URL 다운로드 실패');
 }
 async function _attachmentUrlData(a,full){
   const urls=[],errs=[];
@@ -3231,7 +3237,7 @@ async function _attachmentUrlData(a,full){
   for(const u of urls){try{return await _fetchImageDataUrl(u);}catch(e){errs.push(_shortImgErr(e));}}
   throw new Error(errs.filter(Boolean).join(' / ')||'표시용 이미지 주소 다운로드 실패');
 }
-function _cleanAtt(a,local){const x=JSON.parse(JSON.stringify(a||{}));delete x._loading;delete x._fullLoading;delete x._urlLoading;delete x._furlLoading;delete x._imgErr;delete x.imageDirty;if(x.pendUpload&&!x.fullPath){/* 원본 임시 경유: data 유지 */}else if(!(local&&!x.fullPath)){delete x.data;}/* 엑셀·화면 복구용 저용량 썸네일은 로컬과 RTDB에 유지 */return x;}
+function _cleanAtt(a,local){const x=JSON.parse(JSON.stringify(a||{}));delete x._loading;delete x._fullLoading;delete x._urlLoading;delete x._furlLoading;delete x._backupQueued;delete x._imgErr;delete x.imageDirty;/* 로컬 저장공간에는 썸네일만, Firebase RTDB에는 원본 복구본까지 유지 */if(local&&x.fullPath&&!x.pendUpload)delete x.data;return x;}
 function _cleanPlan(p,local){const x=JSON.parse(JSON.stringify(p||{}));if(!local)delete x.syncedAt;x.attach=(p&&p.attach||[]).map(a=>_cleanAtt(a,local));return x;}
 function cleanExperiment(ex,local){const x=JSON.parse(JSON.stringify(ex||{}));if(x.state&&Array.isArray(x.state.plans))x.state.plans=(ex.state.plans||[]).map(p=>_cleanPlan(p,local));delete x.remoteOnly;delete x._remoteLoaded;delete x._knownPlanIds;return x;}
 function cleanRootForLocal(r){const x={experiments:(r.experiments||[]).map(e=>cleanExperiment(e,true)),activeExp:r.activeExp||0,screen:r.screen||'home',trash:r.trash||{},metricLib:r.metricLib||[],_mlibAt:(+r._mlibAt)||0,attMode:r.attMode,attSize:r.attSize,schemaVersion:2};return x;}
@@ -3247,13 +3253,11 @@ async function preparePlanAttachments(ex,pl){const at=(pl.attach||[]);let newFai
 }
 if(newFail){ try{ toast('⬆ 사진서버가 막혀 원본을 데이터서버에 임시 저장 — 폰 등에서 이 실험을 열면 자동 이동돼요'); }catch(_e){} }}
 async function fbStorageTok(path){const tok=await fbToken();
- const r=await fetch(_storageMetaUrl(path),{headers:_storageAuth(tok),cache:'no-store'});
- if(!r.ok)throw new Error('STORAGE META '+r.status);
+ const r=await _storageFetch(_storageMetaUrl(path),{method:'GET',cache:'no-store'},tok);
  const j=await r.json().catch(()=>({}));
  let t=String(j.downloadTokens||((j.metadata||{}).firebaseStorageDownloadTokens)||'').split(',')[0];
  if(!t){const u=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():(Date.now()+'-'+Math.random().toString(36).slice(2));
-  const r2=await fetch(_storageMetaUrl(path),{method:'PATCH',headers:_storageAuth(tok,{'Content-Type':'application/json'}),body:JSON.stringify({metadata:{firebaseStorageDownloadTokens:u}})});
-  if(!r2.ok)throw new Error('STORAGE TOKEN '+r2.status); t=u;}
+  await _storageFetch(_storageMetaUrl(path),{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({metadata:{firebaseStorageDownloadTokens:u}})},tok);t=u;}
  return _storageUrl(path,true)+'&token='+encodeURIComponent(t);}
 async function ensureAttachmentUrl(a){if(!a)return null;if(a.thumbUrl)return a.thumbUrl;if(a.fullUrl)return a.fullUrl;
  const p=a.thumbPath||a.fullPath;if(!p)return null;if(a._urlLoading)return a._urlLoading;
@@ -3263,13 +3267,14 @@ async function ensureAttachmentFullUrl(a){if(!a)return null;if(a.fullUrl)return 
  if(a._furlLoading)return a._furlLoading;
  a._furlLoading=(async()=>{try{const u=await fbStorageTok(a.fullPath);a.fullUrl=u;delete a._imgErr;return u;}
   catch(e){a._imgErr=String((e&&e.message)||e);throw e;}finally{delete a._furlLoading;}})();return a._furlLoading;}
+function _queueRecoveredImageBackup(a){if(!a||a._backupQueued)return;a._backupQueued=true;setTimeout(()=>{delete a._backupQueued;try{scheduleSave();}catch(e){}},120);}
 async function ensureAttachmentThumb(a){
   if(!a||a.thumb)return a&&a.thumb;if(a._loading)return a._loading;
   const p=a.thumbPath||a.fullPath, hasUrl=!!(a.thumbUrl||a.fullUrl);
   if(!p&&!hasUrl)return null;
   a._loading=(async()=>{const errs=[];try{
-    if(hasUrl||p){try{a.thumb=await _attachmentUrlData(a,false);delete a._imgErr;return a.thumb;}catch(e){errs.push(_shortImgErr(e));}}
-    if(p){try{a.thumb=await blobDataUrl(await fbStorageGet(p));delete a._imgErr;return a.thumb;}catch(e){errs.push(_shortImgErr(e));}}
+    if(hasUrl||p){try{a.thumb=await _attachmentUrlData(a,false);delete a._imgErr;_queueRecoveredImageBackup(a);return a.thumb;}catch(e){errs.push(_shortImgErr(e));}}
+    if(p){try{a.thumb=await blobDataUrl(await fbStorageGet(p));delete a._imgErr;_queueRecoveredImageBackup(a);return a.thumb;}catch(e){errs.push(_shortImgErr(e));}}
     throw new Error(errs.filter(Boolean).join(' / ')||'썸네일 원본 없음');
   }catch(e){a._imgErr=_shortImgErr(e);throw e;}finally{delete a._loading;}})();return a._loading;
 }
@@ -3278,14 +3283,14 @@ async function ensureAttachmentFull(a){
   const p=a.fullPath, hasUrl=!!a.fullUrl;
   if(!p&&!hasUrl)throw new Error('원본 경로·주소 없음');
   a._fullLoading=(async()=>{const errs=[];try{
-    if(hasUrl||p){try{a.data=await _attachmentUrlData(a,true);delete a._imgErr;return a.data;}catch(e){errs.push(_shortImgErr(e));}}
-    if(p){try{a.data=await blobDataUrl(await fbStorageGet(p));delete a._imgErr;return a.data;}catch(e){errs.push(_shortImgErr(e));}}
+    if(hasUrl||p){try{a.data=await _attachmentUrlData(a,true);if(!a.thumb){const t=await _mkThumbFrom(a.data);if(t)a.thumb=t;}_rememberFull(a.id,a.data);delete a._imgErr;_queueRecoveredImageBackup(a);return a.data;}catch(e){errs.push(_shortImgErr(e));}}
+    if(p){try{a.data=await blobDataUrl(await fbStorageGet(p));if(!a.thumb){const t=await _mkThumbFrom(a.data);if(t)a.thumb=t;}_rememberFull(a.id,a.data);delete a._imgErr;_queueRecoveredImageBackup(a);return a.data;}catch(e){errs.push(_shortImgErr(e));}}
     throw new Error(errs.filter(Boolean).join(' / ')||'이미지 원본 다운로드 실패');
   }catch(e){a._imgErr=_shortImgErr(e);throw e;}finally{delete a._fullLoading;}})();return a._fullLoading;
 }
 async function hydratePlanThumbs(pl){if(!pl)return;await Promise.all((pl.attach||[]).map(a=>ensureAttachmentThumb(a).catch(()=>null)));}
 async function hydratePlanFull(pl){if(!pl)return;await Promise.all((pl.attach||[]).map(a=>ensureAttachmentFull(a).catch(()=>null)));}
-function releaseExperimentImages(ex){try{for(const pl of (((ex||{}).state||{}).plans||[]))for(const a of (pl.attach||[])){if(a.fullPath||a.fullUrl)delete a.data;/* 썸네일은 엑셀·화면 복구용으로 유지 */}}catch(e){}}
+function releaseExperimentImages(ex){/* v98: 동기화·실험 전환 뒤에도 회전/엑셀용 이미지 캐시 유지 */}
 async function hydrateAllKnownImages(){for(const ex of (root.experiments||[])){if(ex.remoteOnly||!((ex.state||{}).plans||[]).length){try{const full=await fbLoadExperiment(ex.id);_carryExperimentImages(ex,full);Object.assign(ex,full);}catch(e){continue;}}for(const pl of ((ex.state||{}).plans||[]))await hydratePlanFull(pl);}}
 async function hydrateVisibleAttachmentThumbs(){if(_thumbBusy||root.screen!=='sim'||!curPlan()||!fbConfigReady()||!FB_AUTH.refreshToken)return;const miss=(curPlan().attach||[]).filter(a=>a&&!a.thumb&&!a.thumbUrl&&!a.fullUrl&&!a._imgErr&&(a.thumbPath||a.fullPath));if(!miss.length)return;_thumbBusy=true;let ch=false;try{await Promise.all(miss.map(async a=>{try{await ensureAttachmentUrl(a);}catch(e){}ch=true;}));
   const nothumb=(curPlan().attach||[]).filter(a=>a&&!a.thumb&&!a._imgErr&&(a.thumbPath||a.fullPath));
@@ -3332,7 +3337,7 @@ async function cloudFlush(silent){if(!fbConfigReady()){cloudStat('err','☁ Fire
 async function cloudSync(silent){if(syncMode()==='claude'){cloudStat('on','☁ 로컬 공유 모드');return;}try{await cloudFlush(true);if(!_editingNow())await cloudLoadSummaries(!!silent);if(!silent&&root.screen==='sim'&&EXP()&&!_editingNow()){const ex=EXP();if(!_dirtyMeta.has(ex.id)&&!_dirtyFull.has(ex.id)&&!_dirtyPlans.has(ex.id)){try{const fresh=await fbLoadExperiment(ex.id);_carryExperimentImages(ex,fresh);const i=root.experiments.indexOf(ex);if(i>=0){root.experiments[i]=fresh;root.activeExp=i;appState=fresh.state;render();hydrateVisibleAttachmentThumbs();}}catch(_e){}}}if(!silent)toast('☁ 최신 내용으로 동기화됨');}catch(e){if(String(e.message).indexOf('LOGIN_REQUIRED')>=0)cloudStat('err','☁ 로그인 필요');else cloudStat('err','☁ 연결 실패');}}
 function scheduleCloudPush(){if(syncMode()==='none')return;clearTimeout(_cpushT);if(syncMode()==='fb')cloudStat('busy','☁ 저장 대기…');_cpushT=setTimeout(()=>cloudFlush(true),1800);}
 async function openExperimentByIndex(i){const ex=root.experiments[i];if(!ex)return;try{if(root.screen==='sim'&&EXP()&&EXP().id!==ex.id)releaseExperimentImages(EXP());}catch(e){}const _hasLocal=!!((ex.state||{}).plans||[]).length;const _dty=_dirtyMeta.has(ex.id)||_dirtyFull.has(ex.id)||_dirtyPlans.has(ex.id);const _stale=fbConfigReady()&&!_dty&&((+ex.planSyncedAt||0)!==(+ex.updatedAt||0));if(ex.remoteOnly||ex._remoteLoaded===false||!_hasLocal||_stale){if(!fbConfigReady()){fbOpen();toast('먼저 Firebase 연결 설정이 필요해요');return;}if(!FB_AUTH.refreshToken&&!FB_AUTH.idToken){gateShow();toast('팀 비밀번호 입력 후 열 수 있어요');return;}cloudStat('busy','☁ 최신 내용 불러오는 중…');try{const full=await fbLoadExperiment(ex.id);_carryExperimentImages(ex,full);root.experiments[i]=full;root.activeExp=i;appState=full.state;root.screen='sim';render();hydrateVisibleAttachmentThumbs();cloudStat('on','☁ 연결됨');return;}catch(e){if(!_hasLocal){toast('실험을 불러오지 못했어요');cloudStat('err','☁ 불러오기 실패');return;}cloudStat('err','☁ 최신 내용 확인 실패 — 저장된 내용 표시');}}root.activeExp=i;appState=ex.state;root.screen='sim';if(!appState.active||typeof appState.active!=='object')appState.active={plan:Math.max(0,(appState.plans||[]).length-1),view:'plan'};const mx=Math.max(0,(appState.plans||[]).length-1);appState.active.plan=Math.max(0,Math.min(mx,+appState.active.plan||0));if(appState.active.view!=='plan'&&appState.active.view!=='result')appState.active.view='plan';render();hydrateVisibleAttachmentThumbs();}
-async function openAttachmentLightbox(im){if(!im)return;let _src=im.data;if(!_src){try{delete im._imgErr;_src=await ensureAttachmentFullUrl(im);}catch(e){const m=String((e&&e.message)||e);im._imgErr=m;try{console.error('IMG FAIL',im.fullPath,m);}catch(_e){}toast('이미지 실패: '+_imgErrTxt(m));try{if(root.screen==='sim')render();}catch(_e){}return;}}const li=$id('lbimg');li.classList.remove('zoom');li.src=_src;$id('lbname').textContent=(im.title||im.name)+' · '+new Date(im.ts).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});$id('lightbox').dataset.img=im.id;$id('lightbox').classList.add('show');try{annoDecorate();}catch(e){}}
+async function openAttachmentLightbox(im){if(!im)return;let _src=im.data||im.thumb;if(!_src){try{delete im._imgErr;_src=await ensureAttachmentFull(im);}catch(e){try{_src=await ensureAttachmentFullUrl(im);}catch(_e){const m=String((e&&e.message)||e);im._imgErr=m;try{console.error('IMG FAIL',im.fullPath,m);}catch(_x){}toast('이미지 실패: '+_imgErrTxt(m));try{if(root.screen==='sim')render();}catch(_x){}return;}}}const li=$id('lbimg');li.classList.remove('zoom');li.src=_src;$id('lbname').textContent=(im.title||im.name)+' · '+new Date(im.ts).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});$id('lightbox').dataset.img=im.id;$id('lightbox').classList.add('show');try{annoDecorate();}catch(e){}}
 async function exportReportHtmlCloud(){try{await hydratePlanFull(curPlan());const ex=EXP();download((ex.name||'실험')+'_결과_'+ymd()+'.html',buildReportDoc(),'text/html;charset=utf-8');toast('⬇ 리포트 HTML 저장됨');}catch(e){toast('내보내기 실패');}}
 async function exportReportPdfCloud(){try{await hydratePlanFull(curPlan());const doc=buildReportDoc().replace('</body>','<scr'+'ipt>window.onload=function(){setTimeout(function(){window.print();},300);};</scr'+'ipt></body>');const win=window.open('','_blank');if(!win)toast('팝업 차단을 해제해 주세요');else{win.document.open();win.document.write(doc);win.document.close();toast('인쇄창에서 PDF로 저장 선택');}}catch(e){toast('PDF 열기 실패');}}
 async function exportXlsxReportCloud(){try{return await exportXlsxReport();}catch(e){toast('\u26a0 \uc5d1\uc140 \uc624\ub958: '+((e&&e.message)||e));}}
@@ -3363,16 +3368,16 @@ async function storageSelfTest(){
     catch(e){ L.push('다운로드 ✘ '+String((e&&e.message)||e)); }
     try{ await fbStorageDelete(p); L.push('삭제 ✔ 성공'); }catch(e){ L.push('삭제 ✘ '+String((e&&e.message)||e)); }
   }
-  let n=0,noPath=0,hasData=0,err=0,e1='';
-  try{ (root.experiments||[]).forEach(x=>(((x.state||{}).plans)||[]).forEach(pl=>((pl.attach||[]).forEach(a=>{ if(!a)return; n++; if(!(a.fullPath||a.thumbPath)){noPath++; if(a.data||a.thumb)hasData++;} if(a._imgErr){err++; if(!e1)e1=a._imgErr;} })))); }catch(e){}
+  let n=0,noPath=0,hasData=0,dbBack=0,err=0,e1='';
+  try{ (root.experiments||[]).forEach(x=>(((x.state||{}).plans)||[]).forEach(pl=>((pl.attach||[]).forEach(a=>{ if(!a)return; n++;if(a.data||a.thumb)dbBack++; if(!(a.fullPath||a.thumbPath)){noPath++; if(a.data||a.thumb)hasData++;} if(a._imgErr){err++; if(!e1)e1=a._imgErr;} })))); }catch(e){}
   L.push('');
-  L.push('첨부 '+n+'개 / 서버경로 없음 '+noPath+'개 (그중 내 기기에 원본 있음 '+hasData+'개) / 불러오기 실패 '+err+'개');
+  L.push('첨부 '+n+'개 / DB·기기 복구본 '+dbBack+'개 / 서버경로 없음 '+noPath+'개 (그중 원본 있음 '+hasData+'개) / 불러오기 실패 '+err+'개');
   if(e1)L.push('첫 실패 사유: '+e1);
   L.push('');
   let tokOk=false;
   try{ const a0=(root.experiments||[]).flatMap(x=>(((x.state||{}).plans)||[])).flatMap(pl=>(pl.attach||[])).find(a=>a&&(a.thumbPath||a.fullPath));
-    if(a0){ const u=await fbStorageTok(a0.thumbPath||a0.fullPath); L.push('표시용 주소 발급 ✔ 성공'); tokOk=!!u; } }
-  catch(e){ L.push('표시용 주소 발급 ✘ '+String((e&&e.message)||e)); }
+    if(a0){ const u=await fbStorageTok(a0.thumbPath||a0.fullPath);await _fetchImageDataUrl(u);L.push('표시용 주소 발급·실제 읽기 ✔ 성공'); tokOk=true; } }
+  catch(e){ L.push('표시용 주소 읽기 ✘ '+String((e&&e.message)||e)); }
   L.push('');
   if(!upOk) L.push('→ Storage 규칙이 게시되지 않았거나 버킷 이름이 다릅니다.');
   else if(tokOk) L.push('→ 표시 경로 정상. 화면에 안 보이면 새로고침하세요.');
@@ -3391,7 +3396,7 @@ async function reuploadAllImages(){
     for(const ex of (root.experiments||[])){
       const pls=((ex.state||{}).plans)||[]; let touched=false;
       for(const pl of pls){
-        const need=(pl.attach||[]).some(a=>a&&(a.data||a.thumb)&&!(a.fullPath&&a.thumbPath));
+        const need=(pl.attach||[]).some(a=>a&&(a.data||a.thumb));
         if(!need)continue;
         try{ await preparePlanAttachments(ex,pl); await fbDb('experiments/'+encodeURIComponent(ex.id)+'/plans/'+encodeURIComponent(pl.id),'PUT',_cleanPlan(pl,false)); pl.syncedAt=+pl.updatedAt||Date.now(); ok++; touched=true; }
         catch(e){ fail++; }
@@ -3596,7 +3601,8 @@ function _anSave(){ if(!_an) return; const ov=$id('annov');
   try{scheduleSave();}catch(_e){} render(); toast('\u270e \uc8fc\uc11d \uc800\uc7a5\ub428'); }
 function openAnno(id){
   const att=_findAtt(id); if(!att){ toast('\uc774\ubbf8\uc9c0\ub97c \ucc3e\uc744 \uc218 \uc5c6\uc5b4\uc694'); return; }
-  if(!att.data&&(att.fullPath||att.fullUrl)){ ensureAttachmentFull(att).then(()=>openAnno(id)).catch(e=>toast('이미지를 불러오지 못했어요 — '+_shortImgErr(e))); return; }
+  if(!att.data&&att.thumb)att.data=att.thumb;
+  if(!att.data&&(att.fullPath||att.fullUrl||att.thumbPath||att.thumbUrl)){ ensureAttachmentFull(att).then(()=>openAnno(id)).catch(async e=>{try{const t=await ensureAttachmentThumb(att);if(t){att.data=t;openAnno(id);return;}}catch(_e){}toast('이미지를 불러오지 못했어요 — '+_shortImgErr(e));}); return; }
   let ov=$id('annov');
   if(!ov){
     document.body.insertAdjacentHTML('beforeend',
@@ -3686,6 +3692,8 @@ async function _xlsxCardPng(a,cs,widthPx,hasScore,title){
   x.strokeStyle=line; x.strokeRect(.5,y+.5,W-1,imageH-1);
   return {data:cv.toDataURL('image/png'),width:W,height:H};
 }
+let _xlsxLastFailCount=0;
+function _xlsxFailImage(title,err){const c=document.createElement('canvas');c.width=900;c.height=560;const x=c.getContext('2d');x.fillStyle='#faedeb';x.fillRect(0,0,c.width,c.height);x.fillStyle='#bd4a41';x.font='700 34px sans-serif';x.textAlign='center';x.fillText('이미지를 불러오지 못했어요',c.width/2,245);x.fillStyle='#6f7f8e';x.font='500 22px sans-serif';x.fillText(String(title||'첨부 이미지').slice(0,40),c.width/2,295);x.font='400 17px sans-serif';x.fillText(_shortImgErr(err).slice(0,70),c.width/2,335);return c.toDataURL('image/jpeg',.86);}
 async function _xlsxImages(wb,ws,cs,plan,r,NC,colW,C,bAll,colBase){
   const _at=(plan.attach||[]); _at.forEach(a=>{ if(a&&!a.loc) a.loc='result'; });
   const _cand=_at.filter(a=>a&&a.loc==='result');
@@ -3696,13 +3704,11 @@ async function _xlsxImages(wb,ws,cs,plan,r,NC,colW,C,bAll,colBase){
     if(!a.data&&!a.thumb&&(a.thumbPath||a.fullPath||a.thumbUrl||a.fullUrl)){ try{ await ensureAttachmentThumb(a); }catch(e){last=e;} }
     if(!a.data&&!a.thumb)_failed.push({a:a,e:last||new Error('원본 경로·주소 없음')});
   }
-  const atts=_cand.filter(a=>a.data||a.thumb);
-  if(_failed.length){
-    const f=_failed[0], nm=String((f.a&&((f.a.title||f.a.name)))||'이미지');
-    throw new Error('첨부 이미지 '+_failed.length+'장을 불러오지 못해 저장을 중단했습니다. ['+nm+'] '+_shortImgErr(f.e)+' · ⚙ → 이미지 서버 점검을 실행해 주세요.');
-  }
+  const failMap=new Map(_failed.map(f=>[f.a,f.e]));
+  const atts=_cand.map(a=>{if(a.data||a.thumb)return a;const d=_xlsxFailImage(a.title||a.name,failMap.get(a));return Object.assign({},a,{data:d,thumb:d,marks:[]});});
+  _xlsxLastFailCount+=_failed.length;
   if(!atts.length) return r;
-  ws.mergeCells(r,1,r,NC); const hc=ws.getCell(r,1); hc.value='첨부 이미지 ('+atts.length+'장)';
+  ws.mergeCells(r,1,r,NC); const hc=ws.getCell(r,1); hc.value='첨부 이미지 ('+atts.length+'장'+(_failed.length?' · 서버 복구 실패 '+_failed.length+'장':'')+')';
   hc.font={bold:true,size:11,color:{argb:C.gink}}; hc.fill={type:'pattern',pattern:'solid',fgColor:{argb:C.ghead}}; hc.border=bAll; hc.alignment={vertical:'middle'}; ws.getRow(r).height=20; r++;
   try{ _annoCache.clear(); }catch(_e){}
 
@@ -3749,11 +3755,12 @@ async function _xlsxImages(wb,ws,cs,plan,r,NC,colW,C,bAll,colBase){
   return r;
 }
 async function exportXlsxReport(){
+  _xlsxLastFailCount=0;
   const ex=(typeof EXP==='function')?EXP():null;
   if(!ex||!appState){ toast('\uc2e4\ud5d8\uc744 \uc5f0 \uc0c1\ud0dc\uc5d0\uc11c \uc0ac\uc6a9\ud560 \uc218 \uc788\uc5b4\uc694'); return; }
   toast('\ud83d\udce5 \uc5d1\uc140 \ub9ac\ud3ec\ud2b8 \uc0dd\uc131 \uc911\u2026');
   try{ await ensureExcelJS(); }catch(e){ toast('\u26a0 \uc5d1\uc140 \ubaa8\ub4c8 \ub85c\ub529 \uc2e4\ud328: '+((e&&e.message)||e)); return; }
-  try{ await (ex.type==='sheet'?_buildXlsxSheet(ex):_buildXlsx(ex)); toast('\ud83d\udce5 \uc5d1\uc140 \ub9ac\ud3ec\ud2b8 \uc800\uc7a5\ub428'); }
+  try{ await (ex.type==='sheet'?_buildXlsxSheet(ex):_buildXlsx(ex)); toast(_xlsxLastFailCount?('\ud83d\udce5 \uc5d1\uc140 \uc800\uc7a5\ub428 \u00b7 \uc774\ubbf8\uc9c0 '+_xlsxLastFailCount+'\uc7a5\uc740 \ubcf5\uad6c \uc548\ub0b4\ub85c \ud45c\uc2dc'):'\ud83d\udce5 \uc5d1\uc140 \ub9ac\ud3ec\ud2b8 \uc800\uc7a5\ub428'); }
   catch(e){ const m=String((e&&e.message)||e); toast('\u26a0 \uc5d1\uc140 \uc0dd\uc131 \uc624\ub958: '+m); if(/\ucca8\ubd80 \uc774\ubbf8\uc9c0|\uce74\ub4dc \uc0dd\uc131|IMAGE/i.test(m)){try{alert('\uc5d1\uc140 \uc774\ubbf8\uc9c0 \ub0b4\ubcf4\ub0b4\uae30 \uc2e4\ud328\n\n'+m);}catch(_e){}} }
 }
 function _xlsxComments(ws,d,r,NC){
