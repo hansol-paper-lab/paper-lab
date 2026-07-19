@@ -1627,9 +1627,19 @@
 /* 측정값 라이브러리 픽커 */
 .mlpick{position:fixed;z-index:400;background:#fff;border:1px solid #c3cedb;border-radius:12px;box-shadow:0 12px 34px rgba(20,40,60,.18);padding:6px;max-height:60vh;overflow:auto}
 .mlpick-h{font:800 11.5px var(--sans);color:var(--muted);padding:6px 8px 4px}
+.mlpick-h.multihelp{position:sticky;top:-6px;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:10px;margin:-6px -6px 4px;padding:10px 12px 9px;background:#f7f9fb;border-bottom:1px solid #dfe6ed;color:var(--ink)}
+.mlpick-h.multihelp b{font-size:12.5px;color:var(--accent-d,#1668a5)}
+.mlpick-h.multihelp span{font-size:11px;color:var(--muted);font-weight:700;white-space:nowrap}
 .mlpick-it{display:block;width:100%;text-align:left;border:none;background:transparent;padding:9px 10px;border-radius:8px;font:700 13.5px var(--sans);color:var(--ink);cursor:pointer}
 .mlpick-it:hover{background:var(--accent-soft,#eaf3fb)}
+.mlpick-it.multi{position:relative;padding-left:38px;user-select:none;-webkit-user-select:none;touch-action:pan-y}
+.mlpick-it.multi::before{content:'';position:absolute;left:11px;top:50%;width:16px;height:16px;transform:translateY(-50%);border:1.5px solid #b9c6d3;border-radius:5px;background:#fff;box-sizing:border-box}
+.mlpick-it.multi.sel{background:var(--accent-soft,#eaf3fb);color:var(--accent-d,#1668a5)}
+.mlpick-it.multi.sel::before{content:'✓';display:grid;place-items:center;background:var(--accent,#15497c);border-color:var(--accent,#15497c);color:#fff;font:900 11px/1 var(--sans)}
 .mlpick-it.free{border-top:1px dashed #d5dde6;margin-top:4px;color:var(--accent-d,#1668a5)}
+.mlpick-actions{position:sticky;bottom:-6px;z-index:2;margin:5px -6px -6px;padding:8px 10px 10px;background:linear-gradient(to bottom,rgba(255,255,255,.9),#fff 28%);border-top:1px solid #dfe6ed}
+.mlpick-addsel{width:100%;justify-content:center;min-height:38px;font-size:13px!important;font-weight:800!important}
+.mlpick-addsel:disabled{cursor:not-allowed;opacity:.48;border-color:#cbd5df!important;background:#edf1f5!important;color:#718092!important}
 .gpick-direct{display:flex;align-items:center;gap:6px;border-top:1px dashed #d5dde6;margin-top:4px;padding:8px 4px 3px}
 .gpick-direct input{min-width:0;flex:1;border:1px solid #cbd6e2;border-radius:8px;padding:9px 10px;font:700 13px var(--sans);color:var(--ink);background:#fff}
 .gpick-direct input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
@@ -4151,7 +4161,7 @@ var _mlpickOutside=null, _mlpickOutsideTimer=null;
 function _mlpickClose(){
   if(_mlpickOutsideTimer!==null){clearTimeout(_mlpickOutsideTimer);_mlpickOutsideTimer=null;}
   if(_mlpickOutside){document.removeEventListener('click',_mlpickOutside);_mlpickOutside=null;}
-  var p=$id('mlpick'); if(p)p.remove();
+  var p=$id('mlpick'); if(p){if(typeof p._pickerCleanup==='function')p._pickerCleanup();p.remove();}
 }
 function _secKey(v){return String(v||'').trim().replace(/\s+/g,' ').toLowerCase();}
 function _placePicker(p,btn,w){
@@ -4182,14 +4192,44 @@ function _metricPick(btn,mode,g){
   }
   _mlpickClose();
   var p=document.createElement('div'); p.id='mlpick'; p.className='mlpick';
-  p.innerHTML=(lib.length?'<div class="mlpick-h">추가할 항목 선택</div>':'<div class="mlpick-h">추가할 라이브러리 항목이 없어요</div>')+lib.map(function(li,i){return '<button class="mlpick-it" data-mlp="'+i+'">'+escT(li.name)+'</button>';}).join('')+'<button class="mlpick-it free" data-mlp="free">＋ 직접 입력</button>';
+  p.innerHTML=(lib.length?'<div class="mlpick-h multihelp"><b>여러 개 선택 가능</b><span>드래그 또는 Ctrl+클릭</span></div>':'<div class="mlpick-h">추가할 라이브러리 항목이 없어요</div>')+lib.map(function(li,i){return '<button class="mlpick-it multi" type="button" data-mlp="'+i+'" aria-pressed="false">'+escT(li.name)+'</button>';}).join('')+'<button class="mlpick-it free" type="button" data-mlp="free">＋ 직접 입력</button>'+(lib.length?'<div class="mlpick-actions"><button class="btn primary mlpick-addsel" type="button" data-mlp-add disabled>선택 항목 추가 (0)</button></div>':'');
   _placePicker(p,btn,300);
-  p.addEventListener('click',function(ev){var b=ev.target.closest('.mlpick-it'); if(!b)return; ev.stopPropagation();
-    var d=D(); if(b.dataset.mlp==='free'){_metricAddDirect(mode,g);}else{var li=lib[+b.dataset.mlp]; if(!li)return; var dec=(li.dec==null||li.dec==='')?null:+li.dec;
-      if(mode==='sheet'){ if(!Array.isArray(d.metrics))d.metrics=[]; d.metrics.push({id:uid('m'),name:li.name,unit:li.unit||'',dec:dec}); }
-      else { d.rmetrics.push({id:uid('m'),name:li.name,unit:li.unit||'',g:g,dec:dec}); }
-      persistNow(); render(); toast('항목 추가: '+li.name);}
-    _mlpickClose();});
+  var selected={}; var dragging=false, dragMode=true, ignoreClick=false;
+  function setSelected(row,on){
+    if(!row||row.dataset.mlp==='free')return;
+    var i=+row.dataset.mlp; if(!lib[i])return;
+    if(on)selected[i]=1;else delete selected[i];
+    row.classList.toggle('sel',!!on); row.setAttribute('aria-pressed',on?'true':'false');
+    var n=Object.keys(selected).length, add=p.querySelector('[data-mlp-add]');
+    if(add){add.disabled=!n;add.textContent='선택 항목 추가 ('+n+')';}
+  }
+  function commitSelected(){
+    var ids=Object.keys(selected).map(Number).sort(function(a,b){return a-b;}); if(!ids.length)return;
+    var d=D();
+    ids.forEach(function(i){var li=lib[i];if(!li)return;var dec=(li.dec==null||li.dec==='')?null:+li.dec;
+      if(mode==='sheet'){if(!Array.isArray(d.metrics))d.metrics=[];d.metrics.push({id:uid('m'),name:li.name,unit:li.unit||'',dec:dec});}
+      else d.rmetrics.push({id:uid('m'),name:li.name,unit:li.unit||'',g:g,dec:dec});
+    });
+    _mlpickClose();persistNow();render();toast('항목 '+ids.length+'개 추가');
+  }
+  function endDrag(){
+    if(!dragging)return;dragging=false;
+    setTimeout(function(){ignoreClick=false;},0);
+  }
+  p.addEventListener('pointerdown',function(ev){
+    var row=ev.target.closest('.mlpick-it.multi');if(!row||((ev.pointerType&&ev.pointerType!=='mouse')||ev.button!==0))return;
+    ev.preventDefault();dragging=true;ignoreClick=true;dragMode=!row.classList.contains('sel');setSelected(row,dragMode);try{row.focus({preventScroll:true});}catch(_e){}
+  });
+  p.addEventListener('pointerover',function(ev){if(!dragging)return;var row=ev.target.closest('.mlpick-it.multi');if(row)setSelected(row,dragMode);});
+  document.addEventListener('pointerup',endDrag);document.addEventListener('pointercancel',endDrag);
+  p._pickerCleanup=function(){document.removeEventListener('pointerup',endDrag);document.removeEventListener('pointercancel',endDrag);};
+  p.addEventListener('click',function(ev){
+    var add=ev.target.closest('[data-mlp-add]');var b=ev.target.closest('.mlpick-it');if(!add&&!b)return;ev.stopPropagation();
+    if(add){commitSelected();return;}
+    if(b.dataset.mlp==='free'){_metricAddDirect(mode,g);_mlpickClose();return;}
+    if(ignoreClick)return;
+    setSelected(b,!b.classList.contains('sel'));
+  });
 }
 function _groupPick(btn){
   var d=D(); var existing={};
