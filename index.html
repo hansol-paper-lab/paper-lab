@@ -1582,14 +1582,14 @@
 #content .ggh .gname{grid-column:2;width:100%!important;text-align:center!important;justify-self:center}
 #content .ggh .gactions{grid-column:3;display:flex;align-items:center;justify-content:flex-end;gap:5px;flex-wrap:wrap;justify-self:stretch}
 #content .ggh .gactions .btn{margin-left:0!important}
+.groupaddbar{display:flex;align-items:center;justify-content:flex-end;margin:12px 0 8px}
+.groupadd-btn{min-height:38px;padding:8px 20px!important;font-size:14px!important;font-weight:800!important;box-shadow:0 1px 3px rgba(23,35,46,.08)}
 @media(max-width:640px){
   #content .ggh .gghw{grid-template-columns:minmax(0,1fr) minmax(118px,160px) minmax(0,1fr)}
   #content .ggh .gactions{gap:3px}
+  .groupaddbar{margin:10px 0 7px}
+  .groupadd-btn{min-height:40px;padding:9px 18px!important}
 }
-
-/* 측정값 픽커 섹션 구분 */
-.mlpick-h.sub{margin-top:5px;border-top:1px dashed #e2e8ee;padding-top:7px;color:#5a6b7c}
-.mlpick-it small.mls{color:#7a8794;background:#eef2f6;border-radius:5px;padding:1px 6px;font-size:10.5px;font-weight:700}
 
 /* 기타실험 조건표 — 코팅실험과 같은 표 구조 */
 .freewrap .free-overview{padding:16px 18px 18px;background:#fbfcfd}
@@ -1628,10 +1628,12 @@
 .mlpick{position:fixed;z-index:400;background:#fff;border:1px solid #c3cedb;border-radius:12px;box-shadow:0 12px 34px rgba(20,40,60,.18);padding:6px;max-height:60vh;overflow:auto}
 .mlpick-h{font:800 11.5px var(--sans);color:var(--muted);padding:6px 8px 4px}
 .mlpick-it{display:block;width:100%;text-align:left;border:none;background:transparent;padding:9px 10px;border-radius:8px;font:700 13.5px var(--sans);color:var(--ink);cursor:pointer}
-.mlpick-it small{color:var(--muted);font-weight:600;margin-left:6px}
-.mlpick-it small.mld{color:var(--accent-d,#1668a5)}
 .mlpick-it:hover{background:var(--accent-soft,#eaf3fb)}
 .mlpick-it.free{border-top:1px dashed #d5dde6;margin-top:4px;color:var(--accent-d,#1668a5)}
+.gpick-direct{display:flex;align-items:center;gap:6px;border-top:1px dashed #d5dde6;margin-top:4px;padding:8px 4px 3px}
+.gpick-direct input{min-width:0;flex:1;border:1px solid #cbd6e2;border-radius:8px;padding:9px 10px;font:700 13px var(--sans);color:var(--ink);background:#fff}
+.gpick-direct input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+.gpick-direct .btn{flex:0 0 auto;min-height:36px;padding:7px 12px!important;font-weight:800!important}
 /* 기타 실험 */
 .fr-pp{width:100%;min-height:96px;border:1px solid var(--line2,#dbe3ea);border-radius:10px;padding:10px 12px;font:600 13.5px/1.7 var(--sans);color:var(--ink);resize:vertical;box-sizing:border-box;background:#fff}
 .fr-pp:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
@@ -2277,7 +2279,6 @@ function renderResult(){
     const mOn=!!d.rmemoOn;
     const ctrlRow='';
     const memoTh2=mOn?`<th class="memoh2">비고</th>`:'';
-    const memoPad=mOn?`<td class="rcell memoc2"></td>`:'';
     const head=`<tr><th class="rcorner">항목</th><th class="runit">단위 · Δ</th>${cs.map(c=>`<th class="${ctrls.includes(c.id)?'ctrlh':''}">${escT(c.name)}</th>`).join('')}${memoTh2}</tr>`;
     let rows='';
     G.forEach(g=>{ const gm=M.filter(m=>m.g===g.id);
@@ -2285,7 +2286,6 @@ function renderResult(){
       gm.forEach(m=>{ if(m.kind==='note'){ rows+=`<tr class="dragrow" data-mrow="${m.id}" data-g="${g.id}"><th class="rmth"><div class="rmw"><input class="rmname2" list="mlibdl" data-role="cmname" data-m="${m.id}" value="${escA(m.name)}"><span class="dragh" data-drag="cm" data-metric="${m.id}" data-g="${g.id}" title="끌어서 순서 변경">⠿</span><button class="del-x" data-action="co-delmetric" data-m="${m.id}" title="삭제">✕</button></div></th><td class="runit"></td><td class="rcell notewide" colspan="${cs.length+(mOn?1:0)}"><input data-role="cnoterow" data-m="${m.id}" value="${escA(m.txt||'')}" ></td></tr>`; return; }
       rows+=`<tr class="dragrow" data-mrow="${m.id}" data-g="${g.id}"><th class="rmth"><div class="rmw"><input class="rmname2" list="mlibdl" data-role="cmname" data-m="${m.id}" value="${escA(m.name)}"><span class="dragh" data-drag="cm" data-metric="${m.id}" data-g="${g.id}" title="끌어서 순서 변경">⠿</span><button class="del-x" data-action="co-delmetric" data-m="${m.id}" title="항목 삭제">✕</button></div></th><td class="runit"><input class="rmunit2" data-role="cmunit" data-m="${m.id}" value="${escA(m.unit||'')}" placeholder="단위"><button class="dtog ${m.delta?'on':''}" data-action="co-mdelta" data-m="${m.id}" title="결과 리포트에 기준 대비 증감 표시">Δ</button></td>${cs.map(c=>`<td class="rcell ${ctrls.includes(c.id)?'ctrlc':''}"><input data-role="cres" data-case="${c.id}" data-m="${m.id}" value="${escA(((d.rresults[c.id]||{})[m.id])||'')}"></td>`).join('')}${mOn?`<td class="rcell memoc2"><input data-role="crmemo" data-m="${m.id}" value="${escA((d.rmemos||{})[m.id]||'')}"></td>`:''}</tr>`; });
     });
-    rows+=`<tr class="ggh"><td colspan="${cs.length+2+(mOn?1:0)}">특이사항</td></tr><tr><th class="rmth">메모</th><td class="runit"></td>${cs.map(c=>`<td class="rcell"><input data-role="cnote" data-case="${c.id}" value="${escA(d.rnotes[c.id]||'')}"></td>`).join('')}${memoPad}</tr>`;
     const lay2=Object.assign({n:150,u:64},d.rlayout||{}); const colg2=`<colgroup><col style="width:${Math.min(+lay2.n||150,260)}px"><col style="width:${Math.min(+lay2.u||64,120)}px">${cs.map(()=>'<col>').join('')}${mOn?`<col style="width:${Math.min(((d.rlayout||{}).m)||170,300)}px">`:''}</colgroup>`;
     body=ctrlRow+`<div class="rcard"><div class="rscroll cscroll"><table class="rinput cinput">${colg2}<thead>${head}</thead><tbody>${rows}</tbody></table></div></div><p class="rhint"><b>기준(${escT(ctrlName)})</b> 대비 바뀐 배합은 리포트에서 ○ 표시. 기준을 <b>여러 개</b> 지정하면 각 케이스는 자기 왼쪽의 가까운 기준과 비교되고, 기준 열엔 ○/Δ가 안 붙어요.</p>`;
   }else{
@@ -2294,7 +2294,7 @@ function renderResult(){
   const expName=(root.experiments[root.activeExp]||{}).name||'코팅 실험';
   if(rInput){
     const rsub=`기준 ${ctrlName} · 그룹별 측정값 입력 (배합비는 계획에서 자동)`;
-    $id('content').innerHTML=`<div class="resultsheet"><div class="rhead"><div class="rtitle"><h1 class="rh1">${escT(expName)} <span class="rh1-sub">— 데이터 입력</span></h1><p class="rsub">${escT(rsub)}</p></div><div class="rspacer"></div><button class="btn sm" data-action="co-addgroup">+ 그룹</button></div>${commentsCard(d)}${body}</div>`+attachCardHTML();
+    $id('content').innerHTML=`<div class="resultsheet"><div class="rhead"><div class="rtitle"><h1 class="rh1">${escT(expName)} <span class="rh1-sub">— 데이터 입력</span></h1><p class="rsub">${escT(rsub)}</p></div><div class="rspacer"></div></div>${commentsCard(d)}<div class="groupaddbar"><button class="btn groupadd-btn" data-action="co-addgroup">＋ 그룹 추가</button></div>${body}</div>`+attachCardHTML();
   }else{
     $id('content').innerHTML=`<div class="resultsheet"><div class="rtoolbar"><span class="rmkr">기준 대비 변경 ○ · Δ = 증감 · 값 클릭 = 강조</span><span class="rspacer"></span><button class="btn sm" data-action="co-xlsx" title="엑셀(.xlsx) 리포트 — 표 + 주석·점수 포함 이미지">📥 엑셀</button><button class="btn sm" data-action="sh-export-report" title="독립 HTML 리포트 저장">⬇ HTML</button></div><div class="rpaper">${letterheadHTML()}${commentsReportHTML(d,true)}${body}${reportFootHTML()}</div></div>`+attachCardHTML();
   }
@@ -2660,10 +2660,6 @@ function buildCoatReport(d){
     });
     secs.push({name:g.name,hint:gm.some(m=>m.delta)?'Δ = 기준 대비 증감 (감소 빨강 · 증가 파랑)':'',table:`<table class="rreport creport">${colg}<thead>${headRowB}</thead><tbody>${rows.map(r=>r.b).join('')}</tbody></table>`,tableDoc:`<table class="rreport creport">${colg}<thead>${headRowD}</thead><tbody>${rows.map(r=>r.d).join('')}</tbody></table>`});
   });
-  if(cs.some(c=>((d.rnotes||{})[c.id]||'').trim())){
-    const rows=`<tr><th class="mname">메모</th><td class="runit"></td>${cs.map(c=>`<td class="notec ${ctrlSet.has(c.id)?'ctrlc':''}">${escT(d.rnotes[c.id]||'')}</td>`).join('')}${memoEmpty}</tr>`;
-    secs.push({name:'특이사항',hint:'',table:`<table class="rreport creport">${colg}<thead>${headRowB}</thead><tbody>${rows}</tbody></table>`,tableDoc:`<table class="rreport creport">${colg}<thead>${headRowD}</thead><tbody>${rows}</tbody></table>`});
-  }
   const body=secs.map(x=>`<div class="rsec"><div class="rsec-h">${escT(x.name)}${x.hint?`<small>${x.hint}</small>`:''}</div><div class="rcard"><div class="rscroll cscroll">${x.table}</div></div>${x.after||''}</div>`).join('');
   const doc=secs.map(x=>`<h2 class="sech">${escT(x.name)}${x.hint?` <small>${x.hint}</small>`:''}</h2><div class="tablecard"><div class="scroll">${x.tableDoc||x.table}</div></div>${x.afterDoc||''}`).join('');
   const noteHTML=`<p class="rnote"><b>기준 ${escT(ctrlName)}</b> — 각 케이스는 <b>자기 왼쪽의 가까운 기준</b>과 비교 · 배합 ○(감소=<b>빨강</b>) · Δ 증감 · 값 · 항목 · 케이스명을 클릭하면 강조 팝업</p>`;
@@ -3110,7 +3106,7 @@ document.addEventListener('click',e=>{
   else if(a==='co-ctrl'){ const id=btn.dataset.case; if(!Array.isArray(d.rctrls)||!d.rctrls.length)d.rctrls=[d.rctrl||id]; const i=d.rctrls.indexOf(id); if(i>=0){ if(d.rctrls.length>1){ d.rctrls.splice(i,1); } else { toast('기준은 최소 1개 필요해요'); } } else { d.rctrls.push(id); } d.rctrl=d.rctrls[0]; render(); }
   else if(a==='cmt-add'){ if(!Array.isArray(d.comments))d.comments=[]; d.comments.push({id:uid('cm'),title:'',body:''}); render(); const el=document.querySelector('.cmtrow:last-child .cmt-title'); if(el)el.focus(); toast('코멘트 추가 — 제목과 내용을 입력하세요'); }
   else if(a==='cmt-del'){ if(Array.isArray(d.comments)){ d.comments=d.comments.filter(x=>x.id!==btn.dataset.cid); render(); toast('코멘트 삭제 — Ctrl+Z로 복구'); } }
-  else if(a==='co-addgroup'){d.rgroups.push({id:uid('g'),name:'새 그룹'}); render(); toast('그룹 추가 — 이름을 바꿔주세요');}
+  else if(a==='co-addgroup'){_groupPick(btn);}
   else if(a==='fr-addcase'){const nm=String.fromCharCode(65+(d.cases.length%26)); d.cases.push({id:uid('k'),name:nm,note:''}); persistNow(); render();}
   else if(a==='fr-delcase'){ if(d.cases.length<=1)return; const kid=btn.dataset.case; const kc=d.cases.find(x=>x.id===kid); askConfirm(`'${kc?kc.name:''}' 케이스를 삭제할까요?`,()=>{ d.cases=d.cases.filter(x=>x.id!==kid); delete d.rresults[kid]; delete d.rnotes[kid]; (d.conds||[]).forEach(r=>{ if(r.vals)delete r.vals[kid]; }); d.rctrls=(d.rctrls||[]).filter(x=>x!==kid); persistNow(); render(); }); }
   else if(a==='fr-addcond'){ (d.conds=d.conds||[]).push({id:uid('fc'),name:'',vals:{}}); persistNow(); render(); }
@@ -3934,11 +3930,6 @@ async function _buildXlsx(ex){
       if(memoOn){ const mc=ws.getCell(r,NC); mc.value=String((d.rmemos||{})[m.id]||''); mc.border=bAll; mc.alignment={horizontal:'left',vertical:'middle',wrapText:true}; mc.font={size:9,color:{argb:C.ink2}}; }
       r++; });
     r++; });
-  if(cs.some(c=>((d.rnotes||{})[c.id]||'').trim())){ secTitle('\ud2b9\uc774\uc0ac\ud56d','');
-    nameCell(r,'\uba54\ubaa8','');
-    cs.forEach((cc,i)=>{ const cell=ws.getCell(r,3+i); cell.value=String((d.rnotes||{})[cc.id]||''); baseCell(cell,cc.id,false); cell.alignment={horizontal:'center',vertical:'middle',wrapText:true}; cell.font={size:9,color:{argb:C.ink2}}; });
-    if(memoOn){ ws.getCell(r,NC).border=bAll; }
-    ws.getRow(r).height=26; r+=2; }
   r=await _xlsxImages(wb,ws,cs,plan,r,NC,colW,C,bAll,3);
   const buf=await wb.xlsx.writeBuffer();
   download((ex.name||'\uc2e4\ud5d8')+'_'+(plan.label||'')+'_\uacb0\uacfc\ub9ac\ud3ec\ud2b8.xlsx', buf, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
@@ -4157,31 +4148,60 @@ function _deltaFmt(m,v){ return (m&&m.dec!=null&&m.dec!=='')?Number(v).toFixed(+
 function _mlibFill(){ var dl=$id('mlibdl'); if(!dl){ dl=document.createElement('datalist'); dl.id='mlibdl'; document.body.appendChild(dl); }
   dl.innerHTML=(root.metricLib||[]).map(function(li){return '<option value="'+escA(li.name||'')+'">';}).join(''); }
 function _mlpickClose(){var p=$id('mlpick'); if(p)p.remove();}
+function _secKey(v){return String(v||'').trim().replace(/\s+/g,' ').toLowerCase();}
+function _placePicker(p,btn,w){
+  document.body.appendChild(p);
+  var r=btn.getBoundingClientRect(); var pw=Math.min(w||300,window.innerWidth-16);
+  p.style.width=pw+'px';
+  p.style.left=Math.max(8,Math.min(r.right-pw,window.innerWidth-pw-8))+'px';
+  p.style.top=Math.max(8,Math.min(r.bottom+6,window.innerHeight-Math.min(320,window.innerHeight*0.6)))+'px';
+  setTimeout(function(){ var h=function(ev){ if(!ev.target.closest||!ev.target.closest('#mlpick')){ _mlpickClose(); document.removeEventListener('click',h); } }; document.addEventListener('click',h); },0);
+}
 function _metricAddDirect(mode,g){ var d=D();
   if(mode==='sheet'){ if(!Array.isArray(d.metrics))d.metrics=[]; d.metrics.push({id:uid('m'),name:'',unit:''}); toast('항목 추가 — 이름 입력'); }
-  else { d.rmetrics.push({id:uid('m'),name:'항목',unit:'',g:g}); }
+  else { d.rmetrics.push({id:uid('m'),name:'',unit:'',g:g}); toast('항목 추가 — 이름 입력'); }
   persistNow(); render(); }
 function _metricPick(btn,mode,g){
+  var d=D();
   var lib=(root.metricLib||[]).filter(function(li){return String(li.name||'').trim();});
-  var curName=''; try{ if(mode==='coat'&&g){ var _gg=(D().rgroups||[]).find(function(x){return x.id===g;}); curName=String((_gg&&_gg.name)||'').trim(); } }catch(e){}
-  var pri=curName?lib.filter(function(li){return String(li.sec||'').trim()===curName;}):[];
-  var rest=lib.filter(function(li){return pri.indexOf(li)<0;});
-  lib=pri.concat(rest);
+  if(mode==='coat'){
+    var group=(d.rgroups||[]).find(function(x){return x.id===g;});
+    var secKey=_secKey(group&&group.name); var used={};
+    (d.rmetrics||[]).filter(function(m){return m.g===g;}).forEach(function(m){used[_secKey(m.name)]=1;});
+    lib=lib.filter(function(li){var nk=_secKey(li.name); return secKey&&_secKey(li.sec)===secKey&&!used[nk];});
+  }
   _mlpickClose();
   var p=document.createElement('div'); p.id='mlpick'; p.className='mlpick';
-  p.innerHTML=(lib.length?'<div class="mlpick-h">측정값 라이브러리 — 단위·소수점·섹션 자동 적용</div>':'<div class="mlpick-h" style="color:#a3562a">측정값 라이브러리가 비어 있어요 — ⚙ 설정 › 측정값 라이브러리에 등록하면 여기서 클릭으로 골라 넣을 수 있어요</div>')+lib.map(function(li,i){var pre=''; if(pri.length&&i===0)pre='<div class="mlpick-h sub">'+escT(curName)+' 지정</div>'; else if(pri.length&&rest.length&&i===pri.length)pre='<div class="mlpick-h sub">다른 섹션·미지정</div>'; return pre+'<button class="mlpick-it" data-mlp="'+i+'">'+escT(li.name)+(li.unit?' <small>'+escT(li.unit)+'</small>':'')+((li.dec!=null&&li.dec!=='')?' <small class="mld">.'+escT(String(li.dec))+'</small>':'')+((li.sec&&String(li.sec).trim()&&String(li.sec).trim()!==curName)?' <small class="mls">'+escT(li.sec)+'</small>':'')+'</button>';}).join('')+'<button class="mlpick-it free" data-mlp="free">＋ 직접 입력</button>';
-  document.body.appendChild(p);
-  var r=btn.getBoundingClientRect(); var pw=Math.min(300,window.innerWidth-16);
-  p.style.width=pw+'px';
-  p.style.left=Math.max(8,Math.min(r.left,window.innerWidth-pw-8))+'px';
-  p.style.top=Math.max(8,Math.min(r.bottom+6,window.innerHeight-Math.min(320,window.innerHeight*0.6)))+'px';
+  p.innerHTML=(lib.length?'<div class="mlpick-h">추가할 항목 선택</div>':'<div class="mlpick-h">추가할 라이브러리 항목이 없어요</div>')+lib.map(function(li,i){return '<button class="mlpick-it" data-mlp="'+i+'">'+escT(li.name)+'</button>';}).join('')+'<button class="mlpick-it free" data-mlp="free">＋ 직접 입력</button>';
+  _placePicker(p,btn,300);
   p.addEventListener('click',function(ev){var b=ev.target.closest('.mlpick-it'); if(!b)return; ev.stopPropagation();
-    var d=D(); if(b.dataset.mlp==='free'){_metricAddDirect(mode,g);}else{var li=lib[+b.dataset.mlp]; var dec=(li.dec==null||li.dec==='')?null:+li.dec;
+    var d=D(); if(b.dataset.mlp==='free'){_metricAddDirect(mode,g);}else{var li=lib[+b.dataset.mlp]; if(!li)return; var dec=(li.dec==null||li.dec==='')?null:+li.dec;
       if(mode==='sheet'){ if(!Array.isArray(d.metrics))d.metrics=[]; d.metrics.push({id:uid('m'),name:li.name,unit:li.unit||'',dec:dec}); }
-      else { var gT=g; try{ var sn=String(li.sec||'').trim(); if(sn){ var mg=(d.rgroups||[]).find(function(x){return String(x.name||'').trim()===sn;}); if(mg) gT=mg.id; } }catch(e){} d.rmetrics.push({id:uid('m'),name:li.name,unit:li.unit||'',g:gT,dec:dec}); if(gT!==g){ try{ var gn=((d.rgroups||[]).find(function(x){return x.id===gT;})||{}).name||''; toast('→ \''+gn+'\' 섹션에 추가됨'); }catch(e){} } }
+      else { d.rmetrics.push({id:uid('m'),name:li.name,unit:li.unit||'',g:g,dec:dec}); }
       persistNow(); render(); toast('항목 추가: '+li.name);}
     _mlpickClose();});
-  setTimeout(function(){ var h=function(ev){ if(!ev.target.closest||!ev.target.closest('#mlpick')){ _mlpickClose(); document.removeEventListener('click',h); } }; document.addEventListener('click',h); },0);
+}
+function _groupPick(btn){
+  var d=D(); var existing={};
+  (d.rgroups||[]).forEach(function(g){var k=_secKey(g.name); if(k)existing[k]=1;});
+  var seen={}; var sections=[];
+  (root.metricLib||[]).forEach(function(li){var name=String(li.sec||'').trim(); var k=_secKey(name); if(k&&!seen[k]&&!existing[k]){seen[k]=1;sections.push(name);}});
+  _mlpickClose();
+  var p=document.createElement('div'); p.id='mlpick'; p.className='mlpick';
+  p.innerHTML=(sections.length?'<div class="mlpick-h">라이브러리 그룹 추천</div>':'<div class="mlpick-h">추가할 추천 그룹이 없어요</div>')+sections.map(function(name,i){return '<button class="mlpick-it" data-gpick="'+i+'">'+escT(name)+'</button>';}).join('')+'<div class="gpick-direct"><input type="text" data-gpick-name placeholder="다른 그룹명 입력" autocomplete="off"><button class="btn sm" data-gpick-add>추가</button></div>';
+  _placePicker(p,btn,330);
+  function addGroup(name){
+    name=String(name||'').trim(); var input=p.querySelector('[data-gpick-name]');
+    if(!name){if(input)input.focus();return;}
+    if((D().rgroups||[]).some(function(x){return _secKey(x.name)===_secKey(name);})){toast('이미 있는 그룹이에요');if(input){input.focus();input.select();}return;}
+    D().rgroups.push({id:uid('g'),name:name}); persistNow(); _mlpickClose(); render(); toast('그룹 추가: '+name);
+  }
+  p.addEventListener('click',function(ev){
+    var pick=ev.target.closest('[data-gpick]'); var add=ev.target.closest('[data-gpick-add]');
+    if(pick){ev.stopPropagation();addGroup(sections[+pick.dataset.gpick]);}
+    else if(add){ev.stopPropagation();addGroup((p.querySelector('[data-gpick-name]')||{}).value);}
+  });
+  p.addEventListener('keydown',function(ev){if(ev.key==='Enter'&&ev.target.matches('[data-gpick-name]')){ev.preventDefault();ev.stopPropagation();addGroup(ev.target.value);}});
 }
 document.addEventListener('click',function(e){
   var b=(e.target&&e.target.closest)?e.target.closest('[data-action]'):null; if(!b) return;
