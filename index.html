@@ -1624,12 +1624,16 @@
   .freecond .colhead,.freecond td.free-editcell{min-width:132px}
 }
 
-/* 측정값 라이브러리 픽커 */
-.mlpick{position:fixed;z-index:400;background:#fff;border:1px solid #c3cedb;border-radius:12px;box-shadow:0 12px 34px rgba(20,40,60,.18);padding:6px;max-height:60vh;overflow:auto}
-.mlpick-h{font:800 11.5px var(--sans);color:var(--muted);padding:6px 8px 4px}
-.mlpick-h.multihelp{position:sticky;top:-6px;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:10px;margin:-6px -6px 4px;padding:10px 12px 9px;background:#f7f9fb;border-bottom:1px solid #dfe6ed;color:var(--ink)}
+/* 측정값 라이브러리 픽커 — 버튼에 붙어 페이지와 함께 이동, 목록만 스크롤 */
+.mlpick{position:absolute;z-index:400;background:#fff;border:1px solid #c3cedb;border-radius:12px;box-shadow:0 12px 34px rgba(20,40,60,.18);display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.mlpick-h{flex:0 0 auto;font:800 11.5px var(--sans);color:var(--muted);padding:10px 12px 9px;background:#f7f9fb;border-bottom:1px solid #dfe6ed}
+.mlpick-h.multihelp{display:flex;align-items:center;justify-content:space-between;gap:10px;color:var(--ink)}
+.mlpick-h.multihelp>div{display:flex;min-width:0;flex-direction:column;gap:2px}
 .mlpick-h.multihelp b{font-size:12.5px;color:var(--accent-d,#1668a5)}
-.mlpick-h.multihelp span{font-size:11px;color:var(--muted);font-weight:700;white-space:nowrap}
+.mlpick-h.multihelp span{font-size:11px;color:var(--muted);font-weight:700;white-space:normal}
+.mlpick-close{flex:0 0 auto;width:30px;height:30px;border:1px solid #d4dde6;border-radius:8px;background:#fff;color:#607080;font:800 14px/1 var(--sans);cursor:pointer}
+.mlpick-close:hover{background:#edf3f8;color:var(--ink)}
+.mlpick-scroll{min-height:0;flex:1 1 auto;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;padding:6px;scrollbar-gutter:stable}
 .mlpick-it{display:block;width:100%;text-align:left;border:none;background:transparent;padding:9px 10px;border-radius:8px;font:700 13.5px var(--sans);color:var(--ink);cursor:pointer}
 .mlpick-it:hover{background:var(--accent-soft,#eaf3fb)}
 .mlpick-it.multi{position:relative;padding-left:38px;user-select:none;-webkit-user-select:none;touch-action:pan-y}
@@ -1637,10 +1641,10 @@
 .mlpick-it.multi.sel{background:var(--accent-soft,#eaf3fb);color:var(--accent-d,#1668a5)}
 .mlpick-it.multi.sel::before{content:'✓';display:grid;place-items:center;background:var(--accent,#15497c);border-color:var(--accent,#15497c);color:#fff;font:900 11px/1 var(--sans)}
 .mlpick-it.free{border-top:1px dashed #d5dde6;margin-top:4px;color:var(--accent-d,#1668a5)}
-.mlpick-actions{position:sticky;bottom:-6px;z-index:2;margin:5px -6px -6px;padding:8px 10px 10px;background:linear-gradient(to bottom,rgba(255,255,255,.9),#fff 28%);border-top:1px solid #dfe6ed}
+.mlpick-actions{flex:0 0 auto;padding:9px 10px 10px;background:#fff;border-top:1px solid #dfe6ed}
 .mlpick-addsel{width:100%;justify-content:center;min-height:38px;font-size:13px!important;font-weight:800!important}
 .mlpick-addsel:disabled{cursor:not-allowed;opacity:.48;border-color:#cbd5df!important;background:#edf1f5!important;color:#718092!important}
-.gpick-direct{display:flex;align-items:center;gap:6px;border-top:1px dashed #d5dde6;margin-top:4px;padding:8px 4px 3px}
+.gpick-direct{display:flex;flex:0 0 auto;align-items:center;gap:6px;border-top:1px solid #d5dde6;padding:9px 10px 10px;background:#fff}
 .gpick-direct input{min-width:0;flex:1;border:1px solid #cbd6e2;border-radius:8px;padding:9px 10px;font:700 13px var(--sans);color:var(--ink);background:#fff}
 .gpick-direct input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
 .gpick-direct .btn{flex:0 0 auto;min-height:36px;padding:7px 12px!important;font-weight:800!important}
@@ -1846,10 +1850,12 @@ let appState=null;
 const SAVE_KEY='soocho_lab_state_v1';
 let _saveT;
 let _undo=[],_redo=[],_lastSnap=null,_undoLock=false,_palIdx=-1;
+function _undoSnapshot(){try{return JSON.stringify(typeof cleanRootForLocal==='function'?cleanRootForLocal(root):root);}catch(e){return JSON.stringify(root);}}
+function _pushHistory(arr,s){if(!s)return;arr.push(s);let total=arr.reduce((n,x)=>n+String(x||'').length,0);while(arr.length>20||(total>16*1024*1024&&arr.length>1)){total-=String(arr[0]||'').length;arr.shift();}}
 function persistNow(){ const st=$id('savestat'); let ok=true; try{
-  let cur=JSON.stringify(root);
-  if(_lastSnap!==null&&cur!==_lastSnap&&!_undoLock){ _undo.push(_lastSnap); while(_undo.length>20)_undo.shift(); _redo.length=0;
-    const ex=(root.screen==='sim')?root.experiments[root.activeExp]:null; if(ex){ ex.updatedAt=Date.now(); const pl=curPlan(); if(pl)pl.updatedAt=ex.updatedAt; cur=JSON.stringify(root); }
+  let cur=_undoSnapshot();
+  if(_lastSnap!==null&&cur!==_lastSnap&&!_undoLock){ _pushHistory(_undo,_lastSnap); _redo.length=0;
+    const ex=(root.screen==='sim')?root.experiments[root.activeExp]:null; if(ex){ ex.updatedAt=Date.now(); const pl=curPlan(); if(pl)pl.updatedAt=ex.updatedAt; cur=_undoSnapshot(); }
   }
   _lastSnap=cur;
   const localJson=JSON.stringify(typeof cleanRootForLocal==='function'?cleanRootForLocal(root):root);
@@ -1860,22 +1866,49 @@ function persistNow(){ const st=$id('savestat'); let ok=true; try{
 function scheduleSave(){ const st=$id('savestat'); if(st&&!st.classList.contains('err'))st.innerHTML='<i></i>저장 중…'; try{markCurrentDirty();}catch(_e){} clearTimeout(_saveT); _saveT=setTimeout(persistNow,250); }
 function updateUndoUI(){ const u=$id('undobtn'),r=$id('redobtn'); if(u)u.disabled=!_undo.length; if(r)r.disabled=!_redo.length; }
 function _applySnap(sn){ try{_delImgPaths.clear();_delImgPrefixes.clear();}catch(_e){} _undoLock=true; try{ applyLoaded(JSON.parse(sn)); _lastSnap=sn; try{localStorage.setItem(SAVE_KEY,JSON.stringify(typeof cleanRootForLocal==='function'?cleanRootForLocal(root):root));}catch(_e){} }finally{ _undoLock=false; } appState=(root.screen==='sim'&&root.experiments[root.activeExp])?root.experiments[root.activeExp].state:null; render(); updateUndoUI(); }
-function doUndo(){ if(!_undo.length){ toast('되돌릴 작업이 없어요'); return; } clearTimeout(_saveT); _redo.push(JSON.stringify(root)); _applySnap(_undo.pop()); toast('↩ 실행 취소'); }
-function doRedo(){ if(!_redo.length){ toast('다시 실행할 작업이 없어요'); return; } clearTimeout(_saveT); _undo.push(JSON.stringify(root)); _applySnap(_redo.pop()); toast('↪ 다시 실행'); }
+function doUndo(){ if(!_undo.length){ toast('되돌릴 작업이 없어요'); return; } clearTimeout(_saveT); _pushHistory(_redo,_undoSnapshot()); _applySnap(_undo.pop()); toast('↩ 실행 취소'); }
+function doRedo(){ if(!_redo.length){ toast('다시 실행할 작업이 없어요'); return; } clearTimeout(_saveT); _pushHistory(_undo,_undoSnapshot()); _applySnap(_redo.pop()); toast('↪ 다시 실행'); }
 function relTime(ts){ if(!ts) return ''; const sec=(Date.now()-ts)/1000; if(sec<60)return'방금 전'; if(sec<3600)return Math.floor(sec/60)+'분 전'; if(sec<86400)return Math.floor(sec/3600)+'시간 전'; if(sec<86400*30)return Math.floor(sec/86400)+'일 전'; const dd=new Date(ts); return (dd.getMonth()+1)+'/'+dd.getDate(); }
 function palOpen(){ const pl=$id('palette'); if(!pl) return; pl.hidden=false; const q=$id('palq'); q.value=''; palRender(''); setTimeout(()=>{try{q.focus();}catch(_e){}},0); }
 function palClose(){ const pl=$id('palette'); if(pl) pl.hidden=true; }
 function palRender(q){ q=(q||'').toLowerCase(); const items=[]; root.experiments.forEach((e,i)=>{ if(!q||(e.name||'').toLowerCase().indexOf(q)>=0) items.push(`<button class="pal-it" data-action="open-exp" data-i="${i}"><span class="pal-ic ${e.type==='free'?'free':(e.type==='sheet'?'sheet':'coat')}">${e.type==='free'?'기타':(e.type==='sheet'?'수초':'코팅')}</span><span class="pal-tx">${escT(e.name)}</span><span class="pal-sub">${escT(e.date||'')}</span></button>`); }); [['new-exp-coat','＋ 새 코팅 실험'],['new-exp-sheet','＋ 새 수초 실험'],['new-exp-free','＋ 새 기타 실험'],['save-app-html','🌐 GitHub 운영용 index.html 저장'],['save-html','📦 전체 백업 HTML 저장'],['save','💾 JSON 저장'],['load','📂 불러오기'],['csv','📊 CSV 내보내기'],['set-shortcuts','⌨ 단축키 보기']].forEach(pr=>{ if(!q||pr[1].toLowerCase().indexOf(q)>=0) items.push(`<button class="pal-it" data-action="${pr[0]}"><span class="pal-ic act">⚡</span><span class="pal-tx">${pr[1]}</span></button>`); }); $id('pallist').innerHTML=items.join('')||`<div class="pal-empty">검색 결과 없음</div>`; palSel(0); }
 function palSel(i){ const its=Array.prototype.slice.call($id('pallist').querySelectorAll('.pal-it')); its.forEach(el=>el.classList.remove('sel')); if(its.length){ _palIdx=Math.max(0,Math.min(i,its.length-1)); its[_palIdx].classList.add('sel'); try{its[_palIdx].scrollIntoView({block:'nearest'});}catch(_e){} } else _palIdx=-1; }
 function curPlan(){ if(root.screen!=='sim'||!appState||!appState.plans) return null; const p=appState.plans[appState.active.plan]; if(p&&!Array.isArray(p.attach)) p.attach=[]; return p; }
-const ATT_FULL_MAX=4096,ATT_FULL_JPEG_Q=.95,ATT_THUMB_MAX=1024;
-function _rot90Data(src){ return new Promise((res,rej)=>{ const im=new Image(); im.onload=()=>{ try{ const w0=im.naturalWidth||im.width||1,h0=im.naturalHeight||im.height||1; const c=document.createElement('canvas'); c.width=h0; c.height=w0; const ctx=c.getContext('2d'); if(!ctx) return rej(new Error('ctx')); ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';ctx.translate(h0,0);ctx.rotate(Math.PI/2);ctx.drawImage(im,0,0);const png=/^data:image\/png/i.test(String(src||''));const nd=png?c.toDataURL('image/png'):c.toDataURL('image/jpeg',.96);if(!nd||nd.length<200)return rej(new Error('enc'));res(nd); }catch(e){ rej(e); } }; im.onerror=()=>rej(new Error('img')); im.src=src; }); }
-function _mkThumbFrom(src){ return new Promise(res=>{ const t=new Image(); t.onload=()=>{ try{ const tw=t.naturalWidth||t.width||1, th0=t.naturalHeight||t.height||1; const sc=Math.min(1,ATT_THUMB_MAX/Math.max(tw,th0)); const c2=document.createElement('canvas'); c2.width=Math.max(1,Math.round(tw*sc)); c2.height=Math.max(1,Math.round(th0*sc)); const x2=c2.getContext('2d'); if(!x2) return res(null);x2.imageSmoothingEnabled=true;x2.imageSmoothingQuality='high';x2.drawImage(t,0,0,c2.width,c2.height);res(c2.toDataURL('image/jpeg',.88)); }catch(e){ res(null); } }; t.onerror=()=>res(null); t.src=src; }); }
+const ATT_FULL_MAX=2560,ATT_FULL_TARGET=950*1024,ATT_FULL_JPEG_Q=.90;
+const ATT_THUMB_MAX=1200,ATT_THUMB_TARGET=220*1024,ATT_THUMB_JPEG_Q=.86;
+function _dataBytes(s){const n=String(s||'').length;return Math.max(0,Math.floor(n*0.75));}
+function _canvasJpegBlob(c,q){return new Promise((res,rej)=>{try{c.toBlob(b=>b&&b.size?res(b):rej(new Error('JPEG 변환 실패')),'image/jpeg',q);}catch(e){rej(e);}});}
+function _drawForEncode(im,edge,rot90){
+  const ow=im.naturalWidth||im.width||1,oh=im.naturalHeight||im.height||1;
+  const rw=rot90?oh:ow,rh=rot90?ow:oh,sc=Math.min(1,edge/Math.max(rw,rh));
+  const w=Math.max(1,Math.round(rw*sc)),h=Math.max(1,Math.round(rh*sc));
+  const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');if(!x)throw new Error('CANVAS 없음');
+  x.imageSmoothingEnabled=true;x.imageSmoothingQuality='high';x.fillStyle='#fff';x.fillRect(0,0,w,h);
+  if(rot90){x.save();x.translate(w,0);x.rotate(Math.PI/2);x.drawImage(im,0,0,ow,oh,0,0,h,w);x.restore();}
+  else x.drawImage(im,0,0,ow,oh,0,0,w,h);
+  return c;
+}
+async function _encodeImageUnder(im,opt){
+  opt=opt||{};const target=Math.max(64*1024,+opt.target||ATT_FULL_TARGET),qMax=Math.min(.94,Math.max(.7,+opt.qMax||.9)),qMin=Math.min(qMax,Math.max(.52,+opt.qMin||.7));
+  const ow=im.naturalWidth||im.width||1,oh=im.naturalHeight||im.height||1,nat=Math.max(opt.rot90?oh:ow,opt.rot90?ow:oh);let edge=Math.min(nat,Math.max(640,+opt.maxEdge||ATT_FULL_MAX));
+  for(let round=0;round<8;round++){
+    const c=_drawForEncode(im,edge,!!opt.rot90);let b=await _canvasJpegBlob(c,qMax);
+    if(b.size<=target)return {data:await blobDataUrl(b),blob:b,width:c.width,height:c.height,bytes:b.size};
+    const low=await _canvasJpegBlob(c,qMin);
+    if(low.size<=target){let best=low,lo=qMin,hi=qMax;for(let n=0;n<5;n++){const q=(lo+hi)/2,bb=await _canvasJpegBlob(c,q);if(bb.size<=target){best=bb;lo=q;}else hi=q;}return {data:await blobDataUrl(best),blob:best,width:c.width,height:c.height,bytes:best.size};}
+    const ratio=Math.sqrt(target/Math.max(1,low.size))*.94;edge=Math.max(480,Math.floor(edge*Math.max(.58,Math.min(.88,ratio))));
+  }
+  let c=_drawForEncode(im,480,!!opt.rot90),b=await _canvasJpegBlob(c,.5);
+  while(b.size>target&&c.width>220&&c.height>220){c=_drawForEncode(im,Math.max(220,Math.floor(Math.max(c.width,c.height)*.78)),!!opt.rot90);b=await _canvasJpegBlob(c,.48);}
+  return {data:await blobDataUrl(b),blob:b,width:c.width,height:c.height,bytes:b.size};
+}
+function _rot90Data(src){return new Promise((res,rej)=>{const im=new Image();im.onload=()=>{_encodeImageUnder(im,{maxEdge:ATT_FULL_MAX,target:ATT_FULL_TARGET,qMax:ATT_FULL_JPEG_Q,qMin:.70,rot90:true}).then(res,rej);};im.onerror=()=>rej(new Error('img'));im.src=src;});}
+function _mkThumbFrom(src){return new Promise(res=>{const im=new Image();im.onload=()=>{_encodeImageUnder(im,{maxEdge:ATT_THUMB_MAX,target:ATT_THUMB_TARGET,qMax:ATT_THUMB_JPEG_Q,qMin:.70}).then(o=>res(o.data),()=>res(null));};im.onerror=()=>res(null);im.src=src;});}
 function _rotMarks90(a){ try{ (a.marks||[]).forEach(m=>{ if(m.pts) m.pts=m.pts.map(p=>[1-p[1],p[0]]); if(typeof m.x==='number'&&typeof m.y==='number'){ const nx=1-m.y; m.y=m.x; m.x=nx; } }); }catch(e){} }
 const _recentFull=new Map();
 function _rememberFull(id,d){ try{ if(!id||!d)return; _recentFull.set(id,{data:d,ts:Date.now()}); if(_recentFull.size>24){ const k=_recentFull.keys().next().value; _recentFull.delete(k); } }catch(e){} }
 function _preferStoredFull(a){if(!a||a.imageDirty||a.pendUpload)return false;const remote=!!(a.fullPath||a.fullUrl),same=!!(a.data&&a.thumb&&(a.data===a.thumb||a.data.length<=a.thumb.length*1.12));if(remote&&same){delete a.data;return true;}return false;}
-async function _applyRot90(a){ const nd=await _rot90Data(a.data); a.data=nd; const nt=await _mkThumbFrom(nd); a.thumb=(nt&&nt.length>=200)?nt:nd; a.imageDirty=true; a.ar=(a.ar&&a.ar>0)?(1/a.ar):a.ar;const fw=a.fullW;a.fullW=+a.fullH||0;a.fullH=+fw||0;_rotMarks90(a); a.kb=Math.round((a.data.length+(a.thumb||'').length)*0.75/1024); _rememberFull(a.id,a.data); }
+async function _applyRot90(a){ const enc=await _rot90Data(a.data); a.data=enc.data; const nt=await _mkThumbFrom(enc.data); a.thumb=(nt&&nt.length>=200)?nt:enc.data; a.imageDirty=true;a.pendUpload=true;a.ar=(a.ar&&a.ar>0)?(1/a.ar):a.ar;a.fullW=enc.width;a.fullH=enc.height;_rotMarks90(a);a.fullKb=Math.ceil(enc.bytes/1024);a.thumbKb=Math.ceil(_dataBytes(a.thumb)/1024);a.kb=a.fullKb+a.thumbKb;_rememberFull(a.id,a.data); }
 async function rotateAttachment(id){const p=curPlan(),a=p&&(p.attach||[]).find(x=>x.id===id);if(!a||a._rotating)return;a._rotating=true;
   try{const rejected=_preferStoredFull(a),rc=_recentFull.get(a.id),fresh=rc&&(Date.now()-rc.ts)<1800000?rc.data:null;
     if(!a.data&&!rejected&&fresh)a.data=fresh;
@@ -1884,14 +1917,22 @@ async function rotateAttachment(id){const p=curPlan(),a=p&&(p.attach||[]).find(x
     await _applyRot90(a);const lb=$id('lightbox');if(lb&&lb.classList.contains('show')&&lb.dataset.img===id){const li=$id('lbimg');if(li)li.src=a.data;}persistNow();render();toast('↻ 90° 회전');
   }catch(e){toast('회전 실패 — '+_shortImgErr(e));}finally{delete a._rotating;}
 }
-function addAttachment(dataURL,name,thumb,ar,w,h){ const p=curPlan(); if(!p){ toast('실험을 먼저 열어주세요'); return; } const loc='result'; const th=thumb||dataURL; const _nid=uid('img'); _rememberFull(_nid,dataURL); p.attach.push({id:_nid,loc,name:name||'스크린샷',ts:Date.now(),data:dataURL,thumb:th,ar:ar||1.4,fullW:+w||0,fullH:+h||0,kb:Math.round((dataURL.length+th.length)*0.75/1024),imageDirty:true}); const ok=persistNow(); render(); toast(ok?'🖼 원본 화질로 첨부됨':'⚠ 로컬 저장 한도 초과 — 원본은 Firebase 업로드를 계속 시도합니다'); }
-function attTotalMB(){ let n=0; try{ root.experiments.forEach(x=>((x.state||{}).plans||[]).forEach(pl=>(pl.attach||[]).forEach(a=>{ n+=(+a.kb||0)/1024; }))); }catch(e){} return n; }
+function addAttachment(dataURL,name,thumb,ar,w,h,fullBytes,thumbBytes){ const p=curPlan(); if(!p){ toast('실험을 먼저 열어주세요'); return; } const loc='result',th=thumb||dataURL,_nid=uid('img'),fk=Math.ceil((+fullBytes||_dataBytes(dataURL))/1024),tk=Math.ceil((+thumbBytes||_dataBytes(th))/1024); _rememberFull(_nid,dataURL); p.attach.push({id:_nid,loc,name:name||'스크린샷',ts:Date.now(),data:dataURL,thumb:th,ar:ar||1.4,fullW:+w||0,fullH:+h||0,fullKb:fk,thumbKb:tk,kb:fk+tk,imageDirty:true,pendUpload:true}); const ok=persistNow();try{scheduleCloudPush(120);}catch(_e){}render();toast(ok?('🖼 원본 '+fk+'KB · 미리보기 '+tk+'KB로 최적화됨'):'⚠ 기기 임시저장 한도 초과 — 사진 서버 업로드를 계속 시도합니다'); }
+function attTotalMB(pl){ let n=0; try{(pl&&pl.attach||[]).forEach(a=>{n+=(+a.kb||0)/1024;});}catch(e){}return n; }
 const REMOTE_IMG_PLACEHOLDER='data:image/svg+xml;charset=utf-8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="800" height="520"><rect width="100%" height="100%" fill="#eef1f4"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#8494a4" font-family="sans-serif" font-size="28">이미지 불러오는 중</text></svg>');
 const REMOTE_IMG_FAIL='data:image/svg+xml;charset=utf-8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="800" height="520"><rect width="100%" height="100%" fill="#faedeb"/><text x="50%" y="46%" dominant-baseline="middle" text-anchor="middle" fill="#bd4a41" font-family="sans-serif" font-size="27">이미지를 불러오지 못했어요</text><text x="50%" y="58%" dominant-baseline="middle" text-anchor="middle" fill="#8494a4" font-family="sans-serif" font-size="22">눌러서 다시 시도</text></svg>');
 const REMOTE_IMG_NOUP='data:image/svg+xml;charset=utf-8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="800" height="520"><rect width="100%" height="100%" fill="#faf2da"/><text x="50%" y="46%" dominant-baseline="middle" text-anchor="middle" fill="#8f6a10" font-family="sans-serif" font-size="26">서버에 올라가지 않은 이미지예요</text><text x="50%" y="58%" dominant-baseline="middle" text-anchor="middle" fill="#8494a4" font-family="sans-serif" font-size="21">⚙ → 이미지 서버 점검을 눌러보세요</text></svg>');
 function attSrc(im,full){if(!im)return REMOTE_IMG_PLACEHOLDER;if(full){if(im.data)return im.data;if(im.fullUrl)return im.fullUrl;if(im.thumb)return im.thumb;if(im.thumbUrl)return im.thumbUrl;}else{if(im.thumb)return im.thumb;if(im.data)return im.data;if(im.thumbUrl)return im.thumbUrl;if(im.fullUrl)return im.fullUrl;}if(im._imgErr)return REMOTE_IMG_FAIL;if(!(im.thumbPath||im.fullPath))return REMOTE_IMG_NOUP;return REMOTE_IMG_PLACEHOLDER;}
-function mkScaled(img,src,MAX,Q){ try{ const w=img.naturalWidth||img.width||0,h=img.naturalHeight||img.height||0; if(!(w&&h)) return src; const sc=Math.min(1,MAX/Math.max(w,h)); if(sc>=1)return src;const cv=document.createElement('canvas'); cv.width=Math.max(1,Math.round(w*sc)); cv.height=Math.max(1,Math.round(h*sc));const x=cv.getContext('2d');if(!x)return src;x.imageSmoothingEnabled=true;x.imageSmoothingQuality='high';x.drawImage(img,0,0,cv.width,cv.height); const j=cv.toDataURL('image/jpeg',Q); return (j&&j.indexOf('data:image')===0)?j:src; }catch(e){ return src; } }
-function processImageFile(file){ if(!file) return; const rd=new FileReader(); rd.onload=()=>{ const src=rd.result; const img=new Image(); img.onload=()=>{ const w=img.naturalWidth||img.width||0,h=img.naturalHeight||img.height||0,mx=Math.max(w,h);const full=mx<=ATT_FULL_MAX?src:mkScaled(img,src,ATT_FULL_MAX,ATT_FULL_JPEG_Q);const th=mkScaled(img,src,ATT_THUMB_MAX,.88);const ar=(w&&h)?(w/h):1.4;addAttachment(full,(file.name&&!/^image\.(png|jpe?g)$/i.test(file.name))?file.name:'스크린샷',th,ar,Math.min(w,Math.round(w*Math.min(1,ATT_FULL_MAX/(mx||1)))),Math.min(h,Math.round(h*Math.min(1,ATT_FULL_MAX/(mx||1))))); }; img.onerror=()=>toast('이미지 형식을 해석하지 못했어요 — PNG/JPG로 저장해 다시 첨부해 주세요'); img.src=src; }; rd.readAsDataURL(file); }
+function _readFileData(file){return new Promise((res,rej)=>{const rd=new FileReader();rd.onload=()=>res(rd.result);rd.onerror=()=>rej(new Error('파일 읽기 실패'));rd.readAsDataURL(file);});}
+function _loadDataImage(src){return new Promise((res,rej)=>{const im=new Image();im.onload=()=>res(im);im.onerror=()=>rej(new Error('이미지 형식 해석 실패'));im.src=src;});}
+let _imgProcessQ=Promise.resolve();
+async function _processImageFileNow(file){
+  const src=await _readFileData(file),img=await _loadDataImage(src),ow=img.naturalWidth||img.width||1,oh=img.naturalHeight||img.height||1;
+  const full=await _encodeImageUnder(img,{maxEdge:ATT_FULL_MAX,target:ATT_FULL_TARGET,qMax:ATT_FULL_JPEG_Q,qMin:.70});
+  const th=await _encodeImageUnder(img,{maxEdge:ATT_THUMB_MAX,target:ATT_THUMB_TARGET,qMax:ATT_THUMB_JPEG_Q,qMin:.70});
+  addAttachment(full.data,(file.name&&!/^image\.(png|jpe?g)$/i.test(file.name))?file.name:'스크린샷',th.data,ow/oh,full.width,full.height,full.bytes,th.bytes);
+}
+function processImageFile(file){if(!file)return Promise.resolve();_imgProcessQ=_imgProcessQ.then(()=>_processImageFileNow(file)).catch(e=>{toast('이미지 최적화 실패 — '+_shortImgErr(e));});return _imgProcessQ;}
 let _mkT=null; let _pickSel=new Set();
 function mkGet(d,cid,key,create){ if(!d) return null; if(!d.rmarks||typeof d.rmarks!=='object'){ if(!create) return null; d.rmarks={}; } if(!d.rmarks[cid]){ if(!create) return null; d.rmarks[cid]={}; } if(!d.rmarks[cid][key]){ if(!create) return null; d.rmarks[cid][key]={}; } return d.rmarks[cid][key]; }
 function mkCls(d,cid,key){ const m=(d&&d.rmarks&&d.rmarks[cid]&&d.rmarks[cid][key])||null; if(!m) return ''; return [m.ring?('mk-ring'+(m.ring==='r'?' mk-rr':'')):'',m.col==='b'?'mk-b':'',m.col==='r'?'mk-r':'',m.u?'mk-u':'',m.bd?'mk-bold':'',m.hl?('mk-hl'+m.hl):''].filter(Boolean).join(' '); }
@@ -1908,11 +1949,10 @@ function attachCardHTML(loc){ const p=curPlan(); if(!p) return '';
   return _attachCardRaw();
 }
 function _attachCardRaw(){ const p=curPlan(); if(!p) return '';
-  const hi=(typeof window!=='undefined'&&window.innerWidth>=900);
   if(root.attMode)delete root.attMode;
   let szRaw=root.attSize||'s'; const sz=(['s','c2','c3'].indexOf(szRaw)>=0)?szRaw:((szRaw==='m'||szRaw==='l'||szRaw==='c1')?'c2':'s');
-  const mb=attTotalMB();
-  const meter=`<span class="attmeter ${mb>4?'warn':''}" title="브라우저 저장공간 사용량">${mb.toFixed(1)}/5MB</span>`;
+  const mb=attTotalMB(p);
+  const meter=`<span class="attmeter" title="현재 차수의 최적화된 원본+미리보기 합계">원본 1MB↓ · ${mb.toFixed(1)}MB</span>`;
   const sizeSeg=p.attach.length?`<div class="attseg"><button class="szb ${sz==='s'?'on':''}" data-action="att-size" data-s="s">작게</button><button class="szb ${sz==='c2'?'on':''}" data-action="att-size" data-s="c2">2열</button><button class="szb ${sz==='c3'?'on':''}" data-action="att-size" data-s="c3">3열</button></div>`:'';
   let bodyHtml;
   if(!p.attach.length){
@@ -1921,10 +1961,10 @@ function _attachCardRaw(){ const p=curPlan(); if(!p) return '';
     bodyHtml=`<div class="attgrid sz-s">${p.attach.map(im=>`<figure class="att" draggable="true" data-attdrag="${im.id}"><img src="${attSrc(im,false)}" alt="" loading="lazy" draggable="false" data-action="att-open" data-img="${im.id}"><button class="att-x" data-action="att-del" data-img="${im.id}" title="삭제">✕</button><figcaption>${escT(im.title||im.name)}${im.kb?` · ${im.kb>=1024?(im.kb/1024).toFixed(1)+'MB':im.kb+'KB'}`:''}</figcaption></figure>`).join('')}</div>`;
   }else{
     let cases=[]; try{ cases=(D().cases||[]); }catch(e){}
-    const big=hi&&sz==='c2';
+    const big=false;
     bodyHtml=`<div class="attcols ${sz==='c2'?'n2':'n3'}">${p.attach.map(im=>{
       const scT=im.sc?`<div class="attsc"><table><tr>${cases.map(c=>`<th>${escT(c.name)}</th>`).join('')}</tr><tr>${cases.map(c=>`<td><input data-role="ascore" data-img="${im.id}" data-case="${c.id}" value="${escA((im.scores||{})[c.id]||'')}" placeholder="-"></td>`).join('')}</tr></table></div>`:'';
-      return `<figure class="attL" draggable="true" data-attdrag="${im.id}"><div class="attL-h"><input class="attTitle" data-role="atitle" data-img="${im.id}" value="${escA(im.title||'')}" placeholder="제목 (예: Dry-pick)"><button class="rotb" data-action="att-rot" data-img="${im.id}" title="90° 회전">↻</button><button class="rotb" data-action="att-anno" data-img="${im.id}" title="주석 — 형광펜·동그라미·글자">✎</button><button class="scbtn ${im.sc?'on':''}" data-action="att-sc" data-img="${im.id}" title="케이스별 점수표 켜기/끄기">점수</button><button class="att-x2" data-action="att-open" data-img="${im.id}" title="전체화면">⤢</button><button class="att-x2 del" data-action="att-del" data-img="${im.id}" title="삭제">✕</button></div>${scT}<div class="attMedia"><img src="${attSrc(im,big)}" alt="" loading="lazy" draggable="false" data-action="att-open" data-img="${im.id}"></div>${im.pendUpload?`<div class="atterr" style="color:#1e5a7a;background:#e9f4fb;border-top-color:#cfe6f5">⬆ 원본이 데이터서버에 임시 저장됨 — 폰 등에서 열면 사진서버로 이동</div>`:''}${im._imgErr?`<div class="atterr">${escT(_imgErrTxt(im._imgErr))}</div>`:''}</figure>`;
+      return `<figure class="attL" draggable="true" data-attdrag="${im.id}"><div class="attL-h"><input class="attTitle" data-role="atitle" data-img="${im.id}" value="${escA(im.title||'')}" placeholder="제목 (예: Dry-pick)"><button class="rotb" data-action="att-rot" data-img="${im.id}" title="90° 회전">↻</button><button class="rotb" data-action="att-anno" data-img="${im.id}" title="주석 — 형광펜·동그라미·글자">✎</button><button class="scbtn ${im.sc?'on':''}" data-action="att-sc" data-img="${im.id}" title="케이스별 점수표 켜기/끄기">점수</button><button class="att-x2" data-action="att-open" data-img="${im.id}" title="전체화면">⤢</button><button class="att-x2 del" data-action="att-del" data-img="${im.id}" title="삭제">✕</button></div>${scT}<div class="attMedia"><img src="${attSrc(im,big)}" alt="" loading="lazy" draggable="false" data-action="att-open" data-img="${im.id}"></div>${im.pendUpload?`<div class="atterr" style="color:#1e5a7a;background:#e9f4fb;border-top-color:#cfe6f5">⬆ 사진 서버 업로드 재시도 중 — 완료 전 창을 닫지 마세요</div>`:''}${im._imgErr?`<div class="atterr">${escT(_imgErrTxt(im._imgErr))}</div>`:''}</figure>`;
     }).join('')}</div>`;
   }
   return `<section class="card attcard"><div class="chead"><span class="num">📎</span><h2>첨부 이미지</h2>${meter}<span class="spacer"></span>${sizeSeg}<button class="btn sm" data-action="att-add">+ 이미지</button></div>${bodyHtml}</section>`; }
@@ -3102,7 +3142,7 @@ document.addEventListener('click',e=>{
   else if(a==='pal-open'){palOpen();}
   else if(a==='set-toggle'){const m=$id('setmenu'),bk=$id('menuback'); if(m.hidden){ let ks=[]; try{ks=Object.keys(localStorage).filter(k=>k.indexOf('soocho_backup_')===0).sort().reverse();}catch(e){} $id('backuplist').innerHTML=ks.length?ks.map(k=>`<button class="set-it" data-action="set-backup-restore" data-k="${k}">↩ ${k.replace('soocho_backup_','')} 백업으로 복구</button>`).join(''):'<div class="set-none">아직 백업이 없어요</div>'; m.hidden=false; bk.hidden=false; } else { m.hidden=true; bk.hidden=true; } }
   else if(a==='set-close'){$id('setmenu').hidden=true;$id('menuback').hidden=true;}
-  else if(a==='set-backup-restore'){const k=btn.dataset.k;$id('setmenu').hidden=true;$id('menuback').hidden=true;askConfirm('이 백업 시점으로 되돌릴까요? (직전 상태는 실행 취소로 복구 가능)',()=>{try{const sn=localStorage.getItem(k);if(sn){_undo.push(JSON.stringify(root));while(_undo.length>20)_undo.shift();_redo.length=0;_applySnap(sn);toast('백업 복구 완료');}}catch(e){toast('복구 실패');}});}
+  else if(a==='set-backup-restore'){const k=btn.dataset.k;$id('setmenu').hidden=true;$id('menuback').hidden=true;askConfirm('이 백업 시점으로 되돌릴까요? (직전 상태는 실행 취소로 복구 가능)',()=>{try{const sn=localStorage.getItem(k);if(sn){_pushHistory(_undo,_undoSnapshot());_redo.length=0;_applySnap(sn);toast('백업 복구 완료');}}catch(e){toast('복구 실패');}});}
   else if(a==='set-shortcuts'){$id('setmenu').hidden=true;$id('menuback').hidden=true;$id('shortcuts').hidden=false;}
   else if(a==='sc-close'){$id('shortcuts').hidden=true;}
   else if(a==='set-reset'){$id('setmenu').hidden=true;$id('menuback').hidden=true;askConfirm('모든 실험 데이터를 완전히 초기화할까요? 되돌릴 수 없어요.',()=>{try{localStorage.removeItem(SAVE_KEY);}catch(e){}try{location.reload();}catch(e){}});}
@@ -3233,7 +3273,7 @@ let _tt;function toast(m){const e=$id('toast');e.textContent=m;e.classList.add('
 const CLOUD_KEY='soocho_lab_cloud_v1';
 const FB_CFG_KEY='soocho_fb_cfg_v2', FB_AUTH_KEY='soocho_fb_auth_v2';
 let _homeQ='', _homeType='all';
-let _cpushT=null,_csBusy=false,_csQueued=false,_pollT=null,_thumbBusy=false;
+let _cpushT=null,_imgRetryT=null,_csBusy=false,_csQueued=false,_pollT=null,_thumbBusy=false;
 let FB_CFG={databaseURL:'',apiKey:'',storageBucket:'',team:'paperlab'}, FB_AUTH={idToken:'',refreshToken:'',expiresAt:0,email:''}, FB_BASE='';
 let _dirtyPlans=new Map(),_dirtyMeta=new Set(),_dirtyFull=new Set(),_deletedRemote=new Set();
 function hasCloud(){try{return !!(window.storage&&typeof window.storage.get==='function'&&typeof window.storage.set==='function');}catch(e){return false;}}
@@ -3272,7 +3312,7 @@ function dataUrlBlob(s){const a=String(s||'').split(','),m=/data:([^;]+)/.exec(a
 function blobDataUrl(b){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(b);});}
 function _shortImgErr(e){const s=String((e&&e.message)||e||'이미지 다운로드 실패');return s.length>220?s.slice(0,220)+'…':s;}
 function _xhrImageDataUrl(u){return new Promise((res,rej)=>{try{const x=new XMLHttpRequest();x.open('GET',u,true);x.responseType='blob';x.withCredentials=false;x.onload=()=>{if(x.status>=200&&x.status<300&&x.response&&x.response.size)blobDataUrl(x.response).then(res,rej);else rej(new Error('XHR '+x.status));};x.onerror=()=>rej(new Error('XHR 네트워크 실패'));x.ontimeout=()=>rej(new Error('XHR 시간 초과'));x.timeout=25000;x.send();}catch(e){rej(e);}});}
-function _canvasImageDataUrl(u){return new Promise((res,rej)=>{try{const im=new Image();im.crossOrigin='anonymous';im.referrerPolicy='no-referrer';im.onload=()=>{try{const iw=im.naturalWidth||im.width||1,ih=im.naturalHeight||im.height||1,sc=Math.min(1,ATT_FULL_MAX/Math.max(iw,ih));const c=document.createElement('canvas');c.width=Math.max(1,Math.round(iw*sc));c.height=Math.max(1,Math.round(ih*sc));const x=c.getContext('2d');if(!x)throw new Error('CANVAS 없음');x.imageSmoothingEnabled=true;x.imageSmoothingQuality='high';x.drawImage(im,0,0,c.width,c.height);const d=c.toDataURL('image/jpeg',.96);if(!d||d.length<200)throw new Error('CANVAS 빈 이미지');res(d);}catch(e){rej(e);}};im.onerror=()=>rej(new Error('IMG 직접 로드 실패'));im.src=u+(u.indexOf('?')>=0?'&':'?')+'_paperlab='+Date.now();}catch(e){rej(e);}});}
+function _canvasImageDataUrl(u){return new Promise((res,rej)=>{try{const im=new Image();im.crossOrigin='anonymous';im.referrerPolicy='no-referrer';im.onload=()=>{_encodeImageUnder(im,{maxEdge:ATT_FULL_MAX,target:ATT_FULL_TARGET,qMax:ATT_FULL_JPEG_Q,qMin:.70}).then(o=>res(o.data),rej);};im.onerror=()=>rej(new Error('IMG 직접 로드 실패'));im.src=u+(u.indexOf('?')>=0?'&':'?')+'_paperlab='+Date.now();}catch(e){rej(e);}});}
 async function _fetchImageDataUrl(u){
   if(!u)throw new Error('IMAGE URL 없음');
   if(/^data:image\//i.test(u))return u;
@@ -3313,21 +3353,33 @@ async function _attachmentUrlData(a,full){
   }
   throw new Error(errs.filter(Boolean).join(' / ')||'표시용 이미지 주소 다운로드 실패');
 }
-function _cleanAtt(a,local){const x=JSON.parse(JSON.stringify(a||{}));delete x._loading;delete x._fullLoading;delete x._urlLoading;delete x._furlLoading;delete x._backupQueued;delete x._imgErr;delete x.imageDirty;/* 로컬 저장공간에는 썸네일만, Firebase RTDB에는 원본 복구본까지 유지 */if(local&&x.fullPath&&!x.pendUpload)delete x.data;return x;}
-function _cleanPlan(p,local){const x=JSON.parse(JSON.stringify(p||{}));if(!local)delete x.syncedAt;x.attach=(p&&p.attach||[]).map(a=>_cleanAtt(a,local));return x;}
-function cleanExperiment(ex,local){const x=JSON.parse(JSON.stringify(ex||{}));if(x.state&&Array.isArray(x.state.plans))x.state.plans=(ex.state.plans||[]).map(p=>_cleanPlan(p,local));delete x.remoteOnly;delete x._remoteLoaded;delete x._knownPlanIds;return x;}
+function _cleanAtt(a,local){
+  const x=JSON.parse(JSON.stringify(a||{}));delete x._loading;delete x._fullLoading;delete x._urlLoading;delete x._furlLoading;delete x._backupQueued;delete x._imgErr;delete x._legacyBody;
+  if(local){if(x.fullPath&&x.thumbPath&&!x.pendUpload){delete x.data;delete x.thumb;delete x.imageDirty;}}
+  else{delete x.data;delete x.thumb;delete x.fullUrl;delete x.thumbUrl;delete x.pendUpload;delete x.imageDirty;}
+  return x;
+}
+function _cleanPlan(p,local){
+  const x=JSON.parse(JSON.stringify(p||{}));if(!local)delete x.syncedAt;
+  const src=(p&&p.attach)||[];x.attach=src.filter(a=>local||!!(a&&a.fullPath&&a.thumbPath&&!a.pendUpload)).map(a=>_cleanAtt(a,local));
+  return x;
+}
+function cleanExperiment(ex,local){const x=JSON.parse(JSON.stringify(ex||{}));if(x.state&&Array.isArray(x.state.plans))x.state.plans=(ex.state.plans||[]).map(p=>_cleanPlan(p,local));delete x.remoteOnly;delete x._remoteLoaded;delete x._knownPlanIds;delete x._needsImageCleanup;return x;}
 function cleanRootForLocal(r){const x={experiments:(r.experiments||[]).map(e=>cleanExperiment(e,true)),activeExp:r.activeExp||0,screen:r.screen||'home',trash:r.trash||{},metricLib:r.metricLib||[],_mlibAt:(+r._mlibAt)||0,attSize:r.attSize,schemaVersion:2};return x;}
 function _summary(ex){let np='';try{np=expNoteText(ex);}catch(e){np=String(ex.notePreview||ex.note||'');}const st=(ex.state||{}),ap=st.active||{};return {id:ex.id,name:ex.name||'',type:ex.type||'coat',date:ex.date||'',updatedAt:+ex.updatedAt||Date.now(),status:ex.status||'run',owner:ex.owner||'',note:ex.note||'',noteEdited:!!ex.noteEdited,notePreview:String(np||'').slice(0,1200),prog:+ex.prog||0,activePlan:+ap.plan||0,activeView:ap.view||'plan',planCount:(st.plans||[]).length,updatedBy:whoAmI()||''};}
 function _meta(ex){const x=cleanExperiment(ex,false),plans=((x.state||{}).plans)||[];const sm=Object.assign({},x.state||{});delete sm.plans;delete x.state;x.stateMeta=sm;x.planOrder=plans.map(p=>({id:p.id,label:p.label||'',updatedAt:+p.updatedAt||0}));return x;}
 function _setRemoteFlags(ex,ids){try{Object.defineProperty(ex,'_remoteLoaded',{value:true,writable:true,configurable:true});Object.defineProperty(ex,'_knownPlanIds',{value:new Set(ids||[]),writable:true,configurable:true});}catch(e){ex._remoteLoaded=true;ex._knownPlanIds=new Set(ids||[]);}delete ex.remoteOnly;return ex;}
-async function preparePlanAttachments(ex,pl){const at=(pl.attach||[]);let newFail=false;for(const a of at){if(!a||!a.id)continue;
+async function preparePlanAttachments(ex,pl){const at=(pl.attach||[]);let newFail=false,legacyFail=false;for(const a of at){if(!a||!a.id)continue;
   let fail=false;
-  if(a.data&&(!a.fullPath||a.imageDirty)){ try{ const p='teams/'+_safeKey(FB_CFG.team)+'/images/'+_safeKey(ex.id)+'/'+_safeKey(pl.id)+'/'+_safeKey(a.id)+'_full.jpg'; const rs=await fbStorageUpload(p,dataUrlBlob(a.data)); a.fullPath=p; delete a.fullUrl; const t=String((rs&&rs.downloadTokens)||'').split(',')[0]; if(t)a.fullUrl=_storageUrl(p,true)+'&token='+encodeURIComponent(t); }catch(e){ fail=true; } }
-  if(a.thumb&&(!a.thumbPath||a.imageDirty)){ try{ const p='teams/'+_safeKey(FB_CFG.team)+'/images/'+_safeKey(ex.id)+'/'+_safeKey(pl.id)+'/'+_safeKey(a.id)+'_thumb.jpg'; const rs=await fbStorageUpload(p,dataUrlBlob(a.thumb)); a.thumbPath=p; delete a.thumbUrl; const t=String((rs&&rs.downloadTokens)||'').split(',')[0]; if(t)a.thumbUrl=_storageUrl(p,true)+'&token='+encodeURIComponent(t); }catch(e){ fail=true; } }
-  if(fail){ if(!a.pendUpload) newFail=true; a.pendUpload=true; }
-  else { delete a.pendUpload; delete a.imageDirty; }
+  const needFull=!a.fullPath||a.imageDirty,needThumb=!a.thumbPath||a.imageDirty;
+  if(needFull){if(a.data){try{ const p='teams/'+_safeKey(FB_CFG.team)+'/images/'+_safeKey(ex.id)+'/'+_safeKey(pl.id)+'/'+_safeKey(a.id)+'_full.jpg'; const rs=await fbStorageUpload(p,dataUrlBlob(a.data)); a.fullPath=p; delete a.fullUrl; const t=String((rs&&rs.downloadTokens)||'').split(',')[0]; if(t)a.fullUrl=_storageUrl(p,true)+'&token='+encodeURIComponent(t); }catch(e){ fail=true; }}else fail=true;}
+  if(needThumb){if(a.thumb){try{ const p='teams/'+_safeKey(FB_CFG.team)+'/images/'+_safeKey(ex.id)+'/'+_safeKey(pl.id)+'/'+_safeKey(a.id)+'_thumb.jpg'; const rs=await fbStorageUpload(p,dataUrlBlob(a.thumb)); a.thumbPath=p; delete a.thumbUrl; const t=String((rs&&rs.downloadTokens)||'').split(',')[0]; if(t)a.thumbUrl=_storageUrl(p,true)+'&token='+encodeURIComponent(t); }catch(e){ fail=true; }}else fail=true;}
+  if(!(a.fullPath&&a.thumbPath))fail=true;
+  if(fail){ if(!a.pendUpload) newFail=true;a.pendUpload=true;if(a._legacyBody)legacyFail=true; }
+  else { delete a.pendUpload;delete a.imageDirty;delete a._legacyBody;delete a.data;delete a.thumb; }
 }
-if(newFail){ try{ toast('⬆ 사진서버가 막혀 원본을 데이터서버에 임시 저장 — 폰 등에서 이 실험을 열면 자동 이동돼요'); }catch(_e){} }}
+if(newFail){try{toast('⬆ 사진 서버 업로드 실패 — 이 기기에서 자동 재시도합니다');}catch(_e){}}
+return {failed:newFail||at.some(a=>a&&a.pendUpload),legacyFailed:legacyFail};}
 async function fbStorageTok(path){const tok=await fbToken();
  const r=await _storageFetch(_storageMetaUrl(path),{method:'GET',cache:'no-store'},tok);
  const j=await r.json().catch(()=>({}));
@@ -3343,14 +3395,14 @@ async function ensureAttachmentFullUrl(a){if(!a)return null;if(a.fullUrl)return 
  if(a._furlLoading)return a._furlLoading;
  a._furlLoading=(async()=>{try{const u=await fbStorageTok(a.fullPath);a.fullUrl=u;delete a._imgErr;return u;}
   catch(e){a._imgErr=String((e&&e.message)||e);throw e;}finally{delete a._furlLoading;}})();return a._furlLoading;}
-function _queueRecoveredImageBackup(a){if(!a||a._backupQueued)return;a._backupQueued=true;setTimeout(()=>{delete a._backupQueued;try{scheduleSave();}catch(e){}},120);}
+function _queueRecoveredImageBackup(a){/* Storage에서 받은 이미지는 메모리 캐시로만 사용하고 RTDB에는 다시 저장하지 않음 */}
 async function ensureAttachmentThumb(a){
   if(!a||a.thumb)return a&&a.thumb;if(a._loading)return a._loading;
   const p=a.thumbPath||a.fullPath, hasUrl=!!(a.thumbUrl||a.fullUrl);
   if(!p&&!hasUrl)return null;
   a._loading=(async()=>{const errs=[];try{
-    if(hasUrl||p){try{a.thumb=await _attachmentUrlData(a,false);delete a._imgErr;_queueRecoveredImageBackup(a);return a.thumb;}catch(e){errs.push(_shortImgErr(e));}}
-    if(p){try{a.thumb=await blobDataUrl(await fbStorageGet(p));delete a._imgErr;_queueRecoveredImageBackup(a);return a.thumb;}catch(e){errs.push(_shortImgErr(e));}}
+    if(p){try{a.thumb=await blobDataUrl(await fbStorageGet(p));delete a._imgErr;return a.thumb;}catch(e){errs.push(_shortImgErr(e));}}
+    if(hasUrl){try{a.thumb=await _attachmentUrlData(a,false);delete a._imgErr;return a.thumb;}catch(e){errs.push(_shortImgErr(e));}}
     throw new Error(errs.filter(Boolean).join(' / ')||'썸네일 원본 없음');
   }catch(e){a._imgErr=_shortImgErr(e);throw e;}finally{delete a._loading;}})();return a._loading;
 }
@@ -3359,28 +3411,28 @@ async function ensureAttachmentFull(a){
   const p=a.fullPath, hasUrl=!!a.fullUrl;
   if(!p&&!hasUrl)throw new Error('원본 경로·주소 없음');
   a._fullLoading=(async()=>{const errs=[];try{
-    if(hasUrl||p){try{a.data=await _attachmentUrlData(a,true);if(!a.thumb){const t=await _mkThumbFrom(a.data);if(t)a.thumb=t;}_rememberFull(a.id,a.data);delete a._imgErr;_queueRecoveredImageBackup(a);return a.data;}catch(e){errs.push(_shortImgErr(e));}}
-    if(p){try{a.data=await blobDataUrl(await fbStorageGet(p));if(!a.thumb){const t=await _mkThumbFrom(a.data);if(t)a.thumb=t;}_rememberFull(a.id,a.data);delete a._imgErr;_queueRecoveredImageBackup(a);return a.data;}catch(e){errs.push(_shortImgErr(e));}}
+    if(p){try{a.data=await blobDataUrl(await fbStorageGet(p));if(!a.thumb){const t=await _mkThumbFrom(a.data);if(t)a.thumb=t;}_rememberFull(a.id,a.data);delete a._imgErr;return a.data;}catch(e){errs.push(_shortImgErr(e));}}
+    if(hasUrl){try{a.data=await _attachmentUrlData(a,true);if(!a.thumb){const t=await _mkThumbFrom(a.data);if(t)a.thumb=t;}_rememberFull(a.id,a.data);delete a._imgErr;return a.data;}catch(e){errs.push(_shortImgErr(e));}}
     throw new Error(errs.filter(Boolean).join(' / ')||'이미지 원본 다운로드 실패');
   }catch(e){a._imgErr=_shortImgErr(e);throw e;}finally{delete a._fullLoading;}})();return a._fullLoading;
 }
 async function hydratePlanThumbs(pl){if(!pl)return;await Promise.all((pl.attach||[]).map(a=>ensureAttachmentThumb(a).catch(()=>null)));}
 async function hydratePlanFull(pl){if(!pl)return;await Promise.all((pl.attach||[]).map(a=>ensureAttachmentFull(a).catch(()=>null)));}
-function releaseExperimentImages(ex){/* 동기화·실험 전환 뒤에도 회전/엑셀용 이미지 캐시 유지 */}
+function releaseExperimentImages(ex){try{((((ex||{}).state||{}).plans)||[]).forEach(pl=>(pl.attach||[]).forEach(a=>{if(!a||a.pendUpload||a.imageDirty)return;delete a.data;delete a.thumb;delete a._loading;delete a._fullLoading;if(a.id)_recentFull.delete(a.id);}));}catch(e){}}
 async function hydrateAllKnownImages(){for(const ex of (root.experiments||[])){if(ex.remoteOnly||!((ex.state||{}).plans||[]).length){try{const full=await fbLoadExperiment(ex.id);_carryExperimentImages(ex,full);Object.assign(ex,full);}catch(e){continue;}}for(const pl of ((ex.state||{}).plans||[]))await hydratePlanFull(pl);}}
-async function hydrateVisibleAttachmentThumbs(){if(_thumbBusy||root.screen!=='sim'||!curPlan()||!fbConfigReady()||!FB_AUTH.refreshToken)return;const miss=(curPlan().attach||[]).filter(a=>a&&!a.thumb&&!a.thumbUrl&&!a.fullUrl&&!a._imgErr&&(a.thumbPath||a.fullPath));if(!miss.length)return;_thumbBusy=true;let ch=false;try{await Promise.all(miss.map(async a=>{try{await ensureAttachmentUrl(a);}catch(e){}ch=true;}));
-  const nothumb=(curPlan().attach||[]).filter(a=>a&&!a.thumb&&!a._imgErr&&(a.thumbPath||a.fullPath));
-  let backed=false;
-  for(const a of nothumb){ try{ await ensureAttachmentThumb(a); backed=true; }catch(e){} }
+async function hydrateVisibleAttachmentThumbs(){if(_thumbBusy||root.screen!=='sim'||!curPlan()||!fbConfigReady()||!FB_AUTH.refreshToken)return;const miss=(curPlan().attach||[]).filter(a=>a&&!a.thumb&&!a._imgErr&&(a.thumbPath||a.fullPath));if(!miss.length&&!((curPlan().attach||[]).some(a=>a&&a.pendUpload&&a.data)))return;_thumbBusy=true;let ch=false;try{
+  for(const a of miss){try{await ensureAttachmentThumb(a);ch=true;}catch(e){}}
   (curPlan().attach||[]).forEach(a=>{ if(a&&a.pendRot) delete a.pendRot; });
-  if((curPlan().attach||[]).some(a=>a&&a.pendUpload&&a.data)) backed=true;
-  if(backed){ ch=true; try{ markCurrentDirty(); scheduleCloudPush(); }catch(_e){} }}finally{_thumbBusy=false;}if(ch&&root.screen==='sim')render();}
+  if((curPlan().attach||[]).some(a=>a&&a.pendUpload&&a.data)){ch=true;try{markCurrentDirty();scheduleCloudPush(600);}catch(_e){}}
+}finally{_thumbBusy=false;}if(ch&&root.screen==='sim')render();}
 function markCurrentDirty(){if(!fbConfigReady())return;if(root.screen==='sim'){const ex=EXP();if(!ex)return;ex.updatedAt=Date.now();_dirtyMeta.add(ex.id);const pl=curPlan();if(pl){pl.updatedAt=ex.updatedAt;if(!_dirtyPlans.has(ex.id))_dirtyPlans.set(ex.id,new Set());_dirtyPlans.get(ex.id).add(pl.id);}}else{(root.experiments||[]).forEach(ex=>{if(!ex.remoteOnly)_dirtyMeta.add(ex.id);});}}
 function markExpFull(id){if(id)_dirtyFull.add(id);}
 function queueRemoteDelete(ex){if(ex&&ex.id)_deletedRemote.add(ex.id);}
 function _carryAttachmentImage(dst,src){if(!dst||!src)return dst;['data','thumb','fullPath','thumbPath','fullUrl','thumbUrl'].forEach(k=>{if(!dst[k]&&src[k])dst[k]=src[k];});if(!dst.data&&dst.id){const rc=_recentFull.get(dst.id);if(rc&&(Date.now()-rc.ts)<1800000)dst.data=rc.data;}return dst;}
 function _carryPlanImages(oldPl,newPl){if(!oldPl||!newPl)return newPl;const om=new Map((oldPl.attach||[]).filter(a=>a&&a.id).map(a=>[a.id,a]));(newPl.attach||[]).forEach(a=>{if(a&&a.id&&om.has(a.id))_carryAttachmentImage(a,om.get(a.id));});return newPl;}
 function _carryExperimentImages(oldEx,newEx){if(!oldEx||!newEx)return newEx;const om=new Map(((((oldEx||{}).state||{}).plans)||[]).filter(p=>p&&p.id).map(p=>[p.id,p]));(((((newEx||{}).state||{}).plans)||[])).forEach(p=>{if(p&&p.id&&om.has(p.id))_carryPlanImages(om.get(p.id),p);});return newEx;}
+function _flagLegacyImageBodies(ex){let found=false;try{((((ex||{}).state||{}).plans)||[]).forEach(pl=>(pl.attach||[]).forEach(a=>{if(a&&(a.data||a.thumb)&&!a.imageDirty&&!a.pendUpload){try{Object.defineProperty(a,'_legacyBody',{value:true,writable:true,configurable:true});}catch(_e){a._legacyBody=true;}found=true;}}));if(found){try{Object.defineProperty(ex,'_needsImageCleanup',{value:true,writable:true,configurable:true});}catch(_e){ex._needsImageCleanup=true;}}}catch(e){}return found;}
+function _queueLegacyImageCleanup(ex){if(!ex||!ex._needsImageCleanup||!fbConfigReady())return;let any=false;((((ex.state||{}).plans)||[])).forEach(pl=>{if((pl.attach||[]).some(a=>a&&a._legacyBody)){if(!_dirtyPlans.has(ex.id))_dirtyPlans.set(ex.id,new Set());_dirtyPlans.get(ex.id).add(pl.id);any=true;}});if(any){_dirtyMeta.add(ex.id);scheduleCloudPush(500);}delete ex._needsImageCleanup;}
 function _mergePlanInto(loc,rem){try{
   const rd=(rem&&rem.data)||{}, od=loc.data||(loc.data={});
   ['rresults','results','rmemos','rnotes'].forEach(k=>{
@@ -3398,11 +3450,27 @@ function _mergePlanInto(loc,rem){try{
   ra.forEach(x=>{ if(!x||!x.id||lt[x.id])return; if(have.has(x.id))_carryAttachmentImage(have.get(x.id),x);else{oa.push(x);have.set(x.id,x);} });
   Object.keys(rt).forEach(k=>{ if(lt[k]==null) lt[k]=rt[k]; });
 }catch(e){}}
-async function fbSaveExperiment(ex){if(!ex)return;if(!ex.updatedAt)ex.updatedAt=Date.now();const id=ex.id,known=(ex._knownPlanIds instanceof Set)?ex._knownPlanIds:new Set();const current=((ex.state||{}).plans||[]),curIds=new Set(current.map(p=>p.id));const full=_dirtyFull.has(id)||!known.size;const dirty=_dirtyPlans.get(id)||new Set();let write=[];if(full){write=current.filter(p=>!known.has(p.id)||dirty.has(p.id));if(!known.size)write=current.slice();for(const old of known)if(!curIds.has(old)){await fbDb('experiments/'+encodeURIComponent(id)+'/plans/'+encodeURIComponent(old),'DELETE');queueImagePrefixDelete(_imgPrefix(id,old));}}else write=current.filter(p=>dirty.has(p.id));let _mgd=false;for(const pl of write){await preparePlanAttachments(ex,pl);try{if(pl.syncedAt){const rAt=await fbDb('experiments/'+encodeURIComponent(id)+'/plans/'+encodeURIComponent(pl.id)+'/updatedAt','GET');if(rAt&&(+rAt||0)!==(+pl.syncedAt||0)){const rem=await fbDb('experiments/'+encodeURIComponent(id)+'/plans/'+encodeURIComponent(pl.id),'GET');if(rem){_mergePlanInto(pl,rem);_mgd=true;}}}}catch(_e){}pl.updatedAt=Date.now();await fbDb('experiments/'+encodeURIComponent(id)+'/plans/'+encodeURIComponent(pl.id),'PUT',_cleanPlan(pl,false));pl.syncedAt=pl.updatedAt;}if(_mgd){try{toast('👥 다른 사람의 입력을 함께 반영했어요');if(root.screen==='sim')render();}catch(_e){}}await fbDb('experiments/'+encodeURIComponent(id)+'/meta','PUT',_meta(ex));await fbDb('summaries/'+encodeURIComponent(id),'PUT',_summary(ex));ex.planSyncedAt=+ex.updatedAt||0;_setRemoteFlags(ex,Array.from(curIds));_dirtyPlans.delete(id);_dirtyMeta.delete(id);_dirtyFull.delete(id);}
-async function fbLoadExperiment(id){const meta=await fbDb('experiments/'+encodeURIComponent(id)+'/meta','GET');if(!meta)throw new Error('NOT_FOUND');const po=await fbDb('experiments/'+encodeURIComponent(id)+'/plans','GET')||{};const order=(meta.planOrder||[]).map(x=>x.id),ids=order.length?order:Object.keys(po);const plans=ids.map(k=>po[k]).filter(Boolean);plans.forEach(p=>{if(p)p.syncedAt=+p.updatedAt||0;});const ex=Object.assign({},meta);delete ex.planOrder;const sm=ex.stateMeta||{};delete ex.stateMeta;ex.state=Object.assign({},sm,{plans});if(!ex.state.active)ex.state.active={plan:Math.max(0,plans.length-1),view:'plan'};ex.planSyncedAt=+ex.updatedAt||0;_setRemoteFlags(ex,ids);return ex;}
+async function fbSaveExperiment(ex){
+  if(!ex)return;if(!ex.updatedAt)ex.updatedAt=Date.now();
+  const id=ex.id,known=(ex._knownPlanIds instanceof Set)?ex._knownPlanIds:new Set(),current=((ex.state||{}).plans||[]),curIds=new Set(current.map(p=>p.id));
+  const full=_dirtyFull.has(id)||!known.size,dirty=_dirtyPlans.get(id)||new Set();let write=[];
+  if(full){write=current.filter(p=>!known.has(p.id)||dirty.has(p.id));if(!known.size)write=current.slice();for(const old of known)if(!curIds.has(old)){await fbDb('experiments/'+encodeURIComponent(id)+'/plans/'+encodeURIComponent(old),'DELETE');queueImagePrefixDelete(_imgPrefix(id,old));}}
+  else write=current.filter(p=>dirty.has(p.id));
+  let merged=false;const retry=new Set();
+  for(const pl of write){
+    const prep=await preparePlanAttachments(ex,pl);if(prep.legacyFailed){_scheduleImageRetry();throw new Error('기존 사진의 Storage 이관이 끝나지 않아 서버 원본을 보존했습니다');}
+    try{if(pl.syncedAt){const rAt=await fbDb('experiments/'+encodeURIComponent(id)+'/plans/'+encodeURIComponent(pl.id)+'/updatedAt','GET');if(rAt&&(+rAt||0)!==(+pl.syncedAt||0)){const rem=await fbDb('experiments/'+encodeURIComponent(id)+'/plans/'+encodeURIComponent(pl.id),'GET');if(rem){_mergePlanInto(pl,rem);merged=true;}}}}catch(_e){}
+    pl.updatedAt=Date.now();await fbDb('experiments/'+encodeURIComponent(id)+'/plans/'+encodeURIComponent(pl.id),'PUT',_cleanPlan(pl,false));pl.syncedAt=pl.updatedAt;if(prep.failed)retry.add(pl.id);
+  }
+  if(merged){try{toast('👥 다른 사람의 입력을 함께 반영했어요');if(root.screen==='sim')render();}catch(_e){}}
+  await fbDb('experiments/'+encodeURIComponent(id)+'/meta','PUT',_meta(ex));await fbDb('summaries/'+encodeURIComponent(id),'PUT',_summary(ex));ex.planSyncedAt=+ex.updatedAt||0;_setRemoteFlags(ex,Array.from(curIds));
+  if(retry.size){_dirtyPlans.set(id,retry);_scheduleImageRetry();}else _dirtyPlans.delete(id);
+  _dirtyMeta.delete(id);_dirtyFull.delete(id);
+}
+async function fbLoadExperiment(id){const meta=await fbDb('experiments/'+encodeURIComponent(id)+'/meta','GET');if(!meta)throw new Error('NOT_FOUND');const po=await fbDb('experiments/'+encodeURIComponent(id)+'/plans','GET')||{};const order=(meta.planOrder||[]).map(x=>x.id),ids=order.length?order:Object.keys(po);const plans=ids.map(k=>po[k]).filter(Boolean);plans.forEach(p=>{if(p)p.syncedAt=+p.updatedAt||0;});const ex=Object.assign({},meta);delete ex.planOrder;const sm=ex.stateMeta||{};delete ex.stateMeta;ex.state=Object.assign({},sm,{plans});if(!ex.state.active)ex.state.active={plan:Math.max(0,plans.length-1),view:'plan'};ex.planSyncedAt=+ex.updatedAt||0;_setRemoteFlags(ex,ids);_flagLegacyImageBodies(ex);return ex;}
 function _remoteStub(s){const ex={id:s.id,name:s.name||'',type:s.type||'coat',date:s.date||'',updatedAt:+s.updatedAt||0,status:s.status||'run',owner:s.owner||'',note:s.note||'',noteEdited:!!s.noteEdited,notePreview:s.notePreview||'',prog:+s.prog||0,remoteOnly:true,state:{active:{plan:+s.activePlan||0,view:s.activeView||'plan'},plans:[]}};try{Object.defineProperty(ex,'_remoteLoaded',{value:false,writable:true,configurable:true});}catch(e){}return ex;}
 async function cloudLoadSummaries(silent){try{ const _ml=await fbDb('settings/metricLib','GET'); if(_ml&&Array.isArray(_ml.items)&&(+_ml.updatedAt||0)>((+root._mlibAt)||0)){ root.metricLib=_ml.items; root._mlibAt=(+_ml.updatedAt)||Date.now(); try{_mlibFill();}catch(_e){} try{persistNow();}catch(_e){} } }catch(_e){}
-  const o=await fbDb('summaries','GET')||{};const list=Object.keys(o).map(k=>o[k]).filter(Boolean);const by=new Map((root.experiments||[]).map(e=>[e.id,e]));const remoteIds=new Set();for(const s of list){remoteIds.add(s.id);const ex=by.get(s.id);if(!ex){root.experiments.push(_remoteStub(s));continue;}const _dty=_dirtyMeta.has(ex.id)||_dirtyFull.has(ex.id)||_dirtyPlans.has(ex.id);const _act=(root.screen==='sim'&&EXP()&&EXP().id===ex.id);const _stale=(+s.updatedAt||0)!==(+ex.planSyncedAt||0);if(!_dty){if(_act&&_stale&&!_editingNow()){try{const fresh=await fbLoadExperiment(ex.id);_carryExperimentImages(ex,fresh);const i=root.experiments.indexOf(ex);root.experiments[i]=fresh;root.activeExp=i;appState=fresh.state;try{render();hydrateVisibleAttachmentThumbs();}catch(_e){}}catch(e){}}else if((+s.updatedAt||0)>(+ex.updatedAt||0)){Object.assign(ex,{name:s.name,type:s.type,date:s.date,updatedAt:s.updatedAt,status:s.status,owner:s.owner,note:s.note,noteEdited:s.noteEdited,notePreview:s.notePreview,prog:s.prog});}}}
+  const o=await fbDb('summaries','GET')||{};const list=Object.keys(o).map(k=>o[k]).filter(Boolean);const by=new Map((root.experiments||[]).map(e=>[e.id,e]));const remoteIds=new Set();for(const s of list){remoteIds.add(s.id);const ex=by.get(s.id);if(!ex){root.experiments.push(_remoteStub(s));continue;}const _dty=_dirtyMeta.has(ex.id)||_dirtyFull.has(ex.id)||_dirtyPlans.has(ex.id);const _act=(root.screen==='sim'&&EXP()&&EXP().id===ex.id);const _stale=(+s.updatedAt||0)!==(+ex.planSyncedAt||0);if(!_dty){if(_act&&_stale&&!_editingNow()){try{const fresh=await fbLoadExperiment(ex.id);_carryExperimentImages(ex,fresh);const i=root.experiments.indexOf(ex);root.experiments[i]=fresh;root.activeExp=i;appState=fresh.state;_queueLegacyImageCleanup(fresh);try{render();hydrateVisibleAttachmentThumbs();}catch(_e){}}catch(e){}}else if((+s.updatedAt||0)>(+ex.updatedAt||0)){Object.assign(ex,{name:s.name,type:s.type,date:s.date,updatedAt:s.updatedAt,status:s.status,owner:s.owner,note:s.note,noteEdited:s.noteEdited,notePreview:s.notePreview,prog:s.prog});}}}
   const activeId=(root.screen==='sim'&&EXP())?EXP().id:null;
   root.experiments=(root.experiments||[]).filter(ex=>{const known=(ex.remoteOnly||ex._remoteLoaded===true);const dirty=_dirtyMeta.has(ex.id)||_dirtyFull.has(ex.id)||_dirtyPlans.has(ex.id);return !(known&&!remoteIds.has(ex.id)&&!dirty);});
   if(activeId){const ni=root.experiments.findIndex(e=>e.id===activeId);if(ni>=0)root.activeExp=ni;else{root.screen='home';appState=null;root.activeExp=Math.max(0,root.experiments.length-1);}}
@@ -3410,14 +3478,36 @@ async function cloudLoadSummaries(silent){try{ const _ml=await fbDb('settings/me
   if(root.screen==='home')render();return list;}
 function _editingNow(){const el=document.activeElement;return !!(el&&(el.tagName==='INPUT'||el.tagName==='TEXTAREA'));}
 async function cloudFlush(silent){if(!fbConfigReady()){cloudStat('err','☁ Firebase 설정 필요');return;}if(!FB_AUTH.refreshToken&&!FB_AUTH.idToken){cloudStat('err','☁ 로그인 필요');return;}if(_csBusy){_csQueued=true;return;}_csBusy=true;if(!silent)cloudStat('busy','☁ 저장 중…');try{for(const id of Array.from(_deletedRemote)){await fbDb('summaries/'+encodeURIComponent(id),'DELETE');await fbDb('experiments/'+encodeURIComponent(id),'DELETE');_deletedRemote.delete(id);}const ids=new Set([..._dirtyMeta,..._dirtyFull,..._dirtyPlans.keys()]);for(const id of ids){const ex=(root.experiments||[]).find(e=>e.id===id);if(ex)await fbSaveExperiment(ex);}if(_mlibDirty){ try{ await fbDb('settings/metricLib','PUT',{items:root.metricLib||[],updatedAt:(+root._mlibAt)||Date.now()}); _mlibDirty=false; }catch(e){} }await _flushImageDeletes();const t=new Date();cloudStat('on','☁ '+(whoAmI()?whoAmI()+' · ':'')+String(t.getHours()).padStart(2,'0')+':'+String(t.getMinutes()).padStart(2,'0'));}catch(e){if(String(e.message).indexOf('LOGIN_REQUIRED')>=0)cloudStat('err','☁ 로그인 필요');else cloudStat('err','☁ 저장 실패 — 눌러 재시도');}finally{_csBusy=false;if(_csQueued){_csQueued=false;setTimeout(()=>cloudFlush(true),800);}}}
-async function cloudSync(silent){if(syncMode()==='claude'){cloudStat('on','☁ 로컬 공유 모드');return;}try{await cloudFlush(true);if(!_editingNow())await cloudLoadSummaries(!!silent);if(!silent&&root.screen==='sim'&&EXP()&&!_editingNow()){const ex=EXP();if(!_dirtyMeta.has(ex.id)&&!_dirtyFull.has(ex.id)&&!_dirtyPlans.has(ex.id)){try{const fresh=await fbLoadExperiment(ex.id);_carryExperimentImages(ex,fresh);const i=root.experiments.indexOf(ex);if(i>=0){root.experiments[i]=fresh;root.activeExp=i;appState=fresh.state;render();hydrateVisibleAttachmentThumbs();}}catch(_e){}}}if(!silent)toast('☁ 최신 내용으로 동기화됨');}catch(e){if(String(e.message).indexOf('LOGIN_REQUIRED')>=0)cloudStat('err','☁ 로그인 필요');else cloudStat('err','☁ 연결 실패');}}
-function scheduleCloudPush(){if(syncMode()==='none')return;clearTimeout(_cpushT);if(syncMode()==='fb')cloudStat('busy','☁ 저장 대기…');_cpushT=setTimeout(()=>cloudFlush(true),1800);}
-async function openExperimentByIndex(i){const ex=root.experiments[i];if(!ex)return;try{if(root.screen==='sim'&&EXP()&&EXP().id!==ex.id)releaseExperimentImages(EXP());}catch(e){}const _hasLocal=!!((ex.state||{}).plans||[]).length;const _dty=_dirtyMeta.has(ex.id)||_dirtyFull.has(ex.id)||_dirtyPlans.has(ex.id);const _stale=fbConfigReady()&&!_dty&&((+ex.planSyncedAt||0)!==(+ex.updatedAt||0));if(ex.remoteOnly||ex._remoteLoaded===false||!_hasLocal||_stale){if(!fbConfigReady()){fbOpen();toast('먼저 Firebase 연결 설정이 필요해요');return;}if(!FB_AUTH.refreshToken&&!FB_AUTH.idToken){gateShow();toast('팀 비밀번호 입력 후 열 수 있어요');return;}cloudStat('busy','☁ 최신 내용 불러오는 중…');try{const full=await fbLoadExperiment(ex.id);_carryExperimentImages(ex,full);root.experiments[i]=full;root.activeExp=i;appState=full.state;root.screen='sim';render();hydrateVisibleAttachmentThumbs();cloudStat('on','☁ 연결됨');return;}catch(e){if(!_hasLocal){toast('실험을 불러오지 못했어요');cloudStat('err','☁ 불러오기 실패');return;}cloudStat('err','☁ 최신 내용 확인 실패 — 저장된 내용 표시');}}root.activeExp=i;appState=ex.state;root.screen='sim';if(!appState.active||typeof appState.active!=='object')appState.active={plan:Math.max(0,(appState.plans||[]).length-1),view:'plan'};const mx=Math.max(0,(appState.plans||[]).length-1);appState.active.plan=Math.max(0,Math.min(mx,+appState.active.plan||0));if(appState.active.view!=='plan'&&appState.active.view!=='result')appState.active.view='plan';render();hydrateVisibleAttachmentThumbs();}
+async function cloudSync(silent){if(syncMode()==='claude'){cloudStat('on','☁ 로컬 공유 모드');return;}try{await cloudFlush(true);if(!_editingNow())await cloudLoadSummaries(!!silent);if(!silent&&root.screen==='sim'&&EXP()&&!_editingNow()){const ex=EXP();if(!_dirtyMeta.has(ex.id)&&!_dirtyFull.has(ex.id)&&!_dirtyPlans.has(ex.id)){try{const fresh=await fbLoadExperiment(ex.id);_carryExperimentImages(ex,fresh);const i=root.experiments.indexOf(ex);if(i>=0){root.experiments[i]=fresh;root.activeExp=i;appState=fresh.state;_queueLegacyImageCleanup(fresh);render();hydrateVisibleAttachmentThumbs();}}catch(_e){}}}if(!silent)toast('☁ 최신 내용으로 동기화됨');}catch(e){if(String(e.message).indexOf('LOGIN_REQUIRED')>=0)cloudStat('err','☁ 로그인 필요');else cloudStat('err','☁ 연결 실패');}}
+function _scheduleImageRetry(){clearTimeout(_imgRetryT);_imgRetryT=setTimeout(()=>cloudFlush(true),5000);}
+function scheduleCloudPush(delay){if(syncMode()==='none')return;clearTimeout(_cpushT);if(syncMode()==='fb')cloudStat('busy','☁ 저장 대기…');const ms=(delay==null)?1800:Math.max(80,+delay||0);_cpushT=setTimeout(()=>cloudFlush(true),ms);}
+async function openExperimentByIndex(i){const ex=root.experiments[i];if(!ex)return;try{if(root.screen==='sim'&&EXP()&&EXP().id!==ex.id)releaseExperimentImages(EXP());}catch(e){}const _hasLocal=!!((ex.state||{}).plans||[]).length;const _dty=_dirtyMeta.has(ex.id)||_dirtyFull.has(ex.id)||_dirtyPlans.has(ex.id);const _stale=fbConfigReady()&&!_dty&&((+ex.planSyncedAt||0)!==(+ex.updatedAt||0));if(ex.remoteOnly||ex._remoteLoaded===false||!_hasLocal||_stale){if(!fbConfigReady()){fbOpen();toast('먼저 Firebase 연결 설정이 필요해요');return;}if(!FB_AUTH.refreshToken&&!FB_AUTH.idToken){gateShow();toast('팀 비밀번호 입력 후 열 수 있어요');return;}cloudStat('busy','☁ 최신 내용 불러오는 중…');try{const full=await fbLoadExperiment(ex.id);_carryExperimentImages(ex,full);root.experiments[i]=full;root.activeExp=i;appState=full.state;root.screen='sim';_queueLegacyImageCleanup(full);render();hydrateVisibleAttachmentThumbs();cloudStat('on','☁ 연결됨');return;}catch(e){if(!_hasLocal){toast('실험을 불러오지 못했어요');cloudStat('err','☁ 불러오기 실패');return;}cloudStat('err','☁ 최신 내용 확인 실패 — 저장된 내용 표시');}}root.activeExp=i;appState=ex.state;root.screen='sim';if(!appState.active||typeof appState.active!=='object')appState.active={plan:Math.max(0,(appState.plans||[]).length-1),view:'plan'};const mx=Math.max(0,(appState.plans||[]).length-1);appState.active.plan=Math.max(0,Math.min(mx,+appState.active.plan||0));if(appState.active.view!=='plan'&&appState.active.view!=='result')appState.active.view='plan';_flagLegacyImageBodies(ex);_queueLegacyImageCleanup(ex);render();hydrateVisibleAttachmentThumbs();}
 async function openAttachmentLightbox(im){if(!im)return;_preferStoredFull(im);let _src=im.data||null;if(!_src&&(im.fullPath||im.fullUrl)){try{delete im._imgErr;_src=await ensureAttachmentFull(im);}catch(e){try{_src=await ensureAttachmentFullUrl(im);}catch(_e){const m=String((e&&e.message)||e);im._imgErr=m;try{console.error('IMG FAIL',im.fullPath,m);}catch(_x){}if(!im.thumb){toast('이미지 실패: '+_imgErrTxt(m));try{if(root.screen==='sim')render();}catch(_x){}return;}}}}if(!_src)_src=im.thumb;if(!_src)return;const li=$id('lbimg');li.classList.remove('zoom');li.src=_src;$id('lbname').textContent=(im.title||im.name)+' · '+new Date(im.ts).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});$id('lightbox').dataset.img=im.id;$id('lightbox').classList.add('show');try{annoDecorate();}catch(e){}}
 async function exportReportHtmlCloud(){try{await hydratePlanFull(curPlan());const ex=EXP();download((ex.name||'실험')+'_결과_'+ymd()+'.html',buildReportDoc(),'text/html;charset=utf-8');toast('⬇ 리포트 HTML 저장됨');}catch(e){toast('내보내기 실패');}}
 async function exportReportPdfCloud(){try{await hydratePlanFull(curPlan());const doc=buildReportDoc().replace('</body>','<scr'+'ipt>window.onload=function(){setTimeout(function(){window.print();},300);};</scr'+'ipt></body>');const win=window.open('','_blank');if(!win)toast('팝업 차단을 해제해 주세요');else{win.document.open();win.document.write(doc);win.document.close();toast('인쇄창에서 PDF로 저장 선택');}}catch(e){toast('PDF 열기 실패');}}
 async function exportXlsxReportCloud(){try{return await exportXlsxReport();}catch(e){toast('\u26a0 \uc5d1\uc140 \uc624\ub958: '+((e&&e.message)||e));}}
-async function fbMigrateRun(){if(!fbConfigReady())return fbOpen();if(!FB_AUTH.refreshToken&&!FB_AUTH.idToken){gateShow();toast('먼저 팀 비밀번호로 입장해 주세요');return;}cloudStat('busy','☁ 기존 데이터 이관 중…');try{let n=0;for(const ex of (root.experiments||[])){if(ex.remoteOnly)continue;const ids=((ex.state||{}).plans||[]).map(p=>p.id);for(const pl of ((ex.state||{}).plans||[])){await preparePlanAttachments(ex,pl);await fbDb('experiments/'+encodeURIComponent(ex.id)+'/plans/'+encodeURIComponent(pl.id),'PUT',_cleanPlan(pl,false));}await fbDb('experiments/'+encodeURIComponent(ex.id)+'/meta','PUT',_meta(ex));await fbDb('summaries/'+encodeURIComponent(ex.id),'PUT',_summary(ex));_setRemoteFlags(ex,ids);n++;cloudStat('busy','☁ 이관 중 '+n+'/'+root.experiments.length);}toast('✅ 기존 데이터 '+n+'개 이관 완료');await cloudLoadSummaries(true);cloudStat('on','☁ 이관 완료');}catch(e){cloudStat('err','☁ 이관 실패');toast('이관 실패 — 설정·권한·Storage를 확인해 주세요');}}
+async function fbMigrateRun(){
+  if(!fbConfigReady())return fbOpen();
+  if(!FB_AUTH.refreshToken&&!FB_AUTH.idToken){gateShow();toast('먼저 팀 비밀번호로 입장해 주세요');return;}
+  cloudStat('busy','☁ 기존 데이터 이관 중…');
+  try{
+    let n=0;
+    for(const ex of (root.experiments||[])){
+      if(ex.remoteOnly)continue;
+      const ids=((ex.state||{}).plans||[]).map(p=>p.id);
+      for(const pl of ((ex.state||{}).plans||[])){
+        const prep=await preparePlanAttachments(ex,pl);
+        if(prep.legacyFailed)throw new Error('기존 사진의 Storage 이관이 끝나지 않아 서버 원본을 보존했습니다');
+        await fbDb('experiments/'+encodeURIComponent(ex.id)+'/plans/'+encodeURIComponent(pl.id),'PUT',_cleanPlan(pl,false));
+        if(prep.failed){if(!_dirtyPlans.has(ex.id))_dirtyPlans.set(ex.id,new Set());_dirtyPlans.get(ex.id).add(pl.id);_dirtyMeta.add(ex.id);_scheduleImageRetry();}
+      }
+      await fbDb('experiments/'+encodeURIComponent(ex.id)+'/meta','PUT',_meta(ex));
+      await fbDb('summaries/'+encodeURIComponent(ex.id),'PUT',_summary(ex));
+      _setRemoteFlags(ex,ids);n++;cloudStat('busy','☁ 이관 중 '+n+'/'+root.experiments.length);
+    }
+    toast('✅ 기존 데이터 '+n+'개 이관 완료');await cloudLoadSummaries(true);cloudStat('on','☁ 이관 완료');
+  }catch(e){cloudStat('err','☁ 이관 실패');toast('이관 실패 — 기존 사진은 보존했습니다. 설정·권한·Storage를 확인해 주세요');}
+}
 const _presId=Math.random().toString(36).slice(2,10);
 async function presencePing(){if(!fbConfigReady()||(!FB_AUTH.refreshToken&&!FB_AUTH.idToken))return;try{const ex=(root.screen==='sim')?EXP():null;const pl=(root.screen==='sim')?curPlan():null;await fbDb('presence/'+_presId,'PUT',{n:whoAmI()||'팀원',e:ex?ex.id:'',p:pl?pl.id:'',at:Date.now()});}catch(e){}}
 async function presenceRead(){try{const el=$id('presence');if(!el)return;const o=await fbDb('presence','GET')||{};const now=Date.now();const ex=(root.screen==='sim')?EXP():null;
@@ -3444,10 +3534,10 @@ async function storageSelfTest(){
     catch(e){ L.push('다운로드 ✘ '+String((e&&e.message)||e)); }
     try{ await fbStorageDelete(p); L.push('삭제 ✔ 성공'); }catch(e){ L.push('삭제 ✘ '+String((e&&e.message)||e)); }
   }
-  let n=0,noPath=0,hasData=0,dbBack=0,err=0,e1='';
-  try{ (root.experiments||[]).forEach(x=>(((x.state||{}).plans)||[]).forEach(pl=>((pl.attach||[]).forEach(a=>{ if(!a)return; n++;if(a.data||a.thumb)dbBack++; if(!(a.fullPath||a.thumbPath)){noPath++; if(a.data||a.thumb)hasData++;} if(a._imgErr){err++; if(!e1)e1=a._imgErr;} })))); }catch(e){}
+  let n=0,ready=0,pending=0,noPath=0,hasData=0,err=0,e1='';
+  try{ (root.experiments||[]).forEach(x=>(((x.state||{}).plans)||[]).forEach(pl=>((pl.attach||[]).forEach(a=>{ if(!a)return; n++;if(a.fullPath&&a.thumbPath&&!a.pendUpload)ready++;if(a.pendUpload||a.imageDirty)pending++;if(!(a.fullPath&&a.thumbPath)){noPath++;if(a.data||a.thumb)hasData++;}if(a._imgErr){err++;if(!e1)e1=a._imgErr;} })))); }catch(e){}
   L.push('');
-  L.push('첨부 '+n+'개 / DB·기기 복구본 '+dbBack+'개 / 서버경로 없음 '+noPath+'개 (그중 원본 있음 '+hasData+'개) / 불러오기 실패 '+err+'개');
+  L.push('첨부 '+n+'개 / Storage 완료 '+ready+'개 / 업로드 대기 '+pending+'개 / 서버경로 없음 '+noPath+'개 / 불러오기 실패 '+err+'개');
   if(e1)L.push('첫 실패 사유: '+e1);
   L.push('');
   let tokOk=false;
@@ -3457,7 +3547,7 @@ async function storageSelfTest(){
   L.push('');
   if(!upOk) L.push('→ Storage 규칙이 게시되지 않았거나 버킷 이름이 다릅니다.');
   else if(tokOk) L.push('→ 표시 경로 정상. 화면에 안 보이면 새로고침하세요.');
-  else if(noPath&&hasData) L.push('→ 원본이 이 기기에 있으니 아래 [이미지 서버로 올리기]를 누르세요.');
+  else if(noPath&&hasData) L.push('→ 이 기기에 업로드 대기 원본이 있으니 아래 [이미지 서버로 올리기]를 누르세요.');
   else if(noPath) L.push('→ 원본이 사라진 첨부입니다. 삭제 후 다시 첨부해 주세요.');
   else if(err) L.push('→ 위 실패 사유를 알려주세요.');
   else L.push('→ 이상 없음.');
@@ -3472,9 +3562,9 @@ async function reuploadAllImages(){
     for(const ex of (root.experiments||[])){
       const pls=((ex.state||{}).plans)||[]; let touched=false;
       for(const pl of pls){
-        const need=(pl.attach||[]).some(a=>a&&(a.data||a.thumb));
+        const need=(pl.attach||[]).some(a=>a&&(a.data||a.thumb||a.pendUpload||a.imageDirty||!a.fullPath||!a.thumbPath));
         if(!need)continue;
-        try{ await preparePlanAttachments(ex,pl); await fbDb('experiments/'+encodeURIComponent(ex.id)+'/plans/'+encodeURIComponent(pl.id),'PUT',_cleanPlan(pl,false)); pl.syncedAt=+pl.updatedAt||Date.now(); ok++; touched=true; }
+        try{ const prep=await preparePlanAttachments(ex,pl);if(prep.legacyFailed)throw new Error('기존 사진 Storage 이관 실패');await fbDb('experiments/'+encodeURIComponent(ex.id)+'/plans/'+encodeURIComponent(pl.id),'PUT',_cleanPlan(pl,false));pl.syncedAt=+pl.updatedAt||Date.now();if(prep.failed){if(!_dirtyPlans.has(ex.id))_dirtyPlans.set(ex.id,new Set());_dirtyPlans.get(ex.id).add(pl.id);_dirtyMeta.add(ex.id);_scheduleImageRetry();}ok++;touched=true; }
         catch(e){ fail++; }
       }
       if(touched){ try{ await fbDb('experiments/'+encodeURIComponent(ex.id)+'/meta','PUT',_meta(ex)); await fbDb('summaries/'+encodeURIComponent(ex.id),'PUT',_summary(ex)); }catch(e){} }
@@ -4166,10 +4256,16 @@ function _mlpickClose(){
 function _secKey(v){return String(v||'').trim().replace(/\s+/g,' ').toLowerCase();}
 function _placePicker(p,btn,w){
   document.body.appendChild(p);
-  var r=btn.getBoundingClientRect(); var pw=Math.min(w||300,window.innerWidth-16);
+  p.setAttribute('role','dialog');p.setAttribute('aria-modal','false');
+  var r=btn.getBoundingClientRect(),vw=window.innerWidth||360,vh=window.innerHeight||640,sx=window.scrollX||window.pageXOffset||0,sy=window.scrollY||window.pageYOffset||0;
+  var pw=Math.min(w||300,vw-16);
   p.style.width=pw+'px';
-  p.style.left=Math.max(8,Math.min(r.right-pw,window.innerWidth-pw-8))+'px';
-  p.style.top=Math.max(8,Math.min(r.bottom+6,window.innerHeight-Math.min(320,window.innerHeight*0.6)))+'px';
+  p.style.left=(sx+Math.max(8,Math.min(r.right-pw,vw-pw-8)))+'px';
+  var below=Math.max(0,vh-r.bottom-10),above=Math.max(0,r.top-10),openBelow=(below>=Math.min(360,vh*.55)||below>=above);
+  var available=openBelow?below:above,maxH=Math.max(150,Math.min(620,vh-16,Math.max(150,available)));
+  p.style.maxHeight=maxH+'px';p.style.visibility='hidden';
+  var ph=Math.min(p.scrollHeight,maxH),top=openBelow?(sy+r.bottom+6):(sy+r.top-ph-6);
+  top=Math.max(sy+8,Math.min(top,sy+vh-ph-8));p.style.top=top+'px';p.style.visibility='visible';
   _mlpickOutsideTimer=setTimeout(function(){
     _mlpickOutsideTimer=null;
     if($id('mlpick')!==p)return;
@@ -4192,7 +4288,7 @@ function _metricPick(btn,mode,g){
   }
   _mlpickClose();
   var p=document.createElement('div'); p.id='mlpick'; p.className='mlpick';
-  p.innerHTML=(lib.length?'<div class="mlpick-h multihelp"><b>여러 개 선택 가능</b><span>드래그 또는 Ctrl+클릭</span></div>':'<div class="mlpick-h">추가할 라이브러리 항목이 없어요</div>')+lib.map(function(li,i){return '<button class="mlpick-it multi" type="button" data-mlp="'+i+'" aria-pressed="false">'+escT(li.name)+'</button>';}).join('')+'<button class="mlpick-it free" type="button" data-mlp="free">＋ 직접 입력</button>'+(lib.length?'<div class="mlpick-actions"><button class="btn primary mlpick-addsel" type="button" data-mlp-add disabled>선택 항목 추가 (0)</button></div>':'');
+  p.innerHTML='<div class="mlpick-h multihelp"><div><b>항목 선택</b><span>'+(lib.length?'여러 개 선택 · 드래그 또는 Ctrl+클릭':'추가할 라이브러리 항목이 없어요')+'</span></div><button class="mlpick-close" type="button" data-mlp-close aria-label="닫기">✕</button></div><div class="mlpick-scroll">'+lib.map(function(li,i){return '<button class="mlpick-it multi" type="button" data-mlp="'+i+'" aria-pressed="false">'+escT(li.name)+'</button>';}).join('')+'<button class="mlpick-it free" type="button" data-mlp="free">＋ 직접 입력</button></div>'+(lib.length?'<div class="mlpick-actions"><button class="btn primary mlpick-addsel" type="button" data-mlp-add disabled>선택한 항목 추가 (0)</button></div>':'');
   _placePicker(p,btn,300);
   var selected={}; var dragging=false, dragMode=true, ignoreClick=false;
   function setSelected(row,on){
@@ -4201,7 +4297,7 @@ function _metricPick(btn,mode,g){
     if(on)selected[i]=1;else delete selected[i];
     row.classList.toggle('sel',!!on); row.setAttribute('aria-pressed',on?'true':'false');
     var n=Object.keys(selected).length, add=p.querySelector('[data-mlp-add]');
-    if(add){add.disabled=!n;add.textContent='선택 항목 추가 ('+n+')';}
+    if(add){add.disabled=!n;add.textContent='선택한 항목 추가 ('+n+')';}
   }
   function commitSelected(){
     var ids=Object.keys(selected).map(Number).sort(function(a,b){return a-b;}); if(!ids.length)return;
@@ -4224,7 +4320,8 @@ function _metricPick(btn,mode,g){
   document.addEventListener('pointerup',endDrag);document.addEventListener('pointercancel',endDrag);
   p._pickerCleanup=function(){document.removeEventListener('pointerup',endDrag);document.removeEventListener('pointercancel',endDrag);};
   p.addEventListener('click',function(ev){
-    var add=ev.target.closest('[data-mlp-add]');var b=ev.target.closest('.mlpick-it');if(!add&&!b)return;ev.stopPropagation();
+    var close=ev.target.closest('[data-mlp-close]');var add=ev.target.closest('[data-mlp-add]');var b=ev.target.closest('.mlpick-it');if(!close&&!add&&!b)return;ev.stopPropagation();
+    if(close){_mlpickClose();return;}
     if(add){commitSelected();return;}
     if(b.dataset.mlp==='free'){_metricAddDirect(mode,g);_mlpickClose();return;}
     if(ignoreClick)return;
@@ -4238,7 +4335,7 @@ function _groupPick(btn){
   (root.metricLib||[]).forEach(function(li){var name=String(li.sec||'').trim(); var k=_secKey(name); if(k&&!seen[k]&&!existing[k]){seen[k]=1;sections.push(name);}});
   _mlpickClose();
   var p=document.createElement('div'); p.id='mlpick'; p.className='mlpick';
-  p.innerHTML=(sections.length?'<div class="mlpick-h">라이브러리 그룹 추천</div>':'<div class="mlpick-h">추가할 추천 그룹이 없어요</div>')+sections.map(function(name,i){return '<button class="mlpick-it" data-gpick="'+i+'">'+escT(name)+'</button>';}).join('')+'<div class="gpick-direct"><input type="text" data-gpick-name placeholder="다른 그룹명 입력" autocomplete="off"><button class="btn sm" data-gpick-add>추가</button></div>';
+  p.innerHTML='<div class="mlpick-h multihelp"><div><b>그룹 추가</b><span>'+(sections.length?'측정값 라이브러리의 그룹 추천':'추가할 추천 그룹이 없어요')+'</span></div><button class="mlpick-close" type="button" data-mlp-close aria-label="닫기">✕</button></div><div class="mlpick-scroll">'+sections.map(function(name,i){return '<button class="mlpick-it" data-gpick="'+i+'">'+escT(name)+'</button>';}).join('')+'</div><div class="gpick-direct"><input type="text" data-gpick-name placeholder="다른 그룹명 입력" autocomplete="off"><button class="btn sm" data-gpick-add>추가</button></div>';
   _placePicker(p,btn,330);
   function addGroup(name){
     name=String(name||'').trim(); var input=p.querySelector('[data-gpick-name]');
@@ -4247,8 +4344,9 @@ function _groupPick(btn){
     D().rgroups.push({id:uid('g'),name:name}); persistNow(); _mlpickClose(); render(); toast('그룹 추가: '+name);
   }
   p.addEventListener('click',function(ev){
-    var pick=ev.target.closest('[data-gpick]'); var add=ev.target.closest('[data-gpick-add]');
-    if(pick){ev.stopPropagation();addGroup(sections[+pick.dataset.gpick]);}
+    var close=ev.target.closest('[data-mlp-close]');var pick=ev.target.closest('[data-gpick]'); var add=ev.target.closest('[data-gpick-add]');
+    if(close){ev.stopPropagation();_mlpickClose();}
+    else if(pick){ev.stopPropagation();addGroup(sections[+pick.dataset.gpick]);}
     else if(add){ev.stopPropagation();addGroup((p.querySelector('[data-gpick-name]')||{}).value);}
   });
   p.addEventListener('keydown',function(ev){if(ev.key==='Enter'&&ev.target.matches('[data-gpick-name]')){ev.preventDefault();ev.stopPropagation();addGroup(ev.target.value);}});
@@ -4299,7 +4397,7 @@ try{const _el=document.getElementById('__embed'); if(_el&&_el.textContent)_emb=J
 let _pick=_ls;
 if(_emb){ let _h=''; try{ let _m=0;(_emb.experiments||[]).forEach(function(x){if((x.updatedAt||0)>_m)_m=x.updatedAt;}); _h=String((JSON.stringify(_emb)||'').length)+':'+_m; }catch(e){}
   let _seen=''; try{_seen=localStorage.getItem('soocho_embed_seen')||'';}catch(e){}
-  if(_h&&_h!==_seen){ if(_ls){try{_undo.push(JSON.stringify(_ls));}catch(e){}} _pick=_emb; try{localStorage.setItem('soocho_embed_seen',_h);}catch(e){} setTimeout(function(){try{toast('📦 파일에 담긴 데이터로 열었어요'+(_ls?' · 이전 데이터는 ↩ 복구 가능':''));}catch(_e){}},500); }
+  if(_h&&_h!==_seen){ if(_ls){try{_pushHistory(_undo,JSON.stringify(_ls));}catch(e){}} _pick=_emb; try{localStorage.setItem('soocho_embed_seen',_h);}catch(e){} setTimeout(function(){try{toast('📦 파일에 담긴 데이터로 열었어요'+(_ls?' · 이전 데이터는 ↩ 복구 가능':''));}catch(_e){}},500); }
   else if(!_ls) _pick=_emb;
 }
 if(_pick){ try{ applyLoaded(_pick); }catch(e){} } root.screen='home'; appState=null; render(); updateUndoUI(); ['input','change'].forEach(ev=>document.addEventListener(ev,scheduleSave,true)); document.addEventListener('click',()=>setTimeout(scheduleSave,0),true); window.addEventListener('pagehide',persistNow); document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')persistNow();});
@@ -4357,7 +4455,7 @@ document.addEventListener('scroll',()=>{ try{ const mp=$id('mkpop'); if(mp&&!mp.
         mp.style.left=Math.round(x)+'px'; mp.style.top=Math.round(y)+'px'; } } }
   else closeMkPop(); } }catch(_e){} },true);
 document.addEventListener('pointerdown',e=>{ try{ const mp=$id('mkpop'); if(mp&&!mp.hidden){ const t=e.target; if(!(t.closest&&(t.closest('#mkpop')||t.closest('[data-mk]')))) closeMkPop(); } }catch(_e){} });
-try{ _lastSnap=JSON.stringify(root); const _localSnap=JSON.stringify(typeof cleanRootForLocal==='function'?cleanRootForLocal(root):root); const bk='soocho_backup_'+(new Date().toISOString().slice(0,10)); if(!localStorage.getItem(bk)) localStorage.setItem(bk,_localSnap); const ks=Object.keys(localStorage).filter(k=>k.indexOf('soocho_backup_')===0).sort(); while(ks.length>3) localStorage.removeItem(ks.shift()); }catch(e){}
+try{ _lastSnap=_undoSnapshot(); const _localSnap=JSON.stringify(typeof cleanRootForLocal==='function'?cleanRootForLocal(root):root); const bk='soocho_backup_'+(new Date().toISOString().slice(0,10)); if(!localStorage.getItem(bk)) localStorage.setItem(bk,_localSnap); const ks=Object.keys(localStorage).filter(k=>k.indexOf('soocho_backup_')===0).sort(); while(ks.length>3) localStorage.removeItem(ks.shift()); }catch(e){}
 updateUndoUI();
 (function(){ const pal=$id('palette'); if(!pal) return; pal.addEventListener('click',e=>{ if(e.target===pal){ palClose(); return; } if(e.target.closest&&e.target.closest('.pal-it')) setTimeout(palClose,0); }); const q=$id('palq'); q.addEventListener('input',()=>palRender(q.value)); q.addEventListener('keydown',e=>{ if(e.key==='ArrowDown'){e.preventDefault();palSel(_palIdx+1);} else if(e.key==='ArrowUp'){e.preventDefault();palSel(_palIdx-1);} else if(e.key==='Enter'){e.preventDefault();const el=$id('pallist').querySelector('.pal-it.sel');if(el)el.click();} else if(e.key==='Escape'){palClose();} }); const sm=$id('setmenu'); if(sm) sm.addEventListener('click',e=>{ if(e.target.closest&&e.target.closest('.set-it')) setTimeout(()=>{ /* keep open only for backup list refresh cases */ },0); }); })(); }catch(err){const c=document.getElementById('content');if(c)c.innerHTML='<div style="padding:22px;color:#b0524e;font-size:13px;line-height:1.6">화면을 그리는 중 오류가 났어요.<br><b>'+((err&&err.message)||err)+'</b><br><br>이 메시지를 캡처해서 알려주시면 고칠게요.</div>';}
 ;try{setTimeout(function(){try{ensureExcelJS().catch(function(){});}catch(e){}},2500);}catch(e){}
