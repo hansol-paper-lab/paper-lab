@@ -1910,7 +1910,7 @@ function _rotMarks90(a){ try{ (a.marks||[]).forEach(m=>{ if(m.pts) m.pts=m.pts.m
 const _recentFull=new Map();
 function _rememberFull(id,d){ try{ if(!id||!d)return; _recentFull.set(id,{data:d,ts:Date.now()}); if(_recentFull.size>24){ const k=_recentFull.keys().next().value; _recentFull.delete(k); } }catch(e){} }
 function _preferStoredFull(a){if(!a||a.imageDirty||a.pendUpload)return false;const remote=!!(a.fullPath||a.fullUrl),same=!!(a.data&&a.thumb&&(a.data===a.thumb||a.data.length<=a.thumb.length*1.12));if(remote&&same){delete a.data;return true;}return false;}
-async function _applyRot90(a){ const enc=await _rot90Data(a.data); a.data=enc.data; const nt=await _mkThumbFrom(enc.data); a.thumb=(nt&&nt.length>=200)?nt:enc.data; a.imageDirty=true;a.pendUpload=true;a.ar=(a.ar&&a.ar>0)?(1/a.ar):a.ar;a.fullW=enc.width;a.fullH=enc.height;_rotMarks90(a);a.fullKb=Math.ceil(enc.bytes/1024);a.thumbKb=Math.ceil(_dataBytes(a.thumb)/1024);a.kb=a.fullKb+a.thumbKb;_rememberFull(a.id,a.data); }
+async function _applyRot90(a){ const enc=await _rot90Data(a.data); a.data=enc.data; const nt=await _mkThumbFrom(enc.data); a.thumb=(nt&&nt.length>=200)?nt:enc.data; a.imageDirty=true;a.pendUpload=true;a.iv=Date.now();a.ar=(a.ar&&a.ar>0)?(1/a.ar):a.ar;a.fullW=enc.width;a.fullH=enc.height;_rotMarks90(a);a.fullKb=Math.ceil(enc.bytes/1024);a.thumbKb=Math.ceil(_dataBytes(a.thumb)/1024);a.kb=a.fullKb+a.thumbKb;_rememberFull(a.id,a.data); }
 async function rotateAttachment(id){const p=curPlan(),a=p&&(p.attach||[]).find(x=>x.id===id);if(!a||a._rotating)return;a._rotating=true;
   try{const rejected=_preferStoredFull(a),rc=_recentFull.get(a.id),fresh=rc&&(Date.now()-rc.ts)<1800000?rc.data:null;
     if(!a.data&&!rejected&&fresh)a.data=fresh;
@@ -3306,6 +3306,29 @@ function _storageAuth(tok,extra,scheme){return Object.assign({Authorization:(sch
 async function _storageFetch(url,opt,tok){const errs=[],accept=((opt||{})._accept||[]),base=Object.assign({},opt||{});delete base._accept;for(const scheme of ['Firebase','Bearer']){try{const init=Object.assign({},base,{headers:_storageAuth(tok,base.headers,scheme)});const r=await fetch(url,init);if(r.ok||accept.indexOf(r.status)>=0)return r;errs.push(scheme+' HTTP '+r.status);}catch(e){errs.push(scheme+' '+_shortImgErr(e));}}throw new Error(errs.join(' / ')||'STORAGE NETWORK');}
 function _xhrStorageBlob(url,tok,scheme){return new Promise((res,rej)=>{try{const x=new XMLHttpRequest();x.open('GET',url,true);x.responseType='blob';x.timeout=25000;x.setRequestHeader('Authorization',(scheme||'Firebase')+' '+tok);x.onload=()=>{if(x.status>=200&&x.status<300&&x.response&&x.response.size)res(x.response);else rej(new Error((scheme||'Firebase')+' XHR '+x.status));};x.onerror=()=>rej(new Error((scheme||'Firebase')+' XHR 네트워크 실패'));x.ontimeout=()=>rej(new Error((scheme||'Firebase')+' XHR 시간 초과'));x.send();}catch(e){rej(e);}});}
 async function fbStorageUpload(path,blob){const tok=await fbToken();const r=await _storageFetch(_storageUrl(path,false),{method:'POST',headers:{'Content-Type':blob.type||'image/jpeg'},body:blob},tok);return r.json().catch(()=>({}));}
+
+/* ---- IndexedDB image cache (disk, survives refresh) ---- */
+var _icDb=null,_icPuts=0,_icOK=(typeof indexedDB!=='undefined');
+function _icOpen(){return new Promise((res)=>{if(!_icOK)return res(null);if(_icDb)return res(_icDb);
+  try{const rq=indexedDB.open('paperlab_imgcache',1);
+  rq.onupgradeneeded=()=>{try{const db=rq.result;if(!db.objectStoreNames.contains('img')){const st=db.createObjectStore('img',{keyPath:'k'});st.createIndex('ts','ts');}}catch(e){}};
+  rq.onsuccess=()=>{_icDb=rq.result;try{_icDb.onversionchange=()=>{try{_icDb.close();}catch(e){}_icDb=null;};}catch(e){}res(_icDb);};
+  rq.onerror=()=>{_icOK=false;res(null);};rq.onblocked=()=>res(null);}catch(e){_icOK=false;res(null);}});}
+function _icKey(a,kind){const p=(kind==='thumb')?(a.thumbPath||a.fullPath):(a.fullPath||'');const u=(kind==='thumb')?(a.thumbUrl||a.fullUrl||''):(a.fullUrl||'');const base=p||('u:'+u);if(!base)return null;const kb=(kind==='thumb')?(+a.thumbKb||0):(+a.fullKb||0);return kind+':'+base+'#'+(+a.iv||0)+'.'+kb;}
+function _icGet(key){return new Promise((res)=>{if(!key)return res(null);_icOpen().then(db=>{if(!db)return res(null);
+  try{const tx=db.transaction('img','readonly'),rq=tx.objectStore('img').get(key);
+  rq.onsuccess=()=>{const v=rq.result;res((v&&typeof v.d==='string'&&v.d.length>50)?v.d:null);};
+  rq.onerror=()=>res(null);}catch(e){res(null);}});});}
+function _icPut(key,dataUrl){if(!key||typeof dataUrl!=='string'||dataUrl.length<50||dataUrl.length>8000000)return;_icOpen().then(db=>{if(!db)return;
+  try{const tx=db.transaction('img','readwrite');tx.objectStore('img').put({k:key,d:dataUrl,ts:Date.now(),sz:dataUrl.length});
+  if(((++_icPuts)%12)===0)tx.oncomplete=()=>_icEvict(db);}catch(e){}});}
+function _icEvict(db){try{const CAP=150*1024*1024;const tx=db.transaction('img','readwrite'),st=tx.objectStore('img');
+  const rows=[];st.openCursor().onsuccess=(ev)=>{const c=ev.target.result;
+    if(c){rows.push({k:c.primaryKey,ts:+c.value.ts||0,sz:+c.value.sz||0});c.continue();return;}
+    let tot=rows.reduce((a,r)=>a+r.sz,0);if(tot<=CAP)return;
+    rows.sort((a,b)=>a.ts-b.ts);
+    try{const tx2=db.transaction('img','readwrite'),s2=tx2.objectStore('img');
+      for(const r of rows){if(tot<=CAP)break;s2.delete(r.k);tot-=r.sz;}}catch(e){}};}catch(e){}}
 async function fbStorageGet(path){const url=_storageUrl(path,true);let tok=await fbToken(),last=null;for(let n=0;n<2;n++){try{const r=await _storageFetch(url,{method:'GET',cache:n?'reload':'no-store'},tok);const b=await r.blob();if(b&&b.size)return b;last=new Error('STORAGE GET 빈 응답');}catch(e){last=e;}for(const scheme of ['Firebase','Bearer']){try{return await _xhrStorageBlob(url,tok,scheme);}catch(e){last=e;}}try{const d=await _fetchImageDataUrl(url+'&auth='+encodeURIComponent(tok));return dataUrlBlob(d);}catch(e){last=e;}try{tok=await fbRefresh();}catch(e){break;}}throw last||new Error('STORAGE GET 실패');}
 async function fbStorageDelete(path){if(!path)return;const tok=await fbToken();await _storageFetch(_storageMetaUrl(path),{method:'DELETE',_accept:[404]},tok);}
 let _delImgPaths=new Set(),_delImgPrefixes=new Set();
@@ -3402,8 +3425,8 @@ function _setRemoteFlags(ex,ids){try{Object.defineProperty(ex,'_remoteLoaded',{v
 async function preparePlanAttachments(ex,pl){const at=(pl.attach||[]);let newFail=false,legacyFail=false;for(const a of at){if(!a||!a.id)continue;
   let fail=false;
   const needFull=!a.fullPath||a.imageDirty,needThumb=!a.thumbPath||a.imageDirty;
-  if(needFull){if(a.data){try{ const p='teams/'+_safeKey(FB_CFG.team)+'/images/'+_safeKey(ex.id)+'/'+_safeKey(pl.id)+'/'+_safeKey(a.id)+'_full.jpg'; const rs=await fbStorageUpload(p,dataUrlBlob(a.data)); a.fullPath=p; delete a.fullUrl; const t=String((rs&&rs.downloadTokens)||'').split(',')[0]; if(t)a.fullUrl=_storageUrl(p,true)+'&token='+encodeURIComponent(t); }catch(e){ fail=true; }}else fail=true;}
-  if(needThumb){if(a.thumb){try{ const p='teams/'+_safeKey(FB_CFG.team)+'/images/'+_safeKey(ex.id)+'/'+_safeKey(pl.id)+'/'+_safeKey(a.id)+'_thumb.jpg'; const rs=await fbStorageUpload(p,dataUrlBlob(a.thumb)); a.thumbPath=p; delete a.thumbUrl; const t=String((rs&&rs.downloadTokens)||'').split(',')[0]; if(t)a.thumbUrl=_storageUrl(p,true)+'&token='+encodeURIComponent(t); }catch(e){ fail=true; }}else fail=true;}
+  if(needFull){if(a.data){try{ const p='teams/'+_safeKey(FB_CFG.team)+'/images/'+_safeKey(ex.id)+'/'+_safeKey(pl.id)+'/'+_safeKey(a.id)+'_full.jpg'; const rs=await fbStorageUpload(p,dataUrlBlob(a.data)); a.fullPath=p; delete a.fullUrl; try{_icPut(_icKey(Object.assign({},a,{fullPath:p}),'full'),a.data);}catch(_e){} const t=String((rs&&rs.downloadTokens)||'').split(',')[0]; if(t)a.fullUrl=_storageUrl(p,true)+'&token='+encodeURIComponent(t); }catch(e){ fail=true; }}else fail=true;}
+  if(needThumb){if(a.thumb){try{ const p='teams/'+_safeKey(FB_CFG.team)+'/images/'+_safeKey(ex.id)+'/'+_safeKey(pl.id)+'/'+_safeKey(a.id)+'_thumb.jpg'; const rs=await fbStorageUpload(p,dataUrlBlob(a.thumb)); a.thumbPath=p; delete a.thumbUrl; try{_icPut(_icKey(Object.assign({},a,{thumbPath:p}),'thumb'),a.thumb);}catch(_e){} const t=String((rs&&rs.downloadTokens)||'').split(',')[0]; if(t)a.thumbUrl=_storageUrl(p,true)+'&token='+encodeURIComponent(t); }catch(e){ fail=true; }}else fail=true;}
   if(!(a.fullPath&&a.thumbPath))fail=true;
   if(fail){ if(!a.pendUpload) newFail=true;a.pendUpload=true;if(a._legacyBody)legacyFail=true; }
   else { delete a.pendUpload;delete a.imageDirty;delete a._legacyBody;delete a.data;delete a.thumb; }
@@ -3431,8 +3454,10 @@ async function ensureAttachmentThumb(a){
   const p=a.thumbPath||a.fullPath, hasUrl=!!(a.thumbUrl||a.fullUrl);
   if(!p&&!hasUrl)return null;
   a._loading=(async()=>{const errs=[];try{
-    if(p){try{a.thumb=await blobDataUrl(await fbStorageGet(p));delete a._imgErr;return a.thumb;}catch(e){errs.push(_shortImgErr(e));}}
-    if(hasUrl){try{a.thumb=await _attachmentUrlData(a,false);delete a._imgErr;return a.thumb;}catch(e){errs.push(_shortImgErr(e));}}
+    const ck=_icKey(a,'thumb');
+    try{const hit=await _icGet(ck);if(hit){a.thumb=hit;delete a._imgErr;return a.thumb;}}catch(_e){}
+    if(p){try{a.thumb=await blobDataUrl(await fbStorageGet(p));delete a._imgErr;_icPut(ck,a.thumb);return a.thumb;}catch(e){errs.push(_shortImgErr(e));}}
+    if(hasUrl){try{a.thumb=await _attachmentUrlData(a,false);delete a._imgErr;_icPut(ck,a.thumb);return a.thumb;}catch(e){errs.push(_shortImgErr(e));}}
     throw new Error(errs.filter(Boolean).join(' / ')||'썸네일 원본 없음');
   }catch(e){a._imgErr=_shortImgErr(e);throw e;}finally{delete a._loading;}})();return a._loading;
 }
@@ -3441,8 +3466,10 @@ async function ensureAttachmentFull(a){
   const p=a.fullPath, hasUrl=!!a.fullUrl;
   if(!p&&!hasUrl)throw new Error('원본 경로·주소 없음');
   a._fullLoading=(async()=>{const errs=[];try{
-    if(p){try{a.data=await blobDataUrl(await fbStorageGet(p));if(!a.thumb){const t=await _mkThumbFrom(a.data);if(t)a.thumb=t;}_rememberFull(a.id,a.data);delete a._imgErr;return a.data;}catch(e){errs.push(_shortImgErr(e));}}
-    if(hasUrl){try{a.data=await _attachmentUrlData(a,true);if(!a.thumb){const t=await _mkThumbFrom(a.data);if(t)a.thumb=t;}_rememberFull(a.id,a.data);delete a._imgErr;return a.data;}catch(e){errs.push(_shortImgErr(e));}}
+    const ck=_icKey(a,'full');
+    try{const hit=await _icGet(ck);if(hit){a.data=hit;if(!a.thumb){try{const t=await _mkThumbFrom(hit);if(t)a.thumb=t;}catch(_e){}}_rememberFull(a.id,a.data);delete a._imgErr;return a.data;}}catch(_e){}
+    if(p){try{a.data=await blobDataUrl(await fbStorageGet(p));if(!a.thumb){const t=await _mkThumbFrom(a.data);if(t)a.thumb=t;}_rememberFull(a.id,a.data);delete a._imgErr;_icPut(ck,a.data);return a.data;}catch(e){errs.push(_shortImgErr(e));}}
+    if(hasUrl){try{a.data=await _attachmentUrlData(a,true);if(!a.thumb){const t=await _mkThumbFrom(a.data);if(t)a.thumb=t;}_rememberFull(a.id,a.data);delete a._imgErr;_icPut(ck,a.data);return a.data;}catch(e){errs.push(_shortImgErr(e));}}
     throw new Error(errs.filter(Boolean).join(' / ')||'이미지 원본 다운로드 실패');
   }catch(e){a._imgErr=_shortImgErr(e);throw e;}finally{delete a._fullLoading;}})();return a._fullLoading;
 }
