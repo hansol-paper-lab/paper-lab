@@ -3492,7 +3492,7 @@ async function fbSaveExperiment(ex){
     try{if(pl.syncedAt){const rAt=await fbDb('experiments/'+encodeURIComponent(id)+'/plans/'+encodeURIComponent(pl.id)+'/updatedAt','GET');if(rAt&&(+rAt||0)!==(+pl.syncedAt||0)){const rem=await fbDb('experiments/'+encodeURIComponent(id)+'/plans/'+encodeURIComponent(pl.id),'GET');if(rem){_mergePlanInto(pl,rem);merged=true;}}}}catch(_e){}
     pl.updatedAt=Date.now();await fbDb('experiments/'+encodeURIComponent(id)+'/plans/'+encodeURIComponent(pl.id),'PUT',_cleanPlan(pl,false));pl.syncedAt=pl.updatedAt;if(prep.failed)retry.add(pl.id);
   }
-  if(merged){try{toast('👥 다른 사람의 입력을 함께 반영했어요');if(root.screen==='sim')render();}catch(_e){}}
+  if(merged){try{const _n=Date.now();if(_n-_mergeToastAt>10000){_mergeToastAt=_n;toast('👥 다른 사람의 입력을 함께 반영했어요');}_renderSoon();}catch(_e){}}
   await fbDb('experiments/'+encodeURIComponent(id)+'/meta','PUT',_meta(ex));await fbDb('summaries/'+encodeURIComponent(id),'PUT',_summary(ex));ex.planSyncedAt=+ex.updatedAt||0;_setRemoteFlags(ex,Array.from(curIds));
   if(retry.size){_dirtyPlans.set(id,retry);_scheduleImageRetry();}else _dirtyPlans.delete(id);
   _dirtyMeta.delete(id);_dirtyFull.delete(id);
@@ -3528,6 +3528,34 @@ async function cloudLoadSummaries(silent,force){
   if(isFull&&!list.length&&(root.experiments||[]).some(e=>!e.remoteOnly)&&!silent)toast('☁ 서버가 비어 있어요 — 설정에서 기존 데이터 이관을 눌러주세요');
   if(root.screen==='home')render();return list;}
 function _editingNow(){const el=document.activeElement;return !!(el&&(el.tagName==='INPUT'||el.tagName==='TEXTAREA'));}
+function _focusKey(el){try{if(!el)return null;if(el.id)return '#'+el.id;
+  const ds=el.dataset||{};let s=el.tagName.toLowerCase(),n=0;
+  for(const k in ds){const a=k.replace(/[A-Z]/g,m=>'-'+m.toLowerCase());s+='[data-'+a+'="'+String(ds[k]).replace(/["\\]/g,'\\$&')+'"]';n++;}
+  return n?s:null;}catch(e){return null;}}
+function _withFocus(fn){
+  const el=document.activeElement,keep=el&&(el.tagName==='INPUT'||el.tagName==='TEXTAREA');
+  const key=keep?_focusKey(el):null;let ss=null,se=null;
+  if(keep){try{ss=el.selectionStart;se=el.selectionEnd;}catch(_e){}}
+  fn();
+  if(!key)return;
+  try{const ae=document.activeElement;if(ae&&ae!==document.body&&ae.tagName!=='BODY')return;
+    const n=document.querySelector(key);if(!n)return;
+    n.focus({preventScroll:true});
+    if(ss!=null&&n.setSelectionRange){try{n.setSelectionRange(ss,se);}catch(_e){}}
+  }catch(e){}}
+var _pendRender=false,_pendRT=null,_pendAt=0;
+function _renderSoon(){
+  if(root.screen!=='sim')return;
+  if(!_editingNow()){try{render();}catch(e){}return;}
+  if(!_pendRender){_pendRender=true;_pendAt=Date.now();}
+  if(_pendRT)return;
+  _pendRT=setInterval(()=>{
+    if(_editingNow()&&(Date.now()-_pendAt)<15000)return;
+    clearInterval(_pendRT);_pendRT=null;
+    if(!_pendRender)return;_pendRender=false;
+    if(root.screen==='sim'){try{_withFocus(render);}catch(e){}}
+  },1000);}
+var _mergeToastAt=0;
 async function cloudFlush(silent){if(!fbConfigReady()){cloudStat('err','☁ Firebase 설정 필요');return;}if(!FB_AUTH.refreshToken&&!FB_AUTH.idToken){cloudStat('err','☁ 로그인 필요');return;}if(_csBusy){_csQueued=true;return;}_csBusy=true;if(!silent)cloudStat('busy','☁ 저장 중…');try{for(const id of Array.from(_deletedRemote)){await fbDb('summaries/'+encodeURIComponent(id),'DELETE');await fbDb('experiments/'+encodeURIComponent(id),'DELETE');_deletedRemote.delete(id);}const ids=new Set([..._dirtyMeta,..._dirtyFull,..._dirtyPlans.keys()]);for(const id of ids){const ex=(root.experiments||[]).find(e=>e.id===id);if(ex)await fbSaveExperiment(ex);}if(_mlibDirty){ try{ await fbDb('settings/metricLib','PUT',{items:root.metricLib||[],updatedAt:(+root._mlibAt)||Date.now()}); _mlibDirty=false; }catch(e){} }await _flushImageDeletes();const t=new Date();cloudStat('on','☁ '+(whoAmI()?whoAmI()+' · ':'')+String(t.getHours()).padStart(2,'0')+':'+String(t.getMinutes()).padStart(2,'0'));}catch(e){if(String(e.message).indexOf('LOGIN_REQUIRED')>=0)cloudStat('err','☁ 로그인 필요');else cloudStat('err','☁ 저장 실패 — 눌러 재시도');}finally{_csBusy=false;if(_csQueued){_csQueued=false;setTimeout(()=>cloudFlush(true),800);}}}
 async function cloudSync(silent){if(syncMode()==='claude'){cloudStat('on','☁ 로컬 공유 모드');return;}try{await cloudFlush(true);if(!_editingNow())await cloudLoadSummaries(!!silent,!silent);if(!silent&&root.screen==='sim'&&EXP()&&!_editingNow()){const ex=EXP();if(!_dirtyMeta.has(ex.id)&&!_dirtyFull.has(ex.id)&&!_dirtyPlans.has(ex.id)){try{const fresh=await fbLoadExperiment(ex.id,ex);_carryExperimentImages(ex,fresh);const i=root.experiments.indexOf(ex);if(i>=0){root.experiments[i]=fresh;root.activeExp=i;appState=fresh.state;_queueLegacyImageCleanup(fresh);render();hydrateVisibleAttachmentThumbs();}}catch(_e){}}}if(!silent)toast('☁ 최신 내용으로 동기화됨');}catch(e){if(String(e.message).indexOf('LOGIN_REQUIRED')>=0)cloudStat('err','☁ 로그인 필요');else cloudStat('err','☁ 연결 실패');}}
 function _scheduleImageRetry(){clearTimeout(_imgRetryT);_imgRetryT=setTimeout(()=>cloudFlush(true),5000);}
