@@ -1860,10 +1860,11 @@ function persistNow(){ const st=$id('savestat'); let ok=true; try{
   }
   _lastSnap=cur;
   if(_chg)localStorage.setItem(SAVE_KEY,cur);
-  if(st){const t=new Date();st.innerHTML='<i></i>저장됨 '+String(t.getHours()).padStart(2,'0')+':'+String(t.getMinutes()).padStart(2,'0');st.classList.add('on');st.classList.remove('err');}
+  _savePend=false;if(st){const t=new Date();st.innerHTML='<i></i>저장됨 '+String(t.getHours()).padStart(2,'0')+':'+String(t.getMinutes()).padStart(2,'0');st.classList.add('on');st.classList.remove('err');}
 }catch(e){ ok=(typeof syncMode==='function'&&syncMode()!=='none'); if(st){ if(ok){st.innerHTML='<i></i>☁ 클라우드 저장';st.classList.remove('err');st.classList.add('on');} else {st.innerHTML='<i></i>저장 안 됨';st.classList.add('err');st.classList.remove('on');} } }
   updateUndoUI(); try{markCurrentDirty();scheduleCloudPush();}catch(_e){} return ok; }
-function scheduleSave(){ const st=$id('savestat'); if(st&&!st.classList.contains('err'))st.innerHTML='<i></i>저장 중…'; try{markCurrentDirty();}catch(_e){} clearTimeout(_saveT); _saveT=setTimeout(persistNow,600); }
+var _savePend=false;
+function scheduleSave(){ const st=$id('savestat'); if(st&&!st.classList.contains('err')&&!_savePend){_savePend=true;st.innerHTML='<i></i>저장 중…';} try{markCurrentDirty();}catch(_e){} clearTimeout(_saveT); _saveT=setTimeout(persistNow,600); }
 try{window.addEventListener('pagehide',()=>{if(_saveT){clearTimeout(_saveT);_saveT=null;try{persistNow();}catch(_e){}}});}catch(_e){}
 function updateUndoUI(){ const u=$id('undobtn'),r=$id('redobtn'); if(u)u.disabled=!_undo.length; if(r)r.disabled=!_redo.length; }
 function _applySnap(sn){ try{_delImgPaths.clear();_delImgPrefixes.clear();}catch(_e){} _undoLock=true; try{ applyLoaded(JSON.parse(sn)); _lastSnap=sn; try{localStorage.setItem(SAVE_KEY,JSON.stringify(typeof cleanRootForLocal==='function'?cleanRootForLocal(root):root));}catch(_e){} }finally{ _undoLock=false; } appState=(root.screen==='sim'&&root.experiments[root.activeExp])?root.experiments[root.activeExp].state:null; render(); updateUndoUI(); }
