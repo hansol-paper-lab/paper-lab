@@ -1856,7 +1856,7 @@ function persistNow(){ const st=$id('savestat'); let ok=true; let _chg9=false; t
   let cur=_undoSnapshot();
   const _chg=_chg9=(_lastSnap===null)||(cur!==_lastSnap);
   if(_lastSnap!==null&&_chg&&!_undoLock){ _pushHistory(_undo,_lastSnap); _redo.length=0;
-    const ex=(root.screen==='sim')?root.experiments[root.activeExp]:null; if(ex){ ex.updatedAt=Date.now(); const pl=curPlan(); if(pl)pl.updatedAt=ex.updatedAt; cur=_undoSnapshot(); }
+    const ex=(root.screen==='sim')?root.experiments[root.activeExp]:null; if(ex){ ex.updatedAt=srvNow(); const pl=curPlan(); if(pl)pl.updatedAt=ex.updatedAt; cur=_undoSnapshot(); }
   }
   _lastSnap=cur;
   if(_chg)localStorage.setItem(SAVE_KEY,cur);
@@ -3109,7 +3109,7 @@ document.addEventListener('click',e=>{
     }
     appState.plans.push({id:uid('p'),label:n+'차',data:nd,notes:""});appState.active={plan:appState.plans.length-1,view:'plan'};markExpFull(EXP().id);render();toast(n+'차 추가 · 케이스 비움');
   }
-  else if(a==='del-round'){const i=+btn.dataset.plan;if(appState.plans.length<=1)return;const pl=appState.plans[i];askConfirm(`'${pl.label}' 차수를 팀 전체에서 삭제할까요? 다른 팀원 화면에서도 함께 사라집니다.`,()=>{try{(pl.attach||[]).forEach(queueImageDelete);queueImagePrefixDelete(_imgPrefix(EXP().id,pl.id));}catch(_e){}try{const _e9=EXP();if(!_e9.delPlans||typeof _e9.delPlans!=='object')_e9.delPlans={};_e9.delPlans[pl.id]=Date.now();}catch(_e){}appState.plans.splice(i,1);markExpFull(EXP().id);if(appState.active.plan>=appState.plans.length)appState.active.plan=appState.plans.length-1;scheduleSave();render();toast('차수 삭제됨');});}
+  else if(a==='del-round'){const i=+btn.dataset.plan;if(appState.plans.length<=1)return;const pl=appState.plans[i];askConfirm(`'${pl.label}' 차수를 팀 전체에서 삭제할까요? 다른 팀원 화면에서도 함께 사라집니다.`,()=>{try{(pl.attach||[]).forEach(queueImageDelete);queueImagePrefixDelete(_imgPrefix(EXP().id,pl.id));}catch(_e){}try{const _e9=EXP();if(!_e9.delPlans||typeof _e9.delPlans!=='object')_e9.delPlans={};_e9.delPlans[pl.id]=srvNow();}catch(_e){}appState.plans.splice(i,1);markExpFull(EXP().id);if(appState.active.plan>=appState.plans.length)appState.active.plan=appState.plans.length-1;scheduleSave();render();toast('차수 삭제됨');});}
   else if(a==='open-exp'){openExperimentByIndex(+btn.dataset.i);}
   else if(a==='go-home'){try{if(EXP())releaseExperimentImages(EXP());}catch(_e){}root.screen='home';appState=null;render();}
   else if(a==='new-exp'||a==='new-exp-coat'){const id=uid('e');root.experiments.push({id,name:'코팅 실험 '+(root.experiments.length+1),type:'coat',date:isoDate(),updatedAt:Date.now(),state:seedAppStateBlank()});root.activeExp=root.experiments.length-1;appState=EXP().state;root.screen='sim';try{presencePing();}catch(_pe){}markExpFull(EXP().id);render();toast('새 코팅 실험 — 라이브러리 유지, 데이터 비움');}
@@ -3294,6 +3294,29 @@ async function fbSignIn(email,password){if(!FB_CFG.apiKey)throw new Error('API_K
 async function fbRefresh(){if(!FB_AUTH.refreshToken)throw new Error('LOGIN_REQUIRED');const r=await fetch('https://securetoken.googleapis.com/v1/token?key='+encodeURIComponent(FB_CFG.apiKey),{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'grant_type=refresh_token&refresh_token='+encodeURIComponent(FB_AUTH.refreshToken)});const j=await r.json().catch(()=>({}));if(!r.ok){_clearAuth();throw new Error('LOGIN_REQUIRED');}FB_AUTH.idToken=j.id_token;FB_AUTH.refreshToken=j.refresh_token||FB_AUTH.refreshToken;FB_AUTH.expiresAt=Date.now()+(+j.expires_in||3600)*1000-60000;_saveAuth();return FB_AUTH.idToken;}
 async function fbToken(){if(FB_AUTH.idToken&&Date.now()<FB_AUTH.expiresAt)return FB_AUTH.idToken;return fbRefresh();}
 async function fbDb(path,method,body,qs){const tok=await fbToken();const base=FB_CFG.databaseURL+'/teams/'+encodeURIComponent(_safeKey(FB_CFG.team));const url=base+(path?'/'+path.replace(/^\/+|\/+$/g,''):'')+'.json?auth='+encodeURIComponent(tok)+(qs?'&'+qs:'');const opt={method:method||'GET',cache:'no-store',headers:{}};if(body!==undefined){opt.headers['Content-Type']='application/json';opt.body=JSON.stringify(body);}const r=await fetch(url,opt);if(!r.ok){if(r.status===401||r.status===403){_clearAuth();throw new Error('LOGIN_REQUIRED');}throw new Error('DB '+r.status);}if((method||'GET')==='DELETE')return null;const t=await r.text();try{_dlAdd(t.length);}catch(_e){}return (!t||t==='null')?null:JSON.parse(t);}
+/* ── 서버 시각 동기화 ──────────────────────────────────────────────
+   기기마다 시계가 다르면 "삭제가 최신인가 수정이 최신인가" 판정이 뒤집힌다.
+   Firebase 의 serverTimeOffset 과 같은 개념을 REST 로 구현: 서버에
+   {".sv":"timestamp"} 를 써서 서버 시각을 받아오고, 그 차이를 보정해서 쓴다. */
+let _clkOff9=0,_clkAt9=0,_clkBusy9=false;
+function srvNow(){return Date.now()+_clkOff9;}
+function clockSkew9(){return _clkOff9;}
+async function syncServerClock9(force){
+  if(_clkBusy9)return _clkOff9;
+  if(!force&&_clkAt9&&(Date.now()-_clkAt9)<600000)return _clkOff9;
+  if(!fbConfigReady())return _clkOff9;
+  if(!FB_AUTH.refreshToken&&!FB_AUTH.idToken)return _clkOff9;
+  _clkBusy9=true;
+  try{
+    const k='_clock/'+encodeURIComponent(_safeKey(whoAmI()||'anon'));
+    const t0=Date.now();
+    let v=await fbDb(k,'PUT',{'.sv':'timestamp'});
+    if(typeof v!=='number')v=await fbDb(k,'GET');
+    const t1=Date.now(),n=+v||0;
+    if(n>0){_clkOff9=n-Math.round((t0+t1)/2);_clkAt9=Date.now();}
+  }catch(_e){}finally{_clkBusy9=false;}
+  return _clkOff9;
+}
 var _dlB=0,_dlN=0,_dlDay='';
 function _dlAdd(n){try{const d=new Date().toDateString();let s=null;try{s=JSON.parse(sessionStorage.getItem('_rtdbUse')||'null');}catch(_e){}
   if(s&&s.d===d){_dlB=+s.b||0;_dlN=+s.n||0;}else if(_dlDay!==d){_dlB=0;_dlN=0;}
@@ -3482,7 +3505,7 @@ async function hydrateVisibleAttachmentThumbs(){if(_thumbBusy||root.screen!=='si
   (curPlan().attach||[]).forEach(a=>{ if(a&&a.pendRot) delete a.pendRot; });
   if((curPlan().attach||[]).some(a=>a&&a.pendUpload&&a.data)){ch=true;try{markCurrentDirty();scheduleCloudPush(600);}catch(_e){}}
 }finally{_thumbBusy=false;}if(ch&&root.screen==='sim')_renderSoon();}
-function markCurrentDirty(){if(!fbConfigReady())return;if(root.screen==='sim'){const ex=EXP();if(!ex)return;ex.updatedAt=Date.now();_dirtyMeta.add(ex.id);const pl=curPlan();if(pl){pl.updatedAt=ex.updatedAt;if(!_dirtyPlans.has(ex.id))_dirtyPlans.set(ex.id,new Set());_dirtyPlans.get(ex.id).add(pl.id);}}else{(root.experiments||[]).forEach(ex=>{if(!ex.remoteOnly)_dirtyMeta.add(ex.id);});}}
+function markCurrentDirty(){if(!fbConfigReady())return;if(root.screen==='sim'){const ex=EXP();if(!ex)return;ex.updatedAt=srvNow();_dirtyMeta.add(ex.id);const pl=curPlan();if(pl){pl.updatedAt=ex.updatedAt;if(!_dirtyPlans.has(ex.id))_dirtyPlans.set(ex.id,new Set());_dirtyPlans.get(ex.id).add(pl.id);}}else{(root.experiments||[]).forEach(ex=>{if(!ex.remoteOnly)_dirtyMeta.add(ex.id);});}}
 function markExpFull(id){if(id)_dirtyFull.add(id);}
 function queueRemoteDelete(ex){if(ex&&ex.id)_deletedRemote.add(ex.id);}
 function _carryAttachmentImage(dst,src){if(!dst||!src)return dst;['data','thumb','fullPath','thumbPath','fullUrl','thumbUrl'].forEach(k=>{if(!dst[k]&&src[k])dst[k]=src[k];});if(!dst.data&&dst.id){const rc=_recentFull.get(dst.id);if(rc&&(Date.now()-rc.ts)<1800000)dst.data=rc.data;}return dst;}
@@ -3508,14 +3531,14 @@ function _mergePlanInto(loc,rem){try{
   Object.keys(rt).forEach(k=>{ if(lt[k]==null) lt[k]=rt[k]; });
 }catch(e){}}
 async function fbSaveExperiment(ex){
-  if(!ex)return;if(!ex.updatedAt)ex.updatedAt=Date.now();
+  if(!ex)return;if(!ex.updatedAt)ex.updatedAt=srvNow();
   const id=ex.id,known=(ex._knownPlanIds instanceof Set)?ex._knownPlanIds:new Set(),current=((ex.state||{}).plans||[]),curIds=new Set(current.map(p=>p.id));
   const full=_dirtyFull.has(id)||!known.size,dirty=_dirtyPlans.get(id)||new Set();let write=[];
   if(full){write=known.size?current.filter(p=>!known.has(p.id)||dirty.has(p.id)):current.slice();}
   else write=current.filter(p=>dirty.has(p.id));
   /* 팀 병합 규칙: 저장 직전에 서버의 차수 목록·삭제기록을 읽어 합친다. 다른 팀원이 만든 차수는 절대 목록에서 지우지 않는다. */
   if(!ex.delPlans||typeof ex.delPlans!=='object')ex.delPlans={};
-  try{const _cut9=Date.now()-60*24*3600*1000;Object.keys(ex.delPlans).forEach(k=>{if((+ex.delPlans[k]||0)<_cut9)delete ex.delPlans[k];});}catch(_e){}
+  try{const _cut9=srvNow()-60*24*3600*1000;Object.keys(ex.delPlans).forEach(k=>{if((+ex.delPlans[k]||0)<_cut9)delete ex.delPlans[k];});}catch(_e){}
   let remOrder=[];try{const _ro9=await fbDb('experiments/'+encodeURIComponent(id)+'/meta/planOrder','GET');if(Array.isArray(_ro9))remOrder=_ro9.filter(Boolean);else if(_ro9&&typeof _ro9==='object')remOrder=Object.keys(_ro9).map(k=>_ro9[k]).filter(Boolean);}catch(_e){}
   try{const _rt9=await fbDb('experiments/'+encodeURIComponent(id)+'/meta/delPlans','GET');if(_rt9&&typeof _rt9==='object')Object.keys(_rt9).forEach(k=>{if((+_rt9[k]||0)>(+ex.delPlans[k]||0))ex.delPlans[k]=+_rt9[k];});}catch(_e){}
   const tombs=ex.delPlans;let adopted=0,_reshape9=0;
@@ -3524,17 +3547,27 @@ async function fbSaveExperiment(ex){
   for(const pid of Object.keys(tombs)){const lp=current.find(p=>p.id===pid);if(!lp)continue;
     if(current.length>1&&(+tombs[pid]||0)>=(+lp.updatedAt||0)){current.splice(current.indexOf(lp),1);curIds.delete(pid);write=write.filter(p=>p.id!==pid);_reshape9++;}
     else delete tombs[pid];}
-  for(const pid of Object.keys(tombs)){if(curIds.has(pid))continue;if(known.has(pid)||remOrder.some(x=>x&&x.id===pid)){try{await fbDb('experiments/'+encodeURIComponent(id)+'/plans/'+encodeURIComponent(pid),'DELETE');}catch(_e){}queueImagePrefixDelete(_imgPrefix(id,pid));}}
+  const _batch9={},_pend9=[];
+  for(const pid of Object.keys(tombs)){if(curIds.has(pid))continue;if(known.has(pid)||remOrder.some(x=>x&&x.id===pid)){_batch9['experiments/'+id+'/plans/'+pid]=null;queueImagePrefixDelete(_imgPrefix(id,pid));}}
   try{if((adopted||_reshape9)&&root.screen==='sim'&&EXP()&&EXP().id===id){const _A9=(ex.state||{}).active;if(_A9&&_A9.plan>=current.length)_A9.plan=Math.max(0,current.length-1);appState=ex.state;_renderSoon();}}catch(_e){}
   if(adopted){try{toast('👥 다른 팀원이 추가한 차수 '+adopted+'개를 함께 반영했어요');}catch(_e){}}
   let merged=false;const retry=new Set();
   for(const pl of write){
     const prep=await preparePlanAttachments(ex,pl);if(prep.legacyFailed){_scheduleImageRetry();throw new Error('기존 사진의 Storage 이관이 끝나지 않아 서버 원본을 보존했습니다');}
     try{if(pl.syncedAt){const rAt=await fbDb('experiments/'+encodeURIComponent(id)+'/plans/'+encodeURIComponent(pl.id)+'/updatedAt','GET');if(rAt&&(+rAt||0)!==(+pl.syncedAt||0)){const rem=await fbDb('experiments/'+encodeURIComponent(id)+'/plans/'+encodeURIComponent(pl.id),'GET');if(rem){_mergePlanInto(pl,rem);merged=true;}}}}catch(_e){}
-    pl.updatedAt=Date.now();await fbDb('experiments/'+encodeURIComponent(id)+'/plans/'+encodeURIComponent(pl.id),'PUT',_cleanPlan(pl,false));pl.syncedAt=pl.updatedAt;if(prep.failed)retry.add(pl.id);
+    pl.updatedAt=srvNow();_batch9['experiments/'+id+'/plans/'+pl.id]=_cleanPlan(pl,false);_pend9.push(pl);if(prep.failed)retry.add(pl.id);
   }
   if(merged){try{const _n=Date.now();if(_n-_mergeToastAt>10000){_mergeToastAt=_n;toast('👥 다른 사람의 입력을 함께 반영했어요');}_renderSoon();}catch(_e){}}
-  await fbDb('experiments/'+encodeURIComponent(id)+'/meta','PUT',_meta(ex));await fbDb('summaries/'+encodeURIComponent(id),'PUT',_summary(ex));ex.planSyncedAt=+ex.updatedAt||0;_setRemoteFlags(ex,Array.from(curIds));
+  _batch9['experiments/'+id+'/meta']=_meta(ex);_batch9['summaries/'+id]=_summary(ex);
+  /* 원자적 다중 경로 쓰기: 차수·차수목록·요약을 PATCH 한 번으로 커밋한다.
+     전부 반영되거나 전부 실패하므로, 중간에 끊겨서 '차수는 올라갔는데 목록엔 없는' 상태가 남지 않는다.
+     권한/네트워크 문제로 PATCH 가 막히면 예전처럼 하나씩 쓰는 방식으로 자동 후퇴한다. */
+  let _atom9=false;
+  try{ await fbDb('','PATCH',_batch9); _atom9=true; }
+  catch(_e9){ if(String((_e9&&_e9.message)||'').indexOf('LOGIN_REQUIRED')>=0)throw _e9; }
+  if(!_atom9){ for(const _k9 of Object.keys(_batch9)){ const _v9=_batch9[_k9]; if(_v9===null)await fbDb(_k9,'DELETE'); else await fbDb(_k9,'PUT',_v9); } }
+  _pend9.forEach(p=>{if(p)p.syncedAt=p.updatedAt;});
+  ex.planSyncedAt=+ex.updatedAt||0;_setRemoteFlags(ex,Array.from(curIds));
   if(retry.size){_dirtyPlans.set(id,retry);_scheduleImageRetry();}else _dirtyPlans.delete(id);
   _dirtyMeta.delete(id);_dirtyFull.delete(id);
 }
@@ -3603,10 +3636,10 @@ function _renderSoon(){
     try{_withFocus(render);}catch(e){}
   },1000);}
 var _mergeToastAt=0;
-async function cloudFlush(silent){if(!fbConfigReady()){cloudStat('err','☁ Firebase 설정 필요');return;}if(!FB_AUTH.refreshToken&&!FB_AUTH.idToken){cloudStat('err','☁ 로그인 필요');return;}if(_csBusy){_csQueued=true;return;}_csBusy=true;if(!silent)cloudStat('busy','☁ 저장 중…');try{for(const id of Array.from(_deletedRemote)){await fbDb('summaries/'+encodeURIComponent(id),'DELETE');await fbDb('experiments/'+encodeURIComponent(id),'DELETE');_deletedRemote.delete(id);}const ids=new Set([..._dirtyMeta,..._dirtyFull,..._dirtyPlans.keys()]);for(const id of ids){const ex=(root.experiments||[]).find(e=>e.id===id);if(ex)await fbSaveExperiment(ex);}if(_mlibDirty){ try{ await fbDb('settings/metricLib','PUT',{items:root.metricLib||[],updatedAt:(+root._mlibAt)||Date.now()}); _mlibDirty=false; }catch(e){} }await _flushImageDeletes();const t=new Date();cloudStat('on','☁ '+(whoAmI()?whoAmI()+' · ':'')+String(t.getHours()).padStart(2,'0')+':'+String(t.getMinutes()).padStart(2,'0'));}catch(e){if(String(e.message).indexOf('LOGIN_REQUIRED')>=0)cloudStat('err','☁ 로그인 필요');else cloudStat('err','☁ 저장 실패 — 눌러 재시도');}finally{_csBusy=false;if(_csQueued){_csQueued=false;setTimeout(()=>cloudFlush(true),800);}}}
+async function cloudFlush(silent){if(!fbConfigReady()){cloudStat('err','☁ Firebase 설정 필요');return;}if(!FB_AUTH.refreshToken&&!FB_AUTH.idToken){cloudStat('err','☁ 로그인 필요');return;}if(_csBusy){_csQueued=true;return;}_csBusy=true;if(!silent)cloudStat('busy','☁ 저장 중…');try{await syncServerClock9();for(const id of Array.from(_deletedRemote)){await fbDb('summaries/'+encodeURIComponent(id),'DELETE');await fbDb('experiments/'+encodeURIComponent(id),'DELETE');_deletedRemote.delete(id);}const ids=new Set([..._dirtyMeta,..._dirtyFull,..._dirtyPlans.keys()]);for(const id of ids){const ex=(root.experiments||[]).find(e=>e.id===id);if(ex)await fbSaveExperiment(ex);}if(_mlibDirty){ try{ await fbDb('settings/metricLib','PUT',{items:root.metricLib||[],updatedAt:(+root._mlibAt)||Date.now()}); _mlibDirty=false; }catch(e){} }await _flushImageDeletes();const t=new Date();cloudStat('on','☁ '+(whoAmI()?whoAmI()+' · ':'')+String(t.getHours()).padStart(2,'0')+':'+String(t.getMinutes()).padStart(2,'0'));}catch(e){if(String(e.message).indexOf('LOGIN_REQUIRED')>=0)cloudStat('err','☁ 로그인 필요');else cloudStat('err','☁ 저장 실패 — 눌러 재시도');}finally{_csBusy=false;if(_csQueued){_csQueued=false;setTimeout(()=>cloudFlush(true),800);}}}
 async function cloudSync(silent){if(syncMode()==='claude'){cloudStat('on','☁ 로컬 공유 모드');return;}try{await cloudFlush(true);if(!_editingNow())await cloudLoadSummaries(!!silent,!silent);if(!silent&&root.screen==='sim'&&EXP()&&!_editingNow()){const ex=EXP();if(!_dirtyMeta.has(ex.id)&&!_dirtyFull.has(ex.id)&&!_dirtyPlans.has(ex.id)){try{const fresh=await fbLoadExperiment(ex.id,ex);if(!_editingNow()&&!(_dirtyMeta.has(ex.id)||_dirtyFull.has(ex.id)||_dirtyPlans.has(ex.id))){_carryExperimentImages(ex,fresh);const i=root.experiments.indexOf(ex);if(i>=0){root.experiments[i]=fresh;root.activeExp=i;appState=fresh.state;_queueLegacyImageCleanup(fresh);_renderSoon();hydrateVisibleAttachmentThumbs();}}}catch(_e){}}}if(!silent)toast('☁ 최신 내용으로 동기화됨');}catch(e){if(String(e.message).indexOf('LOGIN_REQUIRED')>=0)cloudStat('err','☁ 로그인 필요');else cloudStat('err','☁ 연결 실패');}}
 function _scheduleImageRetry(){clearTimeout(_imgRetryT);_imgRetryT=setTimeout(()=>cloudFlush(true),5000);}
-function scheduleCloudPush(delay){if(syncMode()==='none')return;clearTimeout(_cpushT);if(syncMode()==='fb')cloudStat('busy','☁ 저장 대기…');const ms=(delay==null)?1800:Math.max(80,+delay||0);_cpushT=setTimeout(()=>cloudFlush(true),ms);}
+function scheduleCloudPush(delay){if(syncMode()==='none')return;try{syncServerClock9();}catch(_e){}clearTimeout(_cpushT);if(syncMode()==='fb')cloudStat('busy','☁ 저장 대기…');const ms=(delay==null)?1800:Math.max(80,+delay||0);_cpushT=setTimeout(()=>cloudFlush(true),ms);}
 async function openExperimentByIndex(i){const ex=root.experiments[i];if(!ex)return;try{if(root.screen==='sim'&&EXP()&&EXP().id!==ex.id)releaseExperimentImages(EXP());}catch(e){}const _hasLocal=!!((ex.state||{}).plans||[]).length;const _dty=_dirtyMeta.has(ex.id)||_dirtyFull.has(ex.id)||_dirtyPlans.has(ex.id);const _stale=fbConfigReady()&&!_dty&&((+ex.planSyncedAt||0)!==(+ex.updatedAt||0));if(ex.remoteOnly||ex._remoteLoaded===false||!_hasLocal||_stale){if(!fbConfigReady()){fbOpen();toast('먼저 Firebase 연결 설정이 필요해요');return;}if(!FB_AUTH.refreshToken&&!FB_AUTH.idToken){gateShow();toast('팀 비밀번호 입력 후 열 수 있어요');return;}cloudStat('busy','☁ 최신 내용 불러오는 중…');try{const full=await fbLoadExperiment(ex.id,ex);_carryExperimentImages(ex,full);root.experiments[i]=full;root.activeExp=i;appState=full.state;root.screen='sim';try{presencePing();}catch(_pe){}_queueLegacyImageCleanup(full);render();hydrateVisibleAttachmentThumbs();cloudStat('on','☁ 연결됨');return;}catch(e){if(!_hasLocal){toast('실험을 불러오지 못했어요');cloudStat('err','☁ 불러오기 실패');return;}cloudStat('err','☁ 최신 내용 확인 실패 — 저장된 내용 표시');}}root.activeExp=i;appState=ex.state;root.screen='sim';try{presencePing();}catch(_pe){}if(!appState.active||typeof appState.active!=='object')appState.active={plan:Math.max(0,(appState.plans||[]).length-1),view:'plan'};const mx=Math.max(0,(appState.plans||[]).length-1);appState.active.plan=Math.max(0,Math.min(mx,+appState.active.plan||0));if(appState.active.view!=='plan'&&appState.active.view!=='result')appState.active.view='plan';_flagLegacyImageBodies(ex);_queueLegacyImageCleanup(ex);render();hydrateVisibleAttachmentThumbs();}
 async function openAttachmentLightbox(im){if(!im)return;_preferStoredFull(im);let _src=im.data||null;if(!_src&&(im.fullPath||im.fullUrl)){try{delete im._imgErr;_src=await ensureAttachmentFull(im);}catch(e){try{_src=await ensureAttachmentFullUrl(im);}catch(_e){const m=String((e&&e.message)||e);im._imgErr=m;try{console.error('IMG FAIL',im.fullPath,m);}catch(_x){}if(!im.thumb){toast('이미지 실패: '+_imgErrTxt(m));try{if(root.screen==='sim')render();}catch(_x){}return;}}}}if(!_src)_src=im.thumb;if(!_src)return;const li=$id('lbimg');li.classList.remove('zoom');li.src=_src;$id('lbname').textContent=(im.title||im.name)+' · '+new Date(im.ts).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});$id('lightbox').dataset.img=im.id;$id('lightbox').classList.add('show');try{annoDecorate();}catch(e){}}
 async function exportReportHtmlCloud(){try{await hydratePlanFull(curPlan());const ex=EXP();download((ex.name||'실험')+'_결과_'+ymd()+'.html',buildReportDoc(),'text/html;charset=utf-8');toast('⬇ 리포트 HTML 저장됨');}catch(e){toast('내보내기 실패');}}
@@ -3758,8 +3791,8 @@ function fbOpen(){let ov=$id('fbov');if(!ov){document.body.insertAdjacentHTML('b
 async function fbSave(){const msg=$id('fbmsg');FB_CFG.databaseURL=_normDb($id('fbdb').value);FB_CFG.apiKey=$id('fbapi').value.trim();FB_CFG.storageBucket=$id('fbbucket').value.trim().replace(/^gs:\/\//,'');FB_CFG.team=_safeKey($id('fbteam').value);if(!fbConfigReady()){msg.textContent='Database URL, API Key, Storage bucket, 팀 경로를 모두 입력해 주세요.';return;}_saveCfg();msg.textContent='로그인 확인 중…';try{await fbSignIn($id('fbemail').value,$id('fbpass').value);await fbDb('ping','PUT',{at:Date.now(),email:FB_AUTH.email});msg.textContent='✔ 설정 저장 및 로그인 완료 — 기존 자료가 있으면 이관 버튼을 누르세요.';toast('☁ Firebase 로그인 완료');cloudInit();}catch(e){msg.textContent='로그인/권한 실패: '+String(e.message||e).replace('INVALID_LOGIN_CREDENTIALS','이메일 또는 비밀번호가 맞지 않음');cloudStat('err','☁ 로그인 실패');}}
 function fbOff(){FB_CFG={databaseURL:'',apiKey:'',storageBucket:'',team:'paperlab'};FB_BASE='';_clearAuth();try{localStorage.removeItem(FB_CFG_KEY);localStorage.removeItem('soocho_fb_url');}catch(e){}const msg=$id('fbmsg');if(msg)msg.textContent='연결 설정을 지웠습니다.';cloudStat('err','☁ Firebase 설정 필요');toast('Firebase 연결 해제');}
 function fbLogout(){_clearAuth();const msg=$id('fbmsg');if(msg)msg.textContent='로그아웃되었습니다.';cloudStat('err','☁ 로그인 필요');toast('로그아웃');}
-document.addEventListener('input',function(e){const t=e.target,ro=(t&&t.dataset)?t.dataset.role:null;if(ro==='homeq'){_homeQ=t.value;const L=$id('loglist');if(L)L.innerHTML=homeListHTML();}else if(ro==='eowner'||ro==='enote'){const ex=root.experiments.find(x=>x&&x.id===t.dataset.e);if(ex){if(ro==='eowner')ex.owner=t.value;else{ex.note=t.value;ex.noteEdited=true;}ex.updatedAt=Date.now();_dirtyMeta.add(ex.id);scheduleSave();}}});
-document.addEventListener('click',function(e){const b=(e.target&&e.target.closest)?e.target.closest('[data-action]'):null;if(!b)return;const a=b.dataset.action;if(a==='exp-more'){const eid=b.dataset.e;_homeOpen[eid]=!_homeOpen[eid];const L=$id('loglist');if(L)L.innerHTML=homeListHTML();}else if(a==='exp-status'){const ex=root.experiments.find(x=>x&&x.id===b.dataset.e);if(ex){ex.status=b.dataset.st;ex.updatedAt=Date.now();_dirtyMeta.add(ex.id);scheduleSave();const L=$id('loglist');if(L)L.innerHTML=homeListHTML();}}else if(a==='home-filter'){_homeType=b.dataset.t||'all';document.querySelectorAll('.hchip').forEach(c=>c.classList.toggle('on',c.dataset.t===_homeType));const L=$id('loglist');if(L)L.innerHTML=homeListHTML();}else if(a==='cloud-sync'){if(!fbConfigReady())fbOpen();else if(!FB_AUTH.refreshToken&&!FB_AUTH.idToken)gateShow();else cloudSync(false);}else if(a==='img-test'){const m=$id('setmenu'),bk=$id('menuback');if(m)m.hidden=true;if(bk)bk.hidden=true;storageSelfTest();}else if(a==='img-fix'){const m=$id('setmenu'),bk=$id('menuback');if(m)m.hidden=true;if(bk)bk.hidden=true;reuploadAllImages();}else if(a==='fb-setup')fbOpen();else if(a==='fb-save')fbSave();else if(a==='fb-cancel'){const ov=$id('fbov');if(ov)ov.style.display='none';}else if(a==='fb-off')fbOff();else if(a==='fb-logout')fbLogout();else if(a==='fb-migrate')askConfirm('현재 파일의 모든 실험과 이미지를 Firebase 운영 구조로 이관할까요? 같은 ID의 서버 데이터는 현재 파일 기준으로 갱신됩니다.',fbMigrateRun);});
+document.addEventListener('input',function(e){const t=e.target,ro=(t&&t.dataset)?t.dataset.role:null;if(ro==='homeq'){_homeQ=t.value;const L=$id('loglist');if(L)L.innerHTML=homeListHTML();}else if(ro==='eowner'||ro==='enote'){const ex=root.experiments.find(x=>x&&x.id===t.dataset.e);if(ex){if(ro==='eowner')ex.owner=t.value;else{ex.note=t.value;ex.noteEdited=true;}ex.updatedAt=srvNow();_dirtyMeta.add(ex.id);scheduleSave();}}});
+document.addEventListener('click',function(e){const b=(e.target&&e.target.closest)?e.target.closest('[data-action]'):null;if(!b)return;const a=b.dataset.action;if(a==='exp-more'){const eid=b.dataset.e;_homeOpen[eid]=!_homeOpen[eid];const L=$id('loglist');if(L)L.innerHTML=homeListHTML();}else if(a==='exp-status'){const ex=root.experiments.find(x=>x&&x.id===b.dataset.e);if(ex){ex.status=b.dataset.st;ex.updatedAt=srvNow();_dirtyMeta.add(ex.id);scheduleSave();const L=$id('loglist');if(L)L.innerHTML=homeListHTML();}}else if(a==='home-filter'){_homeType=b.dataset.t||'all';document.querySelectorAll('.hchip').forEach(c=>c.classList.toggle('on',c.dataset.t===_homeType));const L=$id('loglist');if(L)L.innerHTML=homeListHTML();}else if(a==='cloud-sync'){if(!fbConfigReady())fbOpen();else if(!FB_AUTH.refreshToken&&!FB_AUTH.idToken)gateShow();else cloudSync(false);}else if(a==='img-test'){const m=$id('setmenu'),bk=$id('menuback');if(m)m.hidden=true;if(bk)bk.hidden=true;storageSelfTest();}else if(a==='img-fix'){const m=$id('setmenu'),bk=$id('menuback');if(m)m.hidden=true;if(bk)bk.hidden=true;reuploadAllImages();}else if(a==='fb-setup')fbOpen();else if(a==='fb-save')fbSave();else if(a==='fb-cancel'){const ov=$id('fbov');if(ov)ov.style.display='none';}else if(a==='fb-off')fbOff();else if(a==='fb-logout')fbLogout();else if(a==='fb-migrate')askConfirm('현재 파일의 모든 실험과 이미지를 Firebase 운영 구조로 이관할까요? 같은 ID의 서버 데이터는 현재 파일 기준으로 갱신됩니다.',fbMigrateRun);});
 document.addEventListener('keydown',function(e){if(e.key==='Escape'){const ov=$id('fbov');if(ov&&ov.style.display!=='none')ov.style.display='none';}});
 /* ================================================================ */
 
@@ -4318,7 +4351,7 @@ var _pb=null;
 function _pbSet(el,pct){ pct=Math.max(0,Math.min(100,Math.round(pct))); var i=el.querySelector('i'); if(i)i.style.width=pct+'%'; var b=el.querySelector('b'); if(b)b.textContent=pct+'%'; el.dataset.v=pct; }
 document.addEventListener('pointerdown',function(e){ var pb=(e.target&&e.target.closest)?e.target.closest('.pbar'):null; if(!pb)return; _pb=pb; var r=pb.getBoundingClientRect(); _pbSet(pb,(e.clientX-r.left)/r.width*100); try{pb.setPointerCapture(e.pointerId);}catch(_e){} e.preventDefault(); },true);
 document.addEventListener('pointermove',function(e){ if(!_pb)return; var r=_pb.getBoundingClientRect(); _pbSet(_pb,(e.clientX-r.left)/r.width*100); });
-document.addEventListener('pointerup',function(){ if(!_pb)return; var pb=_pb; _pb=null; var ex=root.experiments.find(function(x){return x&&x.id===pb.dataset.e;}); if(ex){ ex.prog=(+pb.dataset.v)||0; ex.updatedAt=Date.now(); try{scheduleSave();}catch(_e){} var L=$id('loglist'); if(L) L.innerHTML=homeListHTML(); } });
+document.addEventListener('pointerup',function(){ if(!_pb)return; var pb=_pb; _pb=null; var ex=root.experiments.find(function(x){return x&&x.id===pb.dataset.e;}); if(ex){ ex.prog=(+pb.dataset.v)||0; ex.updatedAt=srvNow(); try{scheduleSave();}catch(_e){} var L=$id('loglist'); if(L) L.innerHTML=homeListHTML(); } });
 const _render47b=render; render=function(){ _render47b(); try{colGrips();}catch(_e){} };
 
 
