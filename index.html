@@ -1836,6 +1836,53 @@
   .resultsheet .rinput tbody th.rcase{position:static!important;box-shadow:none!important}
 }
 
+/* ══════════════════════════════════════════════════════════════
+   모바일 입력 모드 — 항목 순서이동 버튼 + 상단(케이스) 틀고정
+   ══════════════════════════════════════════════════════════════ */
+/* A) 터치 기기: 드래그 핸들 대신 ▲▼ 버튼 (드래그는 폰에서 거의 안 잡힘) */
+@media (hover:none),(pointer:coarse){
+  .resultsheet .cinput .rmw .dragh{display:none}
+  .resultsheet .rinput .del-x,
+  .sheetwrap .rtbl .del-x,
+  .sheetwrap .rtbl .dragh{opacity:1!important}
+  .resultsheet .rinput th.rmh .dragh{display:none}
+}
+.mvpad{display:none;flex:0 0 auto;flex-direction:column;gap:2px;margin-left:2px}
+.mvpad.on{display:inline-flex}
+.mvpad.row{flex-direction:column}
+.mvpad.col{flex-direction:row;gap:3px;margin-left:4px}
+.mvbtn{
+  border:1px solid var(--line2);background:#fff;color:#6b7885;
+  font:800 10px/1 var(--sans);border-radius:6px;padding:0;cursor:pointer;
+  width:22px;height:21px;display:flex;align-items:center;justify-content:center;
+  -webkit-tap-highlight-color:transparent;touch-action:manipulation;
+}
+.mvpad.col .mvbtn{width:24px;height:24px}
+.mvbtn:active{background:var(--accent-soft);border-color:var(--accent);color:var(--accent-d)}
+.mvbtn:disabled{opacity:.28;pointer-events:none}
+.mvbtn.flash{background:var(--accent-soft);border-color:var(--accent);color:var(--accent-d)}
+@media(max-width:640px){
+  .resultsheet .cinput th.rmth{min-width:126px}
+  .mvbtn{width:24px;height:22px;font-size:11px}
+}
+@media print{ .mvpad{display:none!important} }
+
+/* B) 상단 틀고정 — 입력표만, 세로 스크롤 영역 안에서 헤더 고정 */
+.resultsheet .rscroll.freeze{
+  max-height:var(--fzh,70vh);
+  overflow:auto!important;
+  overscroll-behavior-x:contain;
+  overscroll-behavior-y:auto;
+}
+.resultsheet .rscroll.freeze::-webkit-scrollbar{width:10px;height:11px}
+.resultsheet .rscroll.freeze::-webkit-scrollbar-thumb{background:#bcc3cb;border-radius:999px;border:3px solid #f1f3f5}
+.resultsheet .rscroll.freeze table.rinput thead th{position:sticky;top:0;z-index:6}
+.resultsheet .rscroll.freeze table.rinput thead th.rcorner{left:0;z-index:8}
+.resultsheet .rscroll.freeze table.rinput thead th.rmh{top:0;z-index:6}
+.resultsheet .rscroll.freeze table.rinput tbody th.rmth,
+.resultsheet .rscroll.freeze table.rinput tbody th.rcase{z-index:4}
+@media print{ .resultsheet .rscroll.freeze{max-height:none!important;overflow:visible!important} }
+
 </style>
 </head>
 <body>
@@ -4844,6 +4891,150 @@ updateUndoUI();
     if(c&&window.MutationObserver){ new MutationObserver(q).observe(c,{childList:true,subtree:true}); }
     window.addEventListener('resize',q);
     q(); setTimeout(tag,400); setTimeout(tag,1200);
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot);
+  else boot();
+})();
+</script>
+<script>
+/* ── 모바일 입력 보조: 항목 순서 ▲▼ 버튼 · 상단 틀고정 · 드래그 취소 정리 ── */
+(function(){
+  var COARSE=false;
+  try{ COARSE = window.matchMedia && (matchMedia('(hover:none)').matches || matchMedia('(pointer:coarse)').matches); }catch(e){}
+
+  /* 1) 드래그가 도중에 취소돼도 상태가 안 물리게 */
+  document.addEventListener('pointercancel',function(){
+    try{
+      if(window._dr){
+        if(window._dr.el) window._dr.el.classList.remove('dragging');
+        window._dr=null;
+        document.body.classList.remove('reordering');
+        if(typeof window._drClear==='function') window._drClear();
+      }
+    }catch(e){}
+  },true);
+
+  /* 2) 순서 이동 — 드래그와 완전히 같은 배열/저장 경로를 사용 */
+  function moveItem(kind,id,dir){
+    var d=null;
+    try{ d=(typeof D==='function')?D():null; }catch(e){}
+    if(!d) return false;
+    var arr=(kind==='row')?(d.rmetrics||[]):(d.metrics||[]);
+    var i=-1,k;
+    for(k=0;k<arr.length;k++){ if(arr[k]&&arr[k].id===id){ i=k; break; } }
+    if(i<0) return false;
+    var j=-1;
+    if(kind==='row'){
+      var g=arr[i].g;
+      if(dir<0){ for(k=i-1;k>=0;k--){ if(arr[k]&&arr[k].g===g){ j=k; break; } } }
+      else      { for(k=i+1;k<arr.length;k++){ if(arr[k]&&arr[k].g===g){ j=k; break; } } }
+    }else{
+      j=i+dir; if(j<0||j>=arr.length) j=-1;
+    }
+    if(j<0) return false;
+    var it=arr.splice(i,1)[0];
+    arr.splice(j,0,it);
+    var sc=document.querySelector('.resultsheet .rscroll');
+    var sx=sc?sc.scrollLeft:0, sy=sc?sc.scrollTop:0, py=window.pageYOffset;
+    try{ persistNow(); }catch(e){}
+    try{ render(); }catch(e){}
+    setTimeout(function(){
+      try{
+        var s2=document.querySelector('.resultsheet .rscroll');
+        if(s2){ s2.scrollLeft=sx; s2.scrollTop=sy; }
+        window.scrollTo(0,py);
+        var b=document.querySelector('[data-mvid="'+id+'"]');
+        if(b) b.classList.add('flash');
+      }catch(e){}
+    },0);
+    return true;
+  }
+
+  function pad(kind,id){
+    var up=kind==='row'?'\u25B2':'\u25C0', dn=kind==='row'?'\u25BC':'\u25B6';
+    return '<span class="mvpad on '+(kind==='row'?'row':'col')+'" data-mvid="'+id+'">'
+      + '<button type="button" class="mvbtn" data-mv="'+kind+'" data-mvitem="'+id+'" data-dir="-1" title="\uc55e/\uc704\ub85c \uc774\ub3d9">'+up+'</button>'
+      + '<button type="button" class="mvbtn" data-mv="'+kind+'" data-mvitem="'+id+'" data-dir="1" title="\ub4a4/\uc544\ub798\ub85c \uc774\ub3d9">'+dn+'</button>'
+      + '</span>';
+  }
+
+  function injectMove(){
+    if(!COARSE) return;
+    document.querySelectorAll('.resultsheet table.cinput tr.dragrow').forEach(function(tr){
+      var w=tr.querySelector('.rmw'); if(!w||w.querySelector('.mvpad')) return;
+      var id=tr.getAttribute('data-mrow'); if(!id) return;
+      w.insertAdjacentHTML('beforeend',pad('row',id));
+    });
+    document.querySelectorAll('.resultsheet table.rinput:not(.cinput) th.rmh[data-mcol]').forEach(function(th){
+      var w=th.querySelector('.rmhw'); if(!w||w.querySelector('.mvpad')) return;
+      var id=th.getAttribute('data-mcol'); if(!id) return;
+      w.insertAdjacentHTML('beforeend',pad('col',id));
+    });
+    /* 양 끝 항목은 해당 방향 버튼 비활성 */
+    document.querySelectorAll('.resultsheet table.cinput tbody').forEach(function(tb){
+      var groups={};
+      tb.querySelectorAll('tr.dragrow').forEach(function(tr){
+        var g=tr.getAttribute('data-g')||''; (groups[g]=groups[g]||[]).push(tr);
+      });
+      Object.keys(groups).forEach(function(g){
+        var list=groups[g];
+        list.forEach(function(tr,idx){
+          var bs=tr.querySelectorAll('.mvbtn');
+          if(bs[0]) bs[0].disabled=(idx===0);
+          if(bs[1]) bs[1].disabled=(idx===list.length-1);
+        });
+      });
+    });
+  }
+
+  document.addEventListener('click',function(e){
+    var b=(e.target&&e.target.closest)?e.target.closest('.mvbtn'):null;
+    if(!b) return;
+    e.preventDefault(); e.stopPropagation();
+    moveItem(b.getAttribute('data-mv'),b.getAttribute('data-mvitem'),(+b.getAttribute('data-dir'))||0);
+  },true);
+
+  /* 3) 상단 틀고정 — 입력표가 화면보다 길면 자동으로 켜짐 */
+  function freeze(){
+    document.querySelectorAll('.resultsheet .rscroll').forEach(function(sc){
+      var t=sc.querySelector('table.rinput');
+      if(!t||!COARSE){ sc.classList.remove('freeze'); return; }
+      var vh=window.innerHeight||800;
+      var limit=Math.round(Math.min(vh*0.70,620));
+      var h=sc.classList.contains('freeze')? sc.scrollHeight : t.getBoundingClientRect().height;
+      sc.style.setProperty('--fzh',limit+'px');
+      sc.classList.toggle('freeze', h>limit+40);
+    });
+    /* 안내문 문구를 현재 고정 상태에 맞게 */
+    document.querySelectorAll('.resultsheet .rcard').forEach(function(card){
+      var n=card.nextElementSibling;
+      if(!n||!n.classList.contains('scrollnudge')) return;
+      var sc=card.querySelector('.rscroll');
+      var fz=sc&&sc.classList.contains('freeze');
+      var txt=fz
+        ? '\u2194\u2195 \uBC00\uC5B4\uB3C4 \uD56D\uBAA9 \uC5F4\uACFC \uCF00\uC774\uC2A4 \uBC88\uD638\uB294 \uACE0\uC815\uB3FC\uC694 \u00B7 \u25B2\u25BC \uB85C \uC21C\uC11C \uBCC0\uACBD'
+        : '\u2194 \uD45C\uB97C \uC606\uC73C\uB85C \uBC00\uBA74 \uB098\uBA38\uC9C0 \uCF00\uC774\uC2A4\uAC00 \uBCF4\uC5EC\uC694 (\uD56D\uBAA9 \uC5F4\uC740 \uACE0\uC815)';
+      if(n.textContent!==txt) n.textContent=txt;
+    });
+  }
+  /* 고정 스크롤 영역 안에서 입력칸을 탭했을 때 가려지지 않게 */
+  document.addEventListener('focusin',function(e){
+    try{
+      var el=e.target; if(!el||!el.closest) return;
+      var sc=el.closest('.rscroll.freeze'); if(!sc) return;
+      setTimeout(function(){ try{ el.scrollIntoView({block:'nearest',inline:'nearest'}); }catch(_e){} },60);
+    }catch(_e){}
+  });
+
+  function all(){ injectMove(); freeze(); }
+  var t0=null;
+  function q(){ clearTimeout(t0); t0=setTimeout(all,50); }
+  function boot(){
+    var c=document.getElementById('content');
+    if(c&&window.MutationObserver){ new MutationObserver(q).observe(c,{childList:true,subtree:true}); }
+    window.addEventListener('resize',q);
+    window.addEventListener('orientationchange',q);
+    q(); setTimeout(all,450); setTimeout(all,1300);
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot);
   else boot();
