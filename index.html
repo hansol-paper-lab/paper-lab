@@ -2074,6 +2074,7 @@
   .newmenu button{display:flex;flex-direction:column;align-items:flex-start;gap:1px;text-align:left;border:none;background:none;border-radius:8px;padding:8px 11px;cursor:pointer;width:100%}
   .newmenu button:hover{background:#f2f5f8}
   .newmenu button b{font:700 13px var(--sans);color:var(--ink)}
+  .newmenu button:not(:has(span)){padding-top:10px;padding-bottom:10px}
   .newmenu button span{font:500 11px var(--sans);color:#9aa6b2}
   .newsep{height:1px;background:var(--line);margin:4px 8px}
 
@@ -2092,9 +2093,10 @@
   .log-meta .mst.st-done{color:#4a7f5e}
   .log-meta .mown{color:#97a3af}
   .log-note{color:#a3adb8;font-size:11.5px;margin-top:5px}
-  .log-kidtoggle{margin-left:3px;padding:1px 0 1px 5px;border:none;background:none;color:#8b98a5;font:600 11.5px var(--sans);display:inline-flex;align-items:center;gap:3px;vertical-align:baseline}
-  .log-kidtoggle:hover{background:none;color:var(--accent-d);text-decoration:underline}
-  .log-kidtoggle i{font-style:normal;font-size:8.5px;opacity:.7}
+  .log-kidtoggle{margin-left:3px;padding:1px 0 1px 5px;border:none;background:none;color:#8b98a5;font:600 11.5px var(--sans);display:inline-flex;align-items:center;gap:4px;vertical-align:baseline}
+  .log-kidtoggle:hover{background:none;color:var(--accent-d)}
+  .log-kidtoggle:hover span{text-decoration:underline}
+  .log-kidtoggle i{font-style:normal;font-size:13px;line-height:1;opacity:.85;transform:translateY(1px)}
   .log-item.kid{border-left-width:2px;background:#fcfdfe}
   .log-side{align-self:center}
 
@@ -2290,7 +2292,17 @@ function doRedo(){ if(!_redo.length){ toast('다시 실행할 작업이 없어�
 function relTime(ts){ if(!ts) return ''; const sec=(Date.now()-ts)/1000; if(sec<60)return'방금 전'; if(sec<3600)return Math.floor(sec/60)+'분 전'; if(sec<86400)return Math.floor(sec/3600)+'시간 전'; if(sec<86400*30)return Math.floor(sec/86400)+'일 전'; const dd=new Date(ts); return (dd.getMonth()+1)+'/'+dd.getDate(); }
 function palOpen(){ const pl=$id('palette'); if(!pl) return; pl.hidden=false; const q=$id('palq'); q.value=''; palRender(''); setTimeout(()=>{try{q.focus();}catch(_e){}},0); }
 function palClose(){ const pl=$id('palette'); if(pl) pl.hidden=true; }
-var _homeKid={};
+/* 수납 펼침 상태 — 실험별 updatedAt 을 건드리지 않도록 settings 에 따로 두고 팀 전체가 공유한다 */
+var _kidDirty=false;
+function _kidTouch(){ root._kidAt=Date.now(); _kidDirty=true; }
+function kidIsOpen(id){ try{ return (root.kidOpen||[]).indexOf(id)>=0; }catch(_e){ return false; } }
+function kidSetOpen(id,v){
+  if(!Array.isArray(root.kidOpen)) root.kidOpen=[];
+  const i=root.kidOpen.indexOf(id), had=(i>=0), want=!!v;
+  if(had===want) return;                      /* 바뀐 게 없으면 저장하지 않음 */
+  if(want) root.kidOpen.push(id); else root.kidOpen.splice(i,1);
+  _kidTouch(); try{persistNow();}catch(_e){} try{scheduleCloudPush(400);}catch(_e){}
+}
 function closeNewMenu(){ const m=$id('newMenu'); if(m&&!m.hidden){ m.hidden=true;
   const b=document.querySelector('[data-action="new-menu"]'); if(b){ b.setAttribute('aria-expanded','false'); b.classList.remove('on'); } } }
 document.addEventListener('click',function(e){ const t=e.target;
@@ -2411,7 +2423,7 @@ function buildAppHTML(){ if(!__SRC)return null; return _replaceCfgAndEmbed(__SRC
 async function exportSelfHTML(){ persistNow(); try{ await hydrateAllKnownImages(); }catch(_e){} const src=buildSelfHTML(); if(!src){toast('이 환경에선 HTML 내보내기가 안 돼요');return;} download('제지실험_전체백업_'+ymd()+'.html',src,'text/html;charset=utf-8'); toast('📦 전체 백업 HTML 저장됨'); }
 function exportAppHTML(){ persistNow(); const src=buildAppHTML(); if(!src){toast('이 환경에선 HTML 내보내기가 안 돼요');return;} download('index.html',src,'text/html;charset=utf-8'); toast('🌐 GitHub 운영용 index.html 저장됨 — 데이터는 포함되지 않아요'); }
 function applyLoaded(data){
-  if(data&&Array.isArray(data.experiments)){ root=data; if(!Array.isArray(root.metricLib)) root.metricLib=[]; if(!Array.isArray(root.mixLib)) root.mixLib=[]; }
+  if(data&&Array.isArray(data.experiments)){ root=data; if(!Array.isArray(root.metricLib)) root.metricLib=[]; if(!Array.isArray(root.mixLib)) root.mixLib=[]; if(!Array.isArray(root.kidOpen)) root.kidOpen=[]; }
   else if(data&&Array.isArray(data.plans)){ if(typeof data.cupWeight!=='number')data.cupWeight=33; if(!data.active)data.active={plan:0,view:'plan'}; root={experiments:[{id:'e1',name:'실험 1',type:'coat',state:data}],activeExp:0,screen:'home'}; }
   else return false;
   if(!root.trash||typeof root.trash!=='object')root.trash={};
@@ -3525,12 +3537,12 @@ function homeListHTML(){
     const np=expNoteText(e).trim();
     const notePrev=np?'<div class="log-note">'+np.split('\n').map(function(l){return escT(l);}).join('<br>')+'</div>':'';
     const kids=(seen[eid]||depth>=3)?[]:(kidOf[eid]||[]);
-    const kopen=!!_homeKid[eid];
+    const kopen=kidIsOpen(eid);
     let kidBtn='';
     if(kids.length){
       const np=kids.filter(function(k){return expKind(k.e)==='pilot';}).length;
       const lab=(np===kids.length)?'시생산':(np===0?'실험':'하위');
-      kidBtn='<button class="log-kidtoggle" data-action="exp-kids" data-e="'+eid+'" title="여기에 수납된 기록">'+lab+' '+kids.length+'<i>'+(kopen?'▴':'▾')+'</i></button>';
+      kidBtn='<button class="log-kidtoggle" data-action="exp-kids" data-e="'+eid+'" title="여기에 수납된 기록"><span>'+lab+' '+kids.length+'</span><i>'+(kopen?'▴':'▾')+'</i></button>';
     }
     let panel='';
     if(open){
@@ -3602,7 +3614,7 @@ function renderHome(){
         +'<button data-action="new-exp-sheet"><b>수초 실험</b><span>펄프 · 약품 · 초지 조건</span></button>'
         +'<button data-action="new-exp-free"><b>기타 실험</b><span>자유 양식</span></button>'
         +'<div class="newsep"></div>'
-        +'<button data-action="new-exp-pilot"><b>시생산</b><span>실험 밑에 수납해 기록</span></button>'
+        +'<button data-action="new-exp-pilot"><b>시생산</b></button>'
       +'</div>'
     +'</div>'
     +'</div>'
@@ -3901,7 +3913,7 @@ document.addEventListener('click',e=>{
   else if(a==='new-exp'||a==='new-exp-coat'){const id=uid('e');root.experiments.push({id,name:'코팅 실험 '+(root.experiments.length+1),type:'coat',date:isoDate(),updatedAt:Date.now(),state:seedAppStateBlank()});root.activeExp=root.experiments.length-1;appState=EXP().state;root.screen='sim';try{presencePing();}catch(_pe){}markExpFull(EXP().id);render();toast('새 코팅 실험 — 라이브러리 유지, 데이터 비움');}
   else if(a==='new-exp-sheet'){const id=uid('e');root.experiments.push({id,name:'수초 실험 '+(root.experiments.length+1),type:'sheet',date:isoDate(),updatedAt:Date.now(),state:seedSheetState()});root.activeExp=root.experiments.length-1;appState=EXP().state;root.screen='sim';try{presencePing();}catch(_pe){}markExpFull(EXP().id);render();toast('새 수초 실험');}
   else if(a==='new-exp-free'){const id=uid('e');root.experiments.push({id,name:'기타 실험 '+(root.experiments.length+1),type:'free',date:isoDate(),updatedAt:Date.now(),state:seedFreeState()});root.activeExp=root.experiments.length-1;appState=EXP().state;root.screen='sim';try{presencePing();}catch(_pe){}markExpFull(EXP().id);render();toast('새 기타 실험 — 자유 양식');}
-  else if(a==='new-exp-pilot'){const _par=(root.screen==='sim'&&EXP())?EXP():null;const id=uid('e');const _nm=_par?(String(_par.name||'').replace(/\s*실험\s*$/,'')+' 시생산'):('시생산 '+(root.experiments.filter(function(x){return expKind(x)==='pilot';}).length+1));root.experiments.push({id,name:_nm,type:'coat',kind:'pilot',linkTo:_par?_par.id:'',date:isoDate(),updatedAt:Date.now(),state:seedAppStateBlank()});root.activeExp=root.experiments.length-1;appState=EXP().state;root.screen='sim';if(_par)_homeKid[_par.id]=true;try{presencePing();}catch(_pe){}markExpFull(EXP().id);render();toast(_par?('새 시생산 — '+_par.name+' 밑에 수납됩니다'):'새 시생산 — 결과 요약에서 소속을 고르세요');}
+  else if(a==='new-exp-pilot'){const _par=(root.screen==='sim'&&EXP())?EXP():null;const id=uid('e');const _nm=_par?(String(_par.name||'').replace(/\s*실험\s*$/,'')+' 시생산'):('시생산 '+(root.experiments.filter(function(x){return expKind(x)==='pilot';}).length+1));root.experiments.push({id,name:_nm,type:'coat',kind:'pilot',linkTo:_par?_par.id:'',date:isoDate(),updatedAt:Date.now(),state:seedAppStateBlank()});root.activeExp=root.experiments.length-1;appState=EXP().state;root.screen='sim';if(_par)kidSetOpen(_par.id,true);try{presencePing();}catch(_pe){}markExpFull(EXP().id);render();toast(_par?('새 시생산 — '+_par.name+' 밑에 수납됩니다'):'새 시생산 — 결과 요약에서 소속을 고르세요');}
   else if(a==='sh-addpulp'){d.pulp.push({id:uid('u'),kind:'',name:'',free:''});render();}
   else if(a==='sh-delpulp'){if(d.pulp.length>1){d.pulp=d.pulp.filter(p=>p.id!==btn.dataset.pulp);render();}}
   else if(a==='sh-addchem'){const id=uid('s');d.chems.push({id,name:'',solid:'',dil:'',stir:''});if(!d.dose)d.dose={};d.dose[id]={};render();toast('약품 추가 — 이름 입력');}
@@ -4004,7 +4016,7 @@ function saveJSON(){download(fileBase()+'.json',JSON.stringify(root,null,2),'app
 $id('fileInput').addEventListener('change',e=>{
   const f=e.target.files[0];if(!f)return;const r=new FileReader();
   r.onload=ev=>{try{const data=JSON.parse(ev.target.result);
-    if(data&&Array.isArray(data.experiments)){ root=data; if(!Array.isArray(root.metricLib)) root.metricLib=[]; if(!Array.isArray(root.mixLib)) root.mixLib=[]; }
+    if(data&&Array.isArray(data.experiments)){ root=data; if(!Array.isArray(root.metricLib)) root.metricLib=[]; if(!Array.isArray(root.mixLib)) root.mixLib=[]; if(!Array.isArray(root.kidOpen)) root.kidOpen=[]; }
     else if(data&&Array.isArray(data.plans)){ if(typeof data.cupWeight!=='number')data.cupWeight=33; if(!data.active)data.active={plan:0,view:'plan'}; root={experiments:[{id:'e1',name:'실험 1',type:'coat',state:data}],activeExp:0,screen:'home'}; }
     else throw new Error("형식");
     root.experiments.forEach(x=>{ if(!x.type)x.type='coat'; if(x.date==null)x.date=''; if(!x.state)x.state={active:{plan:0,view:'plan'},plans:[]}; if(!Array.isArray(x.state.plans))x.state.plans=[]; x.state.plans.forEach(p=>{if(p&&p.data)(x.type==='sheet'?normalizeSheet:(x.type==='free'?normalizeFree:normalize))(p.data);}); });
@@ -4236,7 +4248,7 @@ function cleanExperiment(ex,local){
     x[k]=_cpy(v);}
   delete x.remoteOnly;delete x._remoteLoaded;delete x._knownPlanIds;delete x._needsImageCleanup;return x;
 }
-function cleanRootForLocal(r){const x={experiments:(r.experiments||[]).map(e=>cleanExperiment(e,true)),activeExp:r.activeExp||0,screen:r.screen||'home',trash:r.trash||{},metricLib:r.metricLib||[],_mlibAt:(+r._mlibAt)||0,mixLib:r.mixLib||[],_xlibAt:(+r._xlibAt)||0,attSize:r.attSize,schemaVersion:2};return x;}
+function cleanRootForLocal(r){const x={experiments:(r.experiments||[]).map(e=>cleanExperiment(e,true)),activeExp:r.activeExp||0,screen:r.screen||'home',trash:r.trash||{},metricLib:r.metricLib||[],_mlibAt:(+r._mlibAt)||0,mixLib:r.mixLib||[],_xlibAt:(+r._xlibAt)||0,kidOpen:r.kidOpen||[],_kidAt:(+r._kidAt)||0,attSize:r.attSize,schemaVersion:2};return x;}
 function _summary(ex){let np='';try{np=expNoteText(ex);}catch(e){np=String(ex.notePreview||ex.note||'');}const st=(ex.state||{}),ap=st.active||{};return {id:ex.id,name:ex.name||'',type:ex.type||'coat',kind:ex.kind||'',linkTo:ex.linkTo||'',date:ex.date||'',updatedAt:+ex.updatedAt||Date.now(),status:ex.status||'run',owner:ex.owner||'',note:ex.note||'',noteEdited:!!ex.noteEdited,notePreview:String(np||'').slice(0,300),prog:+ex.prog||0,activePlan:+ap.plan||0,activeView:ap.view||'plan',planCount:(st.plans||[]).length,updatedBy:whoAmI()||''};}
 function _meta(ex){const x=cleanExperiment(ex,false),plans=((x.state||{}).plans)||[];const sm=Object.assign({},x.state||{});delete sm.plans;delete x.state;x.stateMeta=sm;x.planOrder=plans.map(p=>({id:p.id,label:p.label||'',updatedAt:+p.updatedAt||0}));return x;}
 function _setRemoteFlags(ex,ids){try{Object.defineProperty(ex,'_remoteLoaded',{value:true,writable:true,configurable:true});Object.defineProperty(ex,'_knownPlanIds',{value:new Set(ids||[]),writable:true,configurable:true});}catch(e){ex._remoteLoaded=true;ex._knownPlanIds=new Set(ids||[]);}delete ex.remoteOnly;return ex;}
@@ -4391,6 +4403,7 @@ async function cloudLoadSummaries(silent,force){
   let isFull=(!!force)||(!_sumMark)||(!_sumIdx)||((_nowT-_sumFullAt)>900000);
   if(isFull){try{ const _ml=await fbDb('settings/metricLib','GET'); if(_ml&&Array.isArray(_ml.items)&&(+_ml.updatedAt||0)>((+root._mlibAt)||0)){ root.metricLib=_ml.items; root._mlibAt=(+_ml.updatedAt)||Date.now(); try{_mlibFill();}catch(_e){} try{persistNow();}catch(_e){} } }catch(_e){}
     try{ const _xl=await fbDb('settings/mixLib','GET'); if(_xl&&Array.isArray(_xl.items)&&(+_xl.updatedAt||0)>((+root._xlibAt)||0)){ root.mixLib=_xl.items; root._xlibAt=(+_xl.updatedAt)||Date.now(); try{persistNow();}catch(_e){} try{refreshLibraryPopup();}catch(_e){} } }catch(_e){}
+    try{ const _ko=await fbDb('settings/uiKidOpen','GET'); if(_ko&&Array.isArray(_ko.ids)&&(+_ko.updatedAt||0)>((+root._kidAt)||0)&&!_kidDirty){ root.kidOpen=_ko.ids; root._kidAt=(+_ko.updatedAt)||Date.now(); try{persistNow();}catch(_e){} if(root.screen==='home'){ const L=$id('loglist'); if(L)L.innerHTML=homeListHTML(); } } }catch(_e){}
     try{ const _tr=await fbDb('trash','GET'); root.trash=root.trash||{};
       if(_tr&&typeof _tr==='object'){ for(const k in _tr){ const v=+_tr[k]||0; if(v>((+root.trash[k])||0)) root.trash[k]=v; } }
       const _cut=srvNow()-5184000000; for(const k in root.trash){ if(((+root.trash[k])||0)<_cut) delete root.trash[k]; }
@@ -4437,7 +4450,7 @@ function _renderSoon(){
     try{_withFocus(render);}catch(e){}
   },1000);}
 var _mergeToastAt=0;
-async function cloudFlush(silent){if(!fbConfigReady()){cloudStat('err','☁ Firebase 설정 필요');return;}if(!FB_AUTH.refreshToken&&!FB_AUTH.idToken){cloudStat('err','☁ 로그인 필요');return;}if(_csBusy){_csQueued=true;return;}_csBusy=true;if(!silent)cloudStat('busy','☁ 저장 중…');try{await syncServerClock9();for(const id of Array.from(_deletedRemote)){try{await fbDb('trash/'+encodeURIComponent(id),'PUT',((root.trash&&+root.trash[id])||srvNow()));}catch(_e){}await fbDb('summaries/'+encodeURIComponent(id),'DELETE');await fbDb('experiments/'+encodeURIComponent(id),'DELETE');_deletedRemote.delete(id);}const ids=new Set([..._dirtyMeta,..._dirtyFull,..._dirtyPlans.keys()]);for(const id of ids){if(root.trash&&root.trash[id]!=null){_dirtyMeta.delete(id);_dirtyFull.delete(id);_dirtyPlans.delete(id);continue;}const ex=(root.experiments||[]).find(e=>e.id===id);if(ex)await fbSaveExperiment(ex);}if(_mlibDirty){ try{ await fbDb('settings/metricLib','PUT',{items:root.metricLib||[],updatedAt:(+root._mlibAt)||Date.now()}); _mlibDirty=false; }catch(e){} }if(_xlibDirty){ try{ await fbDb('settings/mixLib','PUT',{items:root.mixLib||[],updatedAt:(+root._xlibAt)||Date.now()}); _xlibDirty=false; }catch(e){} }await _flushImageDeletes();const t=new Date();cloudStat('on','☁ '+(whoAmI()?whoAmI()+' · ':'')+String(t.getHours()).padStart(2,'0')+':'+String(t.getMinutes()).padStart(2,'0'));}catch(e){if(String(e.message).indexOf('LOGIN_REQUIRED')>=0)cloudStat('err','☁ 로그인 필요');else cloudStat('err','☁ 저장 실패 — 눌러 재시도');}finally{_csBusy=false;if(_csQueued){_csQueued=false;setTimeout(()=>cloudFlush(true),800);}}}
+async function cloudFlush(silent){if(!fbConfigReady()){cloudStat('err','☁ Firebase 설정 필요');return;}if(!FB_AUTH.refreshToken&&!FB_AUTH.idToken){cloudStat('err','☁ 로그인 필요');return;}if(_csBusy){_csQueued=true;return;}_csBusy=true;if(!silent)cloudStat('busy','☁ 저장 중…');try{await syncServerClock9();for(const id of Array.from(_deletedRemote)){try{await fbDb('trash/'+encodeURIComponent(id),'PUT',((root.trash&&+root.trash[id])||srvNow()));}catch(_e){}await fbDb('summaries/'+encodeURIComponent(id),'DELETE');await fbDb('experiments/'+encodeURIComponent(id),'DELETE');_deletedRemote.delete(id);}const ids=new Set([..._dirtyMeta,..._dirtyFull,..._dirtyPlans.keys()]);for(const id of ids){if(root.trash&&root.trash[id]!=null){_dirtyMeta.delete(id);_dirtyFull.delete(id);_dirtyPlans.delete(id);continue;}const ex=(root.experiments||[]).find(e=>e.id===id);if(ex)await fbSaveExperiment(ex);}if(_mlibDirty){ try{ await fbDb('settings/metricLib','PUT',{items:root.metricLib||[],updatedAt:(+root._mlibAt)||Date.now()}); _mlibDirty=false; }catch(e){} }if(_xlibDirty){ try{ await fbDb('settings/mixLib','PUT',{items:root.mixLib||[],updatedAt:(+root._xlibAt)||Date.now()}); _xlibDirty=false; }catch(e){} }if(_kidDirty){ try{ await fbDb('settings/uiKidOpen','PUT',{ids:root.kidOpen||[],updatedAt:(+root._kidAt)||Date.now()}); _kidDirty=false; }catch(e){} }await _flushImageDeletes();const t=new Date();cloudStat('on','☁ '+(whoAmI()?whoAmI()+' · ':'')+String(t.getHours()).padStart(2,'0')+':'+String(t.getMinutes()).padStart(2,'0'));}catch(e){if(String(e.message).indexOf('LOGIN_REQUIRED')>=0)cloudStat('err','☁ 로그인 필요');else cloudStat('err','☁ 저장 실패 — 눌러 재시도');}finally{_csBusy=false;if(_csQueued){_csQueued=false;setTimeout(()=>cloudFlush(true),800);}}}
 async function cloudSync(silent){if(syncMode()==='claude'){cloudStat('on','☁ 로컬 공유 모드');return;}try{await cloudFlush(true);if(!_editingNow())await cloudLoadSummaries(!!silent,!silent);if(!silent&&root.screen==='sim'&&EXP()&&!_editingNow()){const ex=EXP();if(!_dirtyMeta.has(ex.id)&&!_dirtyFull.has(ex.id)&&!_dirtyPlans.has(ex.id)){try{const fresh=await fbLoadExperiment(ex.id,ex);if(!_editingNow()&&!(_dirtyMeta.has(ex.id)||_dirtyFull.has(ex.id)||_dirtyPlans.has(ex.id))){_carryExperimentImages(ex,fresh);const i=root.experiments.indexOf(ex);if(i>=0){root.experiments[i]=fresh;root.activeExp=i;appState=fresh.state;_queueLegacyImageCleanup(fresh);_renderSoon();hydrateVisibleAttachmentThumbs();}}}catch(_e){}}}if(!silent)toast('☁ 최신 내용으로 동기화됨');}catch(e){if(String(e.message).indexOf('LOGIN_REQUIRED')>=0)cloudStat('err','☁ 로그인 필요');else cloudStat('err','☁ 연결 실패');}}
 function _scheduleImageRetry(){clearTimeout(_imgRetryT);_imgRetryT=setTimeout(()=>cloudFlush(true),5000);}
 function scheduleCloudPush(delay){if(syncMode()==='none')return;try{syncServerClock9();}catch(_e){}clearTimeout(_cpushT);if(syncMode()==='fb')cloudStat('busy','☁ 저장 대기…');const ms=(delay==null)?1800:Math.max(80,+delay||0);_cpushT=setTimeout(()=>cloudFlush(true),ms);}
@@ -4598,7 +4611,7 @@ document.addEventListener('change',function(e){const t=e.target,ro=(t&&t.dataset
   const want=t.value||'';
   if(want){ const par=root.experiments.find(x=>x&&x.id===want);
     if(!par||par.id===ex.id||expIsDesc(par,ex.id)){ toast('그 항목은 이 기록의 하위라 상위로 지정할 수 없어요'); const L0=$id('loglist'); if(L0)L0.innerHTML=homeListHTML(); return; } }
-  ex.linkTo=want; if(ex.linkTo) _homeKid[ex.linkTo]=true;
+  ex.linkTo=want; if(ex.linkTo) kidSetOpen(ex.linkTo,true);
   ex.updatedAt=srvNow(); _dirtyMeta.add(ex.id); markExpFull(ex.id); scheduleSave(); try{scheduleCloudPush(200);}catch(_e){}
   const L=$id('loglist'); if(L)L.innerHTML=homeListHTML();
   toast(ex.linkTo?('“'+String((root.experiments.find(x=>x&&x.id===ex.linkTo)||{}).name||'')+'” 밑으로 옮겼어요'):'연결을 해제했어요');
@@ -4607,8 +4620,8 @@ document.addEventListener('input',function(e){const t=e.target,ro=(t&&t.dataset)
 document.addEventListener('click',function(e){const b=(e.target&&e.target.closest)?e.target.closest('[data-action]'):null;if(!b)return;const a=b.dataset.action;
 if(a==='new-menu'){ const m=$id('newMenu'); if(m){ const willOpen=m.hidden; m.hidden=!willOpen; b.setAttribute('aria-expanded',willOpen?'true':'false'); b.classList.toggle('on',willOpen); } return; }
 if(a==='exp-more'){const eid=b.dataset.e;_homeOpen[eid]=!_homeOpen[eid];const L=$id('loglist');if(L)L.innerHTML=homeListHTML();}
-else if(a==='exp-kids'){const eid=b.dataset.e;_homeKid[eid]=!_homeKid[eid];const L=$id('loglist');if(L)L.innerHTML=homeListHTML();}
-else if(a==='exp-kind'){const ex=root.experiments.find(x=>x&&x.id===b.dataset.e);if(ex){const want=b.dataset.k;if(want==='pilot'){ex.kind='pilot';}else{delete ex.kind;}if(ex.linkTo)_homeKid[ex.linkTo]=true;ex.updatedAt=srvNow();_dirtyMeta.add(ex.id);markExpFull(ex.id);scheduleSave();try{scheduleCloudPush(200);}catch(_e){}const L=$id('loglist');if(L)L.innerHTML=homeListHTML();toast(want==='pilot'?'시생산으로 바꿨어요 (소속은 그대로)':'일반 실험으로 되돌렸어요 (소속은 그대로)');}}else if(a==='exp-status'){const ex=root.experiments.find(x=>x&&x.id===b.dataset.e);if(ex){ex.status=b.dataset.st;ex.updatedAt=srvNow();_dirtyMeta.add(ex.id);scheduleSave();const L=$id('loglist');if(L)L.innerHTML=homeListHTML();}}else if(a==='home-filter'){_homeType=b.dataset.t||'all';document.querySelectorAll('.hchip').forEach(c=>c.classList.toggle('on',c.dataset.t===_homeType));const L=$id('loglist');if(L)L.innerHTML=homeListHTML();}else if(a==='cloud-sync'){if(!fbConfigReady())fbOpen();else if(!FB_AUTH.refreshToken&&!FB_AUTH.idToken)gateShow();else cloudSync(false);}else if(a==='img-test'){const m=$id('setmenu'),bk=$id('menuback');if(m)m.hidden=true;if(bk)bk.hidden=true;storageSelfTest();}else if(a==='img-fix'){const m=$id('setmenu'),bk=$id('menuback');if(m)m.hidden=true;if(bk)bk.hidden=true;reuploadAllImages();}else if(a==='fb-setup')fbOpen();else if(a==='fb-save')fbSave();else if(a==='fb-cancel'){const ov=$id('fbov');if(ov)ov.style.display='none';}else if(a==='fb-off')fbOff();else if(a==='fb-logout')fbLogout();else if(a==='fb-migrate')askConfirm('현재 파일의 모든 실험과 이미지를 Firebase 운영 구조로 이관할까요? 같은 ID의 서버 데이터는 현재 파일 기준으로 갱신됩니다.',fbMigrateRun);});
+else if(a==='exp-kids'){const eid=b.dataset.e;kidSetOpen(eid,!kidIsOpen(eid));const L=$id('loglist');if(L)L.innerHTML=homeListHTML();}
+else if(a==='exp-kind'){const ex=root.experiments.find(x=>x&&x.id===b.dataset.e);if(ex){const want=b.dataset.k;if(want==='pilot'){ex.kind='pilot';}else{delete ex.kind;}if(ex.linkTo)kidSetOpen(ex.linkTo,true);ex.updatedAt=srvNow();_dirtyMeta.add(ex.id);markExpFull(ex.id);scheduleSave();try{scheduleCloudPush(200);}catch(_e){}const L=$id('loglist');if(L)L.innerHTML=homeListHTML();toast(want==='pilot'?'시생산으로 바꿨어요 (소속은 그대로)':'일반 실험으로 되돌렸어요 (소속은 그대로)');}}else if(a==='exp-status'){const ex=root.experiments.find(x=>x&&x.id===b.dataset.e);if(ex){ex.status=b.dataset.st;ex.updatedAt=srvNow();_dirtyMeta.add(ex.id);scheduleSave();const L=$id('loglist');if(L)L.innerHTML=homeListHTML();}}else if(a==='home-filter'){_homeType=b.dataset.t||'all';document.querySelectorAll('.hchip').forEach(c=>c.classList.toggle('on',c.dataset.t===_homeType));const L=$id('loglist');if(L)L.innerHTML=homeListHTML();}else if(a==='cloud-sync'){if(!fbConfigReady())fbOpen();else if(!FB_AUTH.refreshToken&&!FB_AUTH.idToken)gateShow();else cloudSync(false);}else if(a==='img-test'){const m=$id('setmenu'),bk=$id('menuback');if(m)m.hidden=true;if(bk)bk.hidden=true;storageSelfTest();}else if(a==='img-fix'){const m=$id('setmenu'),bk=$id('menuback');if(m)m.hidden=true;if(bk)bk.hidden=true;reuploadAllImages();}else if(a==='fb-setup')fbOpen();else if(a==='fb-save')fbSave();else if(a==='fb-cancel'){const ov=$id('fbov');if(ov)ov.style.display='none';}else if(a==='fb-off')fbOff();else if(a==='fb-logout')fbLogout();else if(a==='fb-migrate')askConfirm('현재 파일의 모든 실험과 이미지를 Firebase 운영 구조로 이관할까요? 같은 ID의 서버 데이터는 현재 파일 기준으로 갱신됩니다.',fbMigrateRun);});
 document.addEventListener('keydown',function(e){if(e.key==='Escape'){const ov=$id('fbov');if(ov&&ov.style.display!=='none')ov.style.display='none';}});
 /* ================================================================ */
 
@@ -5249,6 +5262,7 @@ _syncFlag(); setTimeout(_syncFlag,800);
 /* ---- 측정값 라이브러리 · 소수점 설정 ---- */
 if(!Array.isArray(root.metricLib)) root.metricLib=[];
 if(!Array.isArray(root.mixLib)) root.mixLib=[];
+if(!Array.isArray(root.kidOpen)) root.kidOpen=[];
 var _mlibDirty=false;
 function _mlibTouch(){ root._mlibAt=Date.now(); _mlibDirty=true; }
 var _xlibDirty=false;
