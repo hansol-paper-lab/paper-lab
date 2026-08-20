@@ -1985,6 +1985,8 @@
   /* 계산 모드 (여러 값 → 평균) */
   .cmean{display:block;font:700 10px var(--mono);color:#5f7d9c;text-align:center;padding:0 2px 3px;letter-spacing:-.02em;min-height:12px}
   .cmean.multi{color:#1d63b8}
+  .cmean.fx{color:#2f7a52;font-weight:800}
+  td.rcell.hasfx>input,td.rcell:has(>.cmean.fx)>input{color:#2f7a52}
   .calcbtn{border:1.3px solid var(--line2);background:#fff;border-radius:8px;font:800 11.5px var(--sans);padding:5px 11px;color:var(--muted);cursor:pointer}
   .calcbtn.on{background:#2e6ca4;border-color:#2e6ca4;color:#fff}
   .calcbar{display:flex;align-items:center;gap:8px;margin:0 0 8px;flex-wrap:wrap}
@@ -2062,9 +2064,50 @@
     .cmtrow .del-x,.rcmt .del-x,td.drycell .dryx,.attL-tools,.case-lib,.case-x,.anno-dot{display:none!important}
   }
 
+  /* ===== 홈: 새 기록 드롭다운 ===== */
+  .newwrap{position:relative;flex:none}
+  .newbtn{width:34px;height:34px;border:1px solid #cfd8e1;background:#fff;color:#5d6b79;border-radius:9px;font:400 19px/1 var(--sans);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.12s}
+  .newbtn:hover{border-color:#8fa0b1;color:var(--ink);background:#f7f9fb}
+  .newbtn.on{background:var(--slate);border-color:var(--slate);color:#fff}
+  .newmenu{position:absolute;right:0;top:calc(100% + 6px);z-index:120;min-width:216px;background:#fff;border:1px solid #d7dee6;border-radius:11px;box-shadow:0 12px 32px rgba(20,30,40,.14);padding:5px;display:flex;flex-direction:column}
+  .newmenu[hidden]{display:none}
+  .newmenu button{display:flex;flex-direction:column;align-items:flex-start;gap:1px;text-align:left;border:none;background:none;border-radius:8px;padding:8px 11px;cursor:pointer;width:100%}
+  .newmenu button:hover{background:#f2f5f8}
+  .newmenu button b{font:700 13px var(--sans);color:var(--ink)}
+  .newmenu button span{font:500 11px var(--sans);color:#9aa6b2}
+  .newsep{height:1px;background:var(--line);margin:4px 8px}
+
+  /* ===== 홈: 목록 행 — 알약·색 줄이고 텍스트 위주로 ===== */
+  .log-item{gap:13px;align-items:flex-start;padding:13px 14px}
+  .log-datechip{background:none!important;border:none!important;flex:0 0 42px;text-align:left;padding:1px 0}
+  .log-datechip b{font:600 13px var(--mono);color:#6d7986;letter-spacing:-.02em}
+  .log-datechip small{font-size:10.5px;color:#b3bdc7}
+  .log-main{min-width:0;flex:1}
+  .log-name{font-weight:650;font-size:14.5px;color:var(--ink);letter-spacing:-.01em}
+  .log-meta{display:flex;align-items:center;flex-wrap:wrap;gap:5px;margin-top:3px;font:500 11.5px var(--sans);color:#9aa6b2;line-height:1.4}
+  .log-meta i{font-style:normal;color:#d3dae1}
+  .log-meta .mtype{color:#97a3af}
+  .log-meta .mst{color:#6d7986;font-weight:600}
+  .log-meta .mst.st-hold{color:#9a7530}
+  .log-meta .mst.st-done{color:#4a7f5e}
+  .log-meta .mown{color:#97a3af}
+  .log-note{color:#a3adb8;font-size:11.5px;margin-top:5px}
+  .log-kidtoggle{margin-left:3px;padding:1px 0 1px 5px;border:none;background:none;color:#8b98a5;font:600 11.5px var(--sans);display:inline-flex;align-items:center;gap:3px;vertical-align:baseline}
+  .log-kidtoggle:hover{background:none;color:var(--accent-d);text-decoration:underline}
+  .log-kidtoggle i{font-style:normal;font-size:8.5px;opacity:.7}
+  .log-item.kid{border-left-width:2px;background:#fcfdfe}
+  .log-side{align-self:center}
+
+  /* 필터 칩 — 테두리 없애고 탭처럼 */
+  .hchips{gap:1px}
+  .hchip{border:1px solid transparent!important;background:none!important;color:#97a3af!important;padding:6px 10px!important;font-weight:600!important;border-radius:8px!important}
+  .hchip:hover{background:#eef1f5!important;color:#5d6b79!important}
+  .hchip.on{background:#eaeef3!important;color:var(--ink)!important;border-color:#dde3e9!important}
+
   @media(max-width:600px){
     .log-item.kid{margin-left:12px}
     .mixrow{flex-wrap:wrap}
+    .newmenu{right:auto;left:0}
   }
 
 </style>
@@ -2248,6 +2291,11 @@ function relTime(ts){ if(!ts) return ''; const sec=(Date.now()-ts)/1000; if(sec<
 function palOpen(){ const pl=$id('palette'); if(!pl) return; pl.hidden=false; const q=$id('palq'); q.value=''; palRender(''); setTimeout(()=>{try{q.focus();}catch(_e){}},0); }
 function palClose(){ const pl=$id('palette'); if(pl) pl.hidden=true; }
 var _homeKid={};
+function closeNewMenu(){ const m=$id('newMenu'); if(m&&!m.hidden){ m.hidden=true;
+  const b=document.querySelector('[data-action="new-menu"]'); if(b){ b.setAttribute('aria-expanded','false'); b.classList.remove('on'); } } }
+document.addEventListener('click',function(e){ const t=e.target;
+  if(t&&t.closest&&t.closest('.newwrap')) return; closeNewMenu(); },true);
+document.addEventListener('keydown',function(e){ if(e.key==='Escape') closeNewMenu(); });
 function palRender(q){ q=(q||'').toLowerCase(); const items=[]; root.experiments.forEach((e,i)=>{ if(!q||(e.name||'').toLowerCase().indexOf(q)>=0) items.push(`<button class="pal-it" data-action="open-exp" data-i="${i}"><span class="pal-ic ${expBadge(e).cls}">${expBadge(e).tx}</span><span class="pal-tx">${escT(e.name)}</span><span class="pal-sub">${escT(e.date||'')}</span></button>`); }); [['new-exp-coat','＋ 새 코팅 실험'],['new-exp-sheet','＋ 새 수초 실험'],['new-exp-free','＋ 새 기타 실험'],['new-exp-pilot','＋ 새 시생산'],['save-app-html','🌐 GitHub 운영용 index.html 저장'],['save-html','📦 전체 백업 HTML 저장'],['save','💾 JSON 저장'],['load','📂 불러오기'],['csv','📊 CSV 내보내기'],['set-shortcuts','⌨ 단축키 보기']].forEach(pr=>{ if(!q||pr[1].toLowerCase().indexOf(q)>=0) items.push(`<button class="pal-it" data-action="${pr[0]}"><span class="pal-ic act">⚡</span><span class="pal-tx">${pr[1]}</span></button>`); }); $id('pallist').innerHTML=items.join('')||`<div class="pal-empty">검색 결과 없음</div>`; palSel(0); }
 function palSel(i){ const its=Array.prototype.slice.call($id('pallist').querySelectorAll('.pal-it')); its.forEach(el=>el.classList.remove('sel')); if(its.length){ _palIdx=Math.max(0,Math.min(i,its.length-1)); its[_palIdx].classList.add('sel'); try{its[_palIdx].scrollIntoView({block:'nearest'});}catch(_e){} } else _palIdx=-1; }
 function curPlan(){ if(root.screen!=='sim'||!appState||!appState.plans) return null; const p=appState.plans[appState.active.plan]; if(p&&!Array.isArray(p.attach)) p.attach=[]; return p; }
@@ -2837,10 +2885,10 @@ function renderResult(){
     G.forEach(g=>{ const gm=M.filter(m=>m.g===g.id);
       rows+=`<tr class="ggh"><td colspan="${cs.length+2+(mOn?1:0)}"><div class="gghw"><span class="gside" aria-hidden="true"></span><input class="gname" data-role="cgname" data-g="${g.id}" value="${escA(g.name)}"><div class="gactions"><button class="btn ghost sm" data-action="co-addmetric" data-g="${g.id}">+ 항목</button><button class="btn ghost sm" data-action="co-addnote" data-g="${g.id}">+ 비고 행</button><button class="btn ghost sm" data-action="co-memo">${mOn?'비고 열 ✓':'+ 비고 열'}</button>${G.length>1?`<button class="del-x" data-action="co-delgroup" data-g="${g.id}" title="그룹 삭제(항목 포함)">✕</button>`:''}</div></div></td></tr>`;
       gm.forEach(m=>{ if(m.kind==='note'){ rows+=`<tr class="dragrow" data-mrow="${m.id}" data-g="${g.id}"><th class="rmth"><div class="rmw"><input class="rmname2" list="mlibdl" data-role="cmname" data-m="${m.id}" value="${escA(m.name)}"><span class="dragh" data-drag="cm" data-metric="${m.id}" data-g="${g.id}" title="끌어서 순서 변경">⠿</span><button class="del-x" data-action="co-delmetric" data-m="${m.id}" title="삭제">✕</button></div></th><td class="runit"></td><td class="rcell notewide" colspan="${cs.length+(mOn?1:0)}"><input data-role="cnoterow" data-m="${m.id}" value="${escA(m.txt||'')}" ></td></tr>`; return; }
-      rows+=`<tr class="dragrow" data-mrow="${m.id}" data-g="${g.id}"><th class="rmth"><div class="rmw"><input class="rmname2" list="mlibdl" data-role="cmname" data-m="${m.id}" value="${escA(m.name)}"><span class="dragh" data-drag="cm" data-metric="${m.id}" data-g="${g.id}" title="끌어서 순서 변경">⠿</span><button class="del-x" data-action="co-delmetric" data-m="${m.id}" title="항목 삭제">✕</button></div></th><td class="runit"><input class="rmunit2" data-role="cmunit" data-m="${m.id}" value="${escA(m.unit||'')}" placeholder="단위"><button class="dtog ${m.delta?'on':''}" data-action="co-mdelta" data-m="${m.id}" title="결과 리포트에 기준 대비 증감 표시">Δ</button></td>${cs.map(c=>{const _raw=((d.rresults[c.id]||{})[m.id])||'';const _st=calcStat(_raw);return `<td class="rcell ${ctrls.includes(c.id)?'ctrlc':''}"><input data-role="cres" data-case="${c.id}" data-m="${m.id}" value="${escA(_raw)}" title="76, 49, 51 → 평균 · 3, 4, 5 / 5, 4, 7 → T면 / 백면 따로 평균 (13/15, 3(4) 같은 표기는 그대로)"><span class="cmean${_st.groups?' multi':''}" id="cmean-${c.id}-${m.id}">${calcLabel(m,_st)}</span></td>`;}).join('')}${mOn?`<td class="rcell memoc2"><input data-role="crmemo" data-m="${m.id}" value="${escA((d.rmemos||{})[m.id]||'')}"></td>`:''}</tr>`; });
+      rows+=`<tr class="dragrow" data-mrow="${m.id}" data-g="${g.id}"><th class="rmth"><div class="rmw"><input class="rmname2" list="mlibdl" data-role="cmname" data-m="${m.id}" value="${escA(m.name)}"><span class="dragh" data-drag="cm" data-metric="${m.id}" data-g="${g.id}" title="끌어서 순서 변경">⠿</span><button class="del-x" data-action="co-delmetric" data-m="${m.id}" title="항목 삭제">✕</button></div></th><td class="runit"><input class="rmunit2" data-role="cmunit" data-m="${m.id}" value="${escA(m.unit||'')}" placeholder="단위"><button class="dtog ${m.delta?'on':''}" data-action="co-mdelta" data-m="${m.id}" title="결과 리포트에 기준 대비 증감 표시">Δ</button></td>${cs.map(c=>{const _raw=((d.rresults[c.id]||{})[m.id])||'';const _st=calcStat(_raw);return `<td class="rcell ${ctrls.includes(c.id)?'ctrlc':''}"><input data-role="cres" data-case="${c.id}" data-m="${m.id}" value="${escA(_raw)}" title="76, 49, 51 → 평균 · 3, 4, 5 / 5, 4, 7 → T면 / 백면 따로 · =81/80.5 → 수식 계산 (13/15, 3(4) 같은 표기는 그대로)"><span class="cmean${calcHit(_st)?' multi':''}${_st.formula?' fx':''}" id="cmean-${c.id}-${m.id}">${calcLabel(m,_st)}</span></td>`;}).join('')}${mOn?`<td class="rcell memoc2"><input data-role="crmemo" data-m="${m.id}" value="${escA((d.rmemos||{})[m.id]||'')}"></td>`:''}</tr>`; });
     });
     const lay2=Object.assign({n:150,u:64},d.rlayout||{}); const colg2=`<colgroup><col style="width:${Math.min(+lay2.n||150,260)}px"><col style="width:${Math.min(+lay2.u||64,120)}px">${cs.map(()=>'<col>').join('')}${mOn?`<col style="width:${Math.min(((d.rlayout||{}).m)||170,300)}px">`:''}</colgroup>`;
-    body=ctrlRow+`<div class="rcard"><div class="rscroll cscroll"><table class="rinput cinput">${colg2}<thead>${head}</thead><tbody>${rows}</tbody></table></div></div><p class="rhint">한 칸에 <b>76, 49, 51</b>처럼 <b>쉼표</b>로 나열하면 평균이 계산됩니다. <b>3, 4, 5 / 5, 4, 7</b>처럼 슬래시로 나누면 <b>T면 / 백면</b>을 따로 평균 냅니다 — <b>13/15</b>·<b>3(4)</b>·<b>5~7</b> 같은 표기는 손대지 않습니다. <b>기준(${escT(ctrlName)})</b> 대비 바뀐 배합은 리포트에서 ○ 표시. 기준을 <b>여러 개</b> 지정하면 각 케이스는 자기 왼쪽의 가까운 기준과 비교되고, 기준 열엔 ○/Δ가 안 붙어요.</p>`;
+    body=ctrlRow+`<div class="rcard"><div class="rscroll cscroll"><table class="rinput cinput">${colg2}<thead>${head}</thead><tbody>${rows}</tbody></table></div></div><p class="rhint">한 칸에 <b>76, 49, 51</b>처럼 <b>쉼표</b>로 나열하면 평균이 계산됩니다. <b>3, 4, 5 / 5, 4, 7</b>이나 <b>1.5, 1.9, 1.2 / 1.9</b>처럼 슬래시로 나누면 <b>T면 / 백면</b>을 따로 냅니다. 엑셀처럼 <b>=81/80.5</b> 로 적으면 계산해 줍니다 — <b>13/15</b>·<b>3(4)</b>·<b>5~7</b> 같은 표기는 손대지 않습니다. <b>기준(${escT(ctrlName)})</b> 대비 바뀐 배합은 리포트에서 ○ 표시. 기준을 <b>여러 개</b> 지정하면 각 케이스는 자기 왼쪽의 가까운 기준과 비교되고, 기준 열엔 ○/Δ가 안 붙어요.</p>`;
   }else{
     body=buildCoatReport(d).body;
   }
@@ -2945,13 +2993,54 @@ function doseOf(d,chem,k){ return num((d.dose[chem]||{})[k])||0; }
 /* 칸별 자동 계산 — "76, 49, 51" 처럼 쉼표로 나눈 순수 숫자일 때만 평균을 낸다.
    13/15, 3(4), 5~7, T/B 같은 표기는 그대로 둔다. */
 function calcOn(d){ return true; }
-const CALC_RE=/^\s*-?\d+(?:\.\d+)?\s*(?:,\s*-?\d+(?:\.\d+)?\s*){1,}$/;
+/* =81/80.5 처럼 = 로 시작하면 엑셀식 수식으로 계산한다.
+   + - * / ^ ( ) % 와 숫자만 허용하는 자체 파서 — eval 은 쓰지 않는다. */
+function calcFormula(raw){
+  const t=String(raw==null?'':raw).trim();
+  if(t.charAt(0)!=='=') return null;
+  const src=t.slice(1);
+  if(!src||!/^[-+*/^().%\d\s]+$/.test(src)) return null;
+  let i=0;
+  const ws=function(){ while(i<src.length&&src.charAt(i)===' ') i++; };
+  const post=function(v){ ws(); while(src.charAt(i)==='%'){ i++; v=v/100; ws(); } return v; };
+  function unary(){
+    ws();
+    const c=src.charAt(i);
+    if(c==='('){ i++; const v=expr(); ws(); if(src.charAt(i)!==')') throw 0; i++; return post(v); }
+    if(c==='-'){ i++; return -unary(); }
+    if(c==='+'){ i++; return unary(); }
+    const st=i;
+    while(i<src.length&&/[\d.]/.test(src.charAt(i))) i++;
+    if(i===st) throw 0;
+    const v=parseFloat(src.slice(st,i));
+    if(!isFinite(v)) throw 0;
+    return post(v);
+  }
+  function power(){ let v=unary(); ws();
+    while(src.charAt(i)==='^'){ i++; v=Math.pow(v,unary()); ws(); } return v; }
+  function term(){ let v=power(); ws();
+    while(src.charAt(i)==='*'||src.charAt(i)==='/'){ const op=src.charAt(i); i++; const r=power();
+      if(op==='/'&&r===0) throw 0; v=(op==='*')?v*r:v/r; ws(); } return v; }
+  function expr(){ let v=term(); ws();
+    while(src.charAt(i)==='+'||src.charAt(i)==='-'){ const op=src.charAt(i); i++; const r=term();
+      v=(op==='+')?v+r:v-r; ws(); } return v; }
+  try{ const v=expr(); ws(); if(i!==src.length) return null; return isFinite(v)?v:null; }
+  catch(e){ return null; }
+}
+const CALC_RE=/^\s*-?\d+(?:\.\d+)?\s*(?:,\s*-?\d+(?:\.\d+)?\s*)*$/;  /* 숫자 1개 이상, 쉼표 구분 */
 const CALC_EMPTY={n:0,mean:0,min:0,max:0,groups:null};
-/* "3, 4, 5, 6" → 평균 1개.
-   "3, 4, 5, 6 / 5, 4, 7, 9" → 슬래시로 나눈 구간(T면 / 백면)별 평균.
-   구간이 하나라도 "숫자, 숫자" 형태가 아니면(13/15, 3(4), 5~7 …) 손대지 않는다. */
+/* 평균을 내는 조건 — 쉼표가 반드시 있어야 하고, 모든 구간이 순수 숫자여야 한다.
+     "3, 4, 5, 6"                 → 평균 1개
+     "3, 4, 5, 6 / 5, 4, 7, 9"    → T면 / 백면 각각 평균
+     "1.5, 1.9, 1.2 / 1.9"        → 한쪽만 여러 번 재도 OK (백면은 값 그대로)
+   손대지 않는 것 — 쉼표가 없거나(13/15, 5~7, T/B), 숫자가 아니거나,
+     구간이 3개 이상인데 값이 하나뿐인 구간이 섞인 경우("13/15, 12/14" 같은 T/B 쌍 나열) */
 function calcStat(raw){
   const t=String(raw==null?'':raw);
+  if(t.trim().charAt(0)==='='){
+    const fv=calcFormula(t);
+    return (fv==null)?CALC_EMPTY:{n:1,mean:fv,min:fv,max:fv,groups:null,formula:true,value:fv};
+  }
   if(t.indexOf(',')<0) return CALC_EMPTY;
   const parts=t.split('/');
   if(parts.length>6) return CALC_EMPTY;
@@ -2959,20 +3048,28 @@ function calcStat(raw){
   for(let i=0;i<parts.length;i++){
     if(!CALC_RE.test(parts[i])) return CALC_EMPTY;
     const xs=parts[i].split(',').map(function(x){return Number(x.trim());});
-    if(xs.some(function(v){return !isFinite(v);})) return CALC_EMPTY;
+    if(!xs.length||xs.some(function(v){return !isFinite(v);})) return CALC_EMPTY;
     const sum=xs.reduce(function(a,b){return a+b;},0);
     gs.push({n:xs.length,mean:sum/xs.length,min:Math.min.apply(null,xs),max:Math.max.apply(null,xs)});
   }
+  const multi=gs.filter(function(g){return g.n>1;}).length;
+  if(gs.length===1){ if(!multi) return CALC_EMPTY; }
+  else if(gs.length===2){ if(!multi) return CALC_EMPTY; }
+  else { if(multi!==gs.length) return CALC_EMPTY; }
   const g0=gs[0];
   return {n:g0.n,mean:g0.mean,min:g0.min,max:g0.max,groups:gs};
 }
+function calcHit(st){ return !!(st&&(st.groups||st.formula)); }
 function calcVal(d,m,raw){
   const st=calcStat(raw);
+  if(st.formula) return _fdec2(m,st.value);
   if(!st.groups) return raw;
   return st.groups.map(function(g){return _fdec2(m,g.mean);}).join(' / ');
 }
 function calcLabel(m,st){
-  if(!st||!st.groups) return '';
+  if(!st) return '';
+  if(st.formula) return '= '+_fdec2(m,st.value);
+  if(!st.groups) return '';
   const av=st.groups.map(function(g){return _fdec2(m,g.mean);}).join(' / ');
   const ns=st.groups.map(function(g){return g.n;});
   const nu=ns.every(function(v){return v===ns[0];})?('n'+ns[0]):('n'+ns.join('/'));
@@ -3433,7 +3530,7 @@ function homeListHTML(){
     if(kids.length){
       const np=kids.filter(function(k){return expKind(k.e)==='pilot';}).length;
       const lab=(np===kids.length)?'시생산':(np===0?'실험':'하위');
-      kidBtn='<button class="log-kidtoggle" data-action="exp-kids" data-e="'+eid+'" title="여기에 수납된 기록">'+(kopen?'▾':'▸')+' '+lab+' '+kids.length+'</button>';
+      kidBtn='<button class="log-kidtoggle" data-action="exp-kids" data-e="'+eid+'" title="여기에 수납된 기록">'+lab+' '+kids.length+'<i>'+(kopen?'▴':'▾')+'</i></button>';
     }
     let panel='';
     if(open){
@@ -3450,10 +3547,14 @@ function homeListHTML(){
         +'<div class="lx-row col"><label>결과 요약</label><textarea class="lx-note" data-role="enote" data-e="'+eid+'" placeholder="결과 리포트의 코멘트가 자동으로 따라옵니다 — 여기서 고치면 이 요약만 따로 바뀝니다">'+escT(expNoteText(e))+'</textarea></div>'
         +'</div>';
     }
+    const meta=[];
+    meta.push('<span class="mtype">'+bd.tx+'</span>');
+    meta.push('<span class="mst '+ST[stt][1]+'">'+ST[stt][0]+'</span>');
+    if(e.owner) meta.push('<span class="mown">'+escT(e.owner)+'</span>');
+    const metaLine='<div class="log-meta">'+meta.join('<i>·</i>')+kidBtn+'</div>';
     let html='<div class="log-item'+(open?' open':'')+(isKid?' kid':'')+(hitIds.has(eid)?'':' dimhit')+'"'+(depth>1?(' style="margin-left:'+(depth*22)+'px"'):'')+' data-action="open-exp" data-i="'+x.i+'">'
-      +'<div class="log-datechip"><b>'+dd+'</b><small>'+(wd?wd+'요일':'')+'</small></div>'
-      +'<span class="log-badge '+bd.cls+'">'+bd.tx+'</span>'
-      +'<div class="log-main"><div class="log-name">'+escT(e.name)+'<span class="stchip mini on '+ST[stt][1]+'">'+ST[stt][0]+'</span>'+own+kidBtn+'</div>'+notePrev+'</div>'
+      +'<div class="log-datechip"><b>'+dd+'</b><small>'+(wd||'')+'</small></div>'
+      +'<div class="log-main"><div class="log-name">'+escT(e.name)+'</div>'+metaLine+notePrev+'</div>'
       +'<div class="log-side">'
       +'<button class="exp-more" data-action="exp-more" data-e="'+eid+'" aria-label="결과 요약" title="담당자 · 상태 · 소속 · 결과 요약">'+(open?'▴':'▾')+'</button>'
       +'<button class="exp-del" data-action="del-exp" data-i="'+x.i+'" title="실험 삭제">✕</button></div>'
@@ -3494,10 +3595,16 @@ function renderHome(){
     +'<input class="hsearch" data-role="homeq" placeholder="실험 이름 검색" value="'+escA(_homeQ)+'">'
     +'<div class="hchips">'+chips+'</div>'
     +'<span style="flex:1"></span>'
-    +'<button class="hnew coat" data-action="new-exp-coat"><span>＋</span>코팅 실험</button>'
-    +'<button class="hnew sheet" data-action="new-exp-sheet"><span>＋</span>수초 실험</button>'
-    +'<button class="hnew free" data-action="new-exp-free"><span>＋</span>기타 실험</button>'
-    +'<button class="hnew pilot" data-action="new-exp-pilot" title="시생산 기록 — 만든 뒤 결과 요약에서 소속을 고르면 그 밑에 수납됩니다"><span>＋</span>시생산</button>'
+    +'<div class="newwrap">'
+      +'<button class="newbtn" data-action="new-menu" aria-haspopup="true" aria-expanded="false" title="새 기록 만들기">＋</button>'
+      +'<div class="newmenu" id="newMenu" hidden>'
+        +'<button data-action="new-exp-coat"><b>코팅 실험</b><span>배합표 · 투입량 · 결과 리포트</span></button>'
+        +'<button data-action="new-exp-sheet"><b>수초 실험</b><span>펄프 · 약품 · 초지 조건</span></button>'
+        +'<button data-action="new-exp-free"><b>기타 실험</b><span>자유 양식</span></button>'
+        +'<div class="newsep"></div>'
+        +'<button data-action="new-exp-pilot"><b>시생산</b><span>실험 밑에 수납해 기록</span></button>'
+      +'</div>'
+    +'</div>'
     +'</div>'
     +'<div id="loglist" class="log-list">'+homeListHTML()+'</div></div>';
 }
@@ -3666,7 +3773,8 @@ document.addEventListener('input',e=>{
     case 'cres': { if(!d.rresults)d.rresults={}; if(!d.rresults[k])d.rresults[k]={}; d.rresults[k][ds.m]=t.value;
       const _el=$id('cmean-'+k+'-'+ds.m);
       if(_el){ const _st=calcStat(t.value), _mm=(d.rmetrics||[]).find(function(x){return x.id===ds.m;});
-        _el.textContent=calcLabel(_mm,_st); _el.classList.toggle('multi',!!_st.groups); }
+        _el.textContent=calcLabel(_mm,_st); _el.classList.toggle('multi',calcHit(_st)); _el.classList.toggle('fx',!!_st.formula);
+        const _cell=t.closest('td'); if(_cell) _cell.classList.toggle('hasfx',!!_st.formula); }
       break; }
     case 'crmemo': if(!d.rmemos)d.rmemos={}; d.rmemos[ds.m]=t.value; break;
     case 'srmemo': if(!d.rmemos)d.rmemos={}; d.rmemos[ds.case]=t.value; break;
@@ -4496,7 +4604,9 @@ document.addEventListener('change',function(e){const t=e.target,ro=(t&&t.dataset
   toast(ex.linkTo?('“'+String((root.experiments.find(x=>x&&x.id===ex.linkTo)||{}).name||'')+'” 밑으로 옮겼어요'):'연결을 해제했어요');
 });
 document.addEventListener('input',function(e){const t=e.target,ro=(t&&t.dataset)?t.dataset.role:null;if(ro==='homeq'){_homeQ=t.value;const L=$id('loglist');if(L)L.innerHTML=homeListHTML();}else if(ro==='eowner'||ro==='enote'){const ex=root.experiments.find(x=>x&&x.id===t.dataset.e);if(ex){if(ro==='eowner')ex.owner=t.value;else{ex.note=t.value;ex.noteEdited=true;}ex.updatedAt=srvNow();_dirtyMeta.add(ex.id);scheduleSave();}}});
-document.addEventListener('click',function(e){const b=(e.target&&e.target.closest)?e.target.closest('[data-action]'):null;if(!b)return;const a=b.dataset.action;if(a==='exp-more'){const eid=b.dataset.e;_homeOpen[eid]=!_homeOpen[eid];const L=$id('loglist');if(L)L.innerHTML=homeListHTML();}
+document.addEventListener('click',function(e){const b=(e.target&&e.target.closest)?e.target.closest('[data-action]'):null;if(!b)return;const a=b.dataset.action;
+if(a==='new-menu'){ const m=$id('newMenu'); if(m){ const willOpen=m.hidden; m.hidden=!willOpen; b.setAttribute('aria-expanded',willOpen?'true':'false'); b.classList.toggle('on',willOpen); } return; }
+if(a==='exp-more'){const eid=b.dataset.e;_homeOpen[eid]=!_homeOpen[eid];const L=$id('loglist');if(L)L.innerHTML=homeListHTML();}
 else if(a==='exp-kids'){const eid=b.dataset.e;_homeKid[eid]=!_homeKid[eid];const L=$id('loglist');if(L)L.innerHTML=homeListHTML();}
 else if(a==='exp-kind'){const ex=root.experiments.find(x=>x&&x.id===b.dataset.e);if(ex){const want=b.dataset.k;if(want==='pilot'){ex.kind='pilot';}else{delete ex.kind;}if(ex.linkTo)_homeKid[ex.linkTo]=true;ex.updatedAt=srvNow();_dirtyMeta.add(ex.id);markExpFull(ex.id);scheduleSave();try{scheduleCloudPush(200);}catch(_e){}const L=$id('loglist');if(L)L.innerHTML=homeListHTML();toast(want==='pilot'?'시생산으로 바꿨어요 (소속은 그대로)':'일반 실험으로 되돌렸어요 (소속은 그대로)');}}else if(a==='exp-status'){const ex=root.experiments.find(x=>x&&x.id===b.dataset.e);if(ex){ex.status=b.dataset.st;ex.updatedAt=srvNow();_dirtyMeta.add(ex.id);scheduleSave();const L=$id('loglist');if(L)L.innerHTML=homeListHTML();}}else if(a==='home-filter'){_homeType=b.dataset.t||'all';document.querySelectorAll('.hchip').forEach(c=>c.classList.toggle('on',c.dataset.t===_homeType));const L=$id('loglist');if(L)L.innerHTML=homeListHTML();}else if(a==='cloud-sync'){if(!fbConfigReady())fbOpen();else if(!FB_AUTH.refreshToken&&!FB_AUTH.idToken)gateShow();else cloudSync(false);}else if(a==='img-test'){const m=$id('setmenu'),bk=$id('menuback');if(m)m.hidden=true;if(bk)bk.hidden=true;storageSelfTest();}else if(a==='img-fix'){const m=$id('setmenu'),bk=$id('menuback');if(m)m.hidden=true;if(bk)bk.hidden=true;reuploadAllImages();}else if(a==='fb-setup')fbOpen();else if(a==='fb-save')fbSave();else if(a==='fb-cancel'){const ov=$id('fbov');if(ov)ov.style.display='none';}else if(a==='fb-off')fbOff();else if(a==='fb-logout')fbLogout();else if(a==='fb-migrate')askConfirm('현재 파일의 모든 실험과 이미지를 Firebase 운영 구조로 이관할까요? 같은 ID의 서버 데이터는 현재 파일 기준으로 갱신됩니다.',fbMigrateRun);});
 document.addEventListener('keydown',function(e){if(e.key==='Escape'){const ov=$id('fbov');if(ov&&ov.style.display!=='none')ov.style.display='none';}});
@@ -5291,6 +5401,7 @@ document.addEventListener('change',function(e){
   var fix=function(seg,sp){ return seg.trim().split(/[\s,]+/).filter(Boolean).map(function(x){var n2=Number(x);return isFinite(n2)?n2.toFixed(dec):x;}).join(sp); };
   var nv;
   if(ro==='cres'){
+    if(_v0.trim().charAt(0)==='=') return;
     if(_v0.indexOf(',')>=0){
       if(!calcStat(_v0).groups) return;
       nv=_v0.split('/').map(function(p){return fix(p,', ');}).join(' / ');
