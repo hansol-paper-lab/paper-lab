@@ -4101,7 +4101,7 @@ let _tt;function toast(m){const e=$id('toast');e.textContent=m;e.classList.add('
 const CLOUD_KEY='soocho_lab_cloud_v1';
 const FB_CFG_KEY='soocho_fb_cfg_v2', FB_AUTH_KEY='soocho_fb_auth_v2';
 let _homeQ='', _homeType='all';
-let _cpushT=null,_imgRetryT=null,_csBusy=false,_csQueued=false,_pollT=null,_thumbBusy=false;
+let _cpushT=null,_imgRetryT=null,_csBusy=false,_csQueued=false,_pollT=null,_thumbBusy=false,_bMisc=false;
 let FB_CFG={databaseURL:'',apiKey:'',storageBucket:'',team:'paperlab'}, FB_AUTH={idToken:'',refreshToken:'',expiresAt:0,email:''}, FB_BASE='';
 let _dirtyPlans=new Map(),_dirtyMeta=new Set(),_dirtyFull=new Set(),_deletedRemote=new Set();
 function hasCloud(){try{return !!(window.storage&&typeof window.storage.get==='function'&&typeof window.storage.set==='function');}catch(e){return false;}}
@@ -4441,7 +4441,10 @@ async function cloudLoadSummaries(silent,force){
   if(activeId){const ni=root.experiments.findIndex(e=>e.id===activeId);if(ni>=0)root.activeExp=ni;else{root.screen='home';appState=null;root.activeExp=Math.max(0,root.experiments.length-1);}}
   if(isFull&&!list.length&&(root.experiments||[]).some(e=>!e.remoteOnly)&&!silent)toast('☁ 서버가 비어 있어요 — 설정에서 기존 데이터 이관을 눌러주세요');
   if(root.screen==='home')_renderSoon();return list;}
-function _editingNow(){const el=document.activeElement;return !!(el&&(el.tagName==='INPUT'||el.tagName==='TEXTAREA'));}
+var _typeAt=0;try{['input','keydown','compositionupdate'].forEach(ev=>document.addEventListener(ev,()=>{_typeAt=Date.now();},true));}catch(_e){}
+/* 모바일은 키보드를 내려도 입력칸 포커스가 남아 갱신이 계속 막히는 일이 있어서,
+   마지막 실제 타이핑 이후 20초가 지나면 '편집 중 아님'으로 본다. */
+function _editingNow(){const el=document.activeElement;if(!(el&&(el.tagName==='INPUT'||el.tagName==='TEXTAREA')))return false;return (Date.now()-_typeAt)<20000;}
 function _focusKey(el){try{if(!el)return null;if(el.id)return '#'+el.id;
   const ds=el.dataset||{};let s=el.tagName.toLowerCase(),n=0;
   for(const k in ds){const a=k.replace(/[A-Z]/g,m=>'-'+m.toLowerCase());s+='[data-'+a+'="'+String(ds[k]).replace(/["\\]/g,'\\$&')+'"]';n++;}
@@ -4469,7 +4472,7 @@ function _renderSoon(){
     try{_withFocus(render);}catch(e){}
   },1000);}
 var _mergeToastAt=0;
-async function cloudFlush(silent){if(!fbConfigReady()){cloudStat('err','☁ Firebase 설정 필요');return;}if(!FB_AUTH.refreshToken&&!FB_AUTH.idToken){cloudStat('err','☁ 로그인 필요');return;}if(_csBusy){_csQueued=true;return;}_csBusy=true;if(!silent)cloudStat('busy','☁ 저장 중…');try{await syncServerClock9();for(const id of Array.from(_deletedRemote)){try{await fbDb('trash/'+encodeURIComponent(id),'PUT',((root.trash&&+root.trash[id])||srvNow()));}catch(_e){}await fbDb('summaries/'+encodeURIComponent(id),'DELETE');await fbDb('experiments/'+encodeURIComponent(id),'DELETE');_deletedRemote.delete(id);}const ids=new Set([..._dirtyMeta,..._dirtyFull,..._dirtyPlans.keys()]);for(const id of ids){if(root.trash&&root.trash[id]!=null){_dirtyMeta.delete(id);_dirtyFull.delete(id);_dirtyPlans.delete(id);continue;}const ex=(root.experiments||[]).find(e=>e.id===id);if(ex)await fbSaveExperiment(ex);}if(_mlibDirty){ try{ await fbDb('settings/metricLib','PUT',{items:root.metricLib||[],updatedAt:(+root._mlibAt)||Date.now()}); _mlibDirty=false; }catch(e){} }if(_xlibDirty){ try{ await fbDb('settings/mixLib','PUT',{items:root.mixLib||[],updatedAt:(+root._xlibAt)||Date.now()}); _xlibDirty=false; }catch(e){} }if(_kidDirty){ try{ await fbDb('settings/uiKidOpen','PUT',{ids:root.kidOpen||[],updatedAt:(+root._kidAt)||Date.now()}); _kidDirty=false; }catch(e){} }await _flushImageDeletes();const t=new Date();cloudStat('on','☁ '+(whoAmI()?whoAmI()+' · ':'')+String(t.getHours()).padStart(2,'0')+':'+String(t.getMinutes()).padStart(2,'0'));}catch(e){if(String(e.message).indexOf('LOGIN_REQUIRED')>=0)cloudStat('err','☁ 로그인 필요');else cloudStat('err','☁ 저장 실패 — 눌러 재시도');}finally{_csBusy=false;if(_csQueued){_csQueued=false;setTimeout(()=>cloudFlush(true),800);}}}
+async function cloudFlush(silent){if(!fbConfigReady()){cloudStat('err','☁ Firebase 설정 필요');return;}if(!FB_AUTH.refreshToken&&!FB_AUTH.idToken){cloudStat('err','☁ 로그인 필요');return;}if(_csBusy){_csQueued=true;return;}_csBusy=true;if(!silent)cloudStat('busy','☁ 저장 중…');try{await syncServerClock9();const _hadDel=_deletedRemote.size>0;for(const id of Array.from(_deletedRemote)){try{await fbDb('trash/'+encodeURIComponent(id),'PUT',((root.trash&&+root.trash[id])||srvNow()));}catch(_e){}await fbDb('summaries/'+encodeURIComponent(id),'DELETE');await fbDb('experiments/'+encodeURIComponent(id),'DELETE');_deletedRemote.delete(id);}const ids=new Set([..._dirtyMeta,..._dirtyFull,..._dirtyPlans.keys()]);for(const id of ids){if(root.trash&&root.trash[id]!=null){_dirtyMeta.delete(id);_dirtyFull.delete(id);_dirtyPlans.delete(id);continue;}const ex=(root.experiments||[]).find(e=>e.id===id);if(ex)await fbSaveExperiment(ex);}if(_mlibDirty){ try{ await fbDb('settings/metricLib','PUT',{items:root.metricLib||[],updatedAt:(+root._mlibAt)||Date.now()}); _mlibDirty=false;_bMisc=true; }catch(e){} }if(_xlibDirty){ try{ await fbDb('settings/mixLib','PUT',{items:root.mixLib||[],updatedAt:(+root._xlibAt)||Date.now()}); _xlibDirty=false;_bMisc=true; }catch(e){} }if(_kidDirty){ try{ await fbDb('settings/uiKidOpen','PUT',{ids:root.kidOpen||[],updatedAt:(+root._kidAt)||Date.now()}); _kidDirty=false;_bMisc=true; }catch(e){} }await _flushImageDeletes();if(_hadDel||ids.size||_bMisc){_bMisc=false;try{await _beatWrite();}catch(_e){}}const t=new Date();cloudStat('on','☁ '+(whoAmI()?whoAmI()+' · ':'')+String(t.getHours()).padStart(2,'0')+':'+String(t.getMinutes()).padStart(2,'0'));}catch(e){if(String(e.message).indexOf('LOGIN_REQUIRED')>=0)cloudStat('err','☁ 로그인 필요');else cloudStat('err','☁ 저장 실패 — 눌러 재시도');}finally{_csBusy=false;if(_csQueued){_csQueued=false;setTimeout(()=>cloudFlush(true),800);}}}
 async function cloudSync(silent){if(syncMode()==='claude'){cloudStat('on','☁ 로컬 공유 모드');return;}try{await cloudFlush(true);if(!_editingNow())await cloudLoadSummaries(!!silent,!silent);if(!silent&&root.screen==='sim'&&EXP()&&!_editingNow()){const ex=EXP();if(!_dirtyMeta.has(ex.id)&&!_dirtyFull.has(ex.id)&&!_dirtyPlans.has(ex.id)){try{const fresh=await fbLoadExperiment(ex.id,ex);if(!_editingNow()&&!(_dirtyMeta.has(ex.id)||_dirtyFull.has(ex.id)||_dirtyPlans.has(ex.id))){_carryExperimentImages(ex,fresh);const i=root.experiments.indexOf(ex);if(i>=0){root.experiments[i]=fresh;root.activeExp=i;appState=fresh.state;_queueLegacyImageCleanup(fresh);_renderSoon();hydrateVisibleAttachmentThumbs();}}}catch(_e){}}}if(!silent)toast('☁ 최신 내용으로 동기화됨');}catch(e){if(String(e.message).indexOf('LOGIN_REQUIRED')>=0)cloudStat('err','☁ 로그인 필요');else cloudStat('err','☁ 연결 실패');}}
 function _scheduleImageRetry(){clearTimeout(_imgRetryT);_imgRetryT=setTimeout(()=>cloudFlush(true),5000);}
 function scheduleCloudPush(delay){if(syncMode()==='none')return;try{syncServerClock9();}catch(_e){}clearTimeout(_cpushT);if(syncMode()==='fb')cloudStat('busy','☁ 저장 대기…');const ms=(delay==null)?1800:Math.max(80,+delay||0);_cpushT=setTimeout(()=>cloudFlush(true),ms);}
@@ -4579,12 +4582,47 @@ function cloudInit(){if(!fbConfigReady()){cloudStat('err','☁ Firebase 설정 �
     _pollTick++;
     const inSim=(root.screen==='sim');
     if(inSim){presencePing();presenceRead();}
-    if((inSim||(_pollTick%3)===0)&&!_editingNow()){_visAt=Date.now();cloudLoadSummaries(true).catch(()=>{});}
-  },60000);
-  if(!_visBound){_visBound=true;document.addEventListener('visibilitychange',()=>{
-    if(document.visibilityState==='visible'){const t=Date.now();if(t-_visAt<30000||_editingNow())return;_visAt=t;cloudLoadSummaries(true).catch(()=>{});if(root.screen==='sim')presenceRead();}
-    else cloudFlush(true);});}}
+    _visAt=Date.now();cloudLoadSummaries(true).catch(()=>{});
+  },30000);
+  _beatStart();
+  if(!_visBound){_visBound=true;
+    const wake=(hard)=>{if(document.visibilityState!=='visible')return;const t=Date.now();
+      if(hard){ if(t-_visAt<1200)return; _visAt=t; _beatNow(true); cloudLoadSummaries(true).catch(()=>{}); if(root.screen==='sim')presenceRead(); }
+      else { if(t-_beatAt<2500)return; _beatNow(true); }};
+    document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){_beatStart();wake(true);}else{clearInterval(_beatT);_beatT=null;cloudFlush(true);}});
+    window.addEventListener('pageshow',()=>{_beatStart();wake(true);});
+    window.addEventListener('focus',()=>wake(true));
+    window.addEventListener('online',()=>{_beatStart();wake(true);});
+    document.addEventListener('touchstart',()=>wake(false),{passive:true});
+    document.addEventListener('pointerdown',()=>wake(false),{passive:true});
+  }}
 var _pollTick=0,_visAt=0,_visBound=false;
+/* ===== 변경 신호(beacon) — 서버의 meta/lastChange 한 칸만 자주 읽어서
+   "누가 뭔가 바꿨다"는 것만 즉시 감지하고, 바뀌었을 때만 실제 데이터를 받아온다.
+   읽는 양이 아주 작아서 4초 주기로 돌려도 통신량 부담이 거의 없음. ===== */
+var _beatT=null,_beatSeen=0,_beatBusy=false,_beatAt=0,BEAT_MS=4000;
+function _beatReady(){return fbConfigReady()&&!!(FB_AUTH.refreshToken||FB_AUTH.idToken);}
+async function _beatNow(force){
+  if(_beatBusy||_csBusy)return;
+  if(!_beatReady())return;
+  if(!force&&document.visibilityState!=='visible')return;
+  _beatBusy=true;_beatAt=Date.now();
+  try{
+    const v=await fbDb('meta/lastChange','GET');
+    const at=(v&&typeof v==='object')?(+v.at||0):(+v||0);
+    const by=(v&&typeof v==='object')?String(v.by||''):'';
+    if(!at)return;
+    if(!_beatSeen){_beatSeen=at;return;}
+    if(at>_beatSeen){
+      _beatSeen=at;
+      if(by===_presId)return;
+      _visAt=Date.now();
+      try{await cloudLoadSummaries(true);}catch(_e){}
+    }
+  }catch(e){}finally{_beatBusy=false;}
+}
+function _beatStart(){if(!_beatReady())return;clearInterval(_beatT);_beatT=setInterval(()=>{_beatNow(false);},BEAT_MS);_beatNow(true);}
+async function _beatWrite(){try{const at=Math.max(srvNow(),_beatSeen+1);_beatSeen=at;await fbDb('meta/lastChange','PUT',{at:at,by:_presId});}catch(_e){}}
 /* ================= 팀 비밀번호 게이트 =================
    팀원은 Firebase 계정·가입 없이 공유 비밀번호 1개로 입장.
    실제 검증은 서버에서: 고정 팀 계정(GATE_EMAIL)으로 로그인하며
