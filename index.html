@@ -143,34 +143,6 @@
   .colhead .note{display:block;margin-top:3px;width:100%;min-width:88px;font-family:var(--sans);font-size:11.5px;font-weight:700;color:var(--ink2);background:transparent;border:none;border-radius:6px;padding:2px 6px;text-align:center;line-height:1.3;white-space:normal;cursor:text}
   .colhead .cn:focus,.colhead .note:focus{outline:none;background:rgba(255,255,255,.6);box-shadow:0 0 0 2px var(--accent-soft)}
   .colhead .note::placeholder{color:var(--muted)}
-  /* ===== 원지(기재) 그룹 ===== */
-  .baserow th{background:var(--slate);color:#fff;text-align:center;font-weight:800;padding:6px 8px;border-bottom:1px solid var(--line2);border-right:2px solid #fff;vertical-align:middle}
-  .baserow th:last-child{border-right:none}
-  .baserow th.bcorner{background:var(--slate2);color:#b9cbdc;font-size:10px;letter-spacing:.16em;font-weight:800;text-align:center;z-index:6}
-  .baserow th.nb{background:#8494a4}
-  .baserow .bnm{font-family:var(--sans);font-weight:800;font-size:13px;text-align:center;background:rgba(255,255,255,.14);color:#fff;border:none;border-radius:6px;padding:3px 8px;width:100%;max-width:320px;cursor:text}
-  .baserow .bnm::placeholder{color:rgba(255,255,255,.6);font-weight:600}
-  .baserow .bnm:focus{outline:none;background:#fff;color:var(--ink);box-shadow:0 0 0 2px rgba(255,255,255,.55)}
-  .baserow .bctl{display:flex;gap:6px;align-items:center;justify-content:center;margin-top:4px;flex-wrap:wrap}
-  .baserow .bok{font-size:10.5px;font-weight:700;color:#c9dbec}
-  .baserow .bwarn{font-size:10.5px;font-weight:800;color:#ffd8a8}
-  .baserow .bmini{background:rgba(255,255,255,.16);border:none;color:#e4eef7;font-size:10.5px;font-weight:700;border-radius:5px;padding:2px 7px;cursor:pointer;font-family:var(--sans)}
-  .baserow .bmini:hover{background:rgba(255,255,255,.34);color:#fff}
-  .colorgrid .crlb{display:block;font-size:9.5px;font-weight:700;color:var(--muted);letter-spacing:.02em;margin-top:1px}
-  .colhead .cbsel{display:block;width:100%;margin:0 0 5px;font-family:var(--sans);font-size:10.5px;font-weight:700;color:var(--accent);background:var(--accent-soft);border:1px solid transparent;border-radius:5px;padding:2px 4px;text-align:center;cursor:pointer;-webkit-appearance:none;appearance:none;text-align-last:center}
-  .colhead .cbsel.nb{color:var(--muted);background:transparent}
-  .colhead .cbsel:hover{border-color:var(--line2);background:#fff}
-  .colhead .cbsel:focus{outline:none;box-shadow:0 0 0 2px var(--accent-soft)}
-  .rbf{display:inline-flex;gap:5px;align-items:center;flex-wrap:wrap}
-  .rbf .rbf-l{font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.04em}
-  .rbfc{background:#fff;border:1px solid var(--line2);color:var(--ink2);font-size:11.5px;font-weight:700;border-radius:999px;padding:3px 11px;cursor:pointer;font-family:var(--sans)}
-  .rbfc.on{background:var(--accent);border-color:var(--accent);color:#fff}
-  .resultsheet .creport tr.brow th,.rpaper .creport tr.brow th{background:#26313d!important;color:#fff!important;font-weight:800;font-size:11.5px;letter-spacing:.04em;border-bottom-color:#1b2530!important;text-align:center!important}
-  .resultsheet .creport tr.brow th.nb,.rpaper .creport tr.brow th.nb{background:#8494a4!important}
-  .resultsheet .creport tr.brow th.brl,.rpaper .creport tr.brow th.brl{background:#31404f!important;color:#b9cbdc!important;font-size:10px;letter-spacing:.16em}
-  .rinput tr.brow th{background:#26313d;color:#fff;font-weight:800;font-size:11.5px;text-align:center;padding:5px 8px}
-  .rinput tr.brow th.nb{background:#8494a4}
-  .rinput tr.brow th.brl{background:#31404f;color:#b9cbdc;font-size:10px;letter-spacing:.16em}
   .case-x{position:absolute;top:6px;right:7px;border:none;background:none;color:var(--muted);font-size:12px;padding:2px 5px;border-radius:5px;opacity:0;transition:.12s;line-height:1}
   .colhead:hover .case-x,.colhead:focus-within .case-x,
   th:hover>.case-x,th:focus-within>.case-x,
@@ -2527,9 +2499,6 @@ function normalize(d){
     try{ const cc=(d.cases||[]).find(c=>String(c.name||'').trim().toUpperCase()==='C'); if(cc){ const cm=mkGet(d,cc.id,'__cs',true); if(!cm.hl)cm.hl='y'; } }catch(_e){}
     d._cYellowDefault=1;
   }
-  (d.cases||[]).forEach(function(c){ if(c.base==null)c.base=''; else c.base=String(c.base); });
-  if(typeof d.rbaseF!=='string') d.rbaseF='';
-  if(d.rbaseF && baseList(d).indexOf(d.rbaseF)<0) d.rbaseF='';
   if(!d.rctrl||!d.cases.find(c=>c.id===d.rctrl)) d.rctrl=d.cases[0]&&d.cases[0].id;
   if(!Array.isArray(d.rctrls)||!d.rctrls.length) d.rctrls=d.rctrl?[d.rctrl]:[];
   d.rctrls=d.rctrls.filter(id=>d.cases.find(c=>c.id===id));
@@ -2539,41 +2508,6 @@ function normalize(d){
 const recipeList=d=>(d.recipe||[]).map(id=>d.chemicals.find(c=>c.id===id)).filter(Boolean);
 const ordered=d=>{const r=recipeList(d);return [...r.filter(c=>c.cat==='pig'),...r.filter(c=>c.cat!=='pig')];};
 const partOf=(d,ch,k)=>num(d.parts[ch]&&d.parts[ch][k]);
-/* ===================== 원지(기재) 구분 ===================== */
-const caseBase=cs=>String((cs&&cs.base)||'').trim();
-function baseUsed(d){ return ((d&&d.cases)||[]).some(c=>caseBase(c)!==''); }
-function baseList(d){ const out=[],seen=new Set(); ((d&&d.cases)||[]).forEach(c=>{const b=caseBase(c); if(b&&!seen.has(b)){seen.add(b);out.push(b);}}); return out; }
-/* 연속된 같은 원지끼리 묶기 (표 헤더 병합용) */
-function baseRuns(d,cases){ const cs=cases||((d&&d.cases)||[]); const out=[]; let cur=null;
-  cs.forEach(c=>{ const b=caseBase(c); if(!cur||cur.base!==b){ cur={base:b,cases:[]}; out.push(cur); } cur.cases.push(c); });
-  return out; }
-/* 팀 전체에서 쓰던 원지명 모으기 (자동완성용) */
-function baseSuggest(){ const s=new Set();
-  try{ (root.experiments||[]).forEach(e=>{ (((e||{}).state||{}).plans||[]).forEach(p=>{ (((p||{}).data||{}).cases||[]).forEach(c=>{ const b=caseBase(c); if(b)s.add(b); }); }); }); }catch(_e){}
-  return Array.from(s); }
-/* 기준 매핑 — 원지를 쓰면 같은 원지 안에서만, 아니면 기존처럼 왼쪽 가까운 기준 */
-function refMap(d,cases){
-  const cs=cases||((d&&d.cases)||[]);
-  const ctrls=(d.rctrls&&d.rctrls.length)?d.rctrls:[d.rctrl];
-  const ctrlSet=new Set(ctrls); const ref={};
-  const assign=arr=>{ let last=null;
-    arr.forEach(c=>{ if(ctrlSet.has(c.id)){ last=c.id; ref[c.id]=c.id; } else ref[c.id]=last; });
-    const first=arr.find(c=>ctrlSet.has(c.id));
-    arr.forEach(c=>{ if(!ref[c.id]) ref[c.id]=first?first.id:null; }); };
-  if(baseUsed(d)){ const by={}; cs.forEach(c=>{ const b=caseBase(c); (by[b]=by[b]||[]).push(c); });
-    Object.keys(by).forEach(b=>assign(by[b])); }
-  else assign(cs);
-  return {ref:ref,ctrlSet:ctrlSet}; }
-/* 기준이 하나도 없는 원지 찾기 */
-function baseNoCtrl(d){ if(!baseUsed(d)) return [];
-  const ctrls=new Set((d.rctrls&&d.rctrls.length)?d.rctrls:[d.rctrl]); const bad=[];
-  baseRuns(d).forEach(g=>{ if(bad.indexOf(g.base)>=0) return;
-    const arr=(d.cases||[]).filter(c=>caseBase(c)===g.base);
-    if(arr.length&&!arr.some(c=>ctrls.has(c.id))) bad.push(g.base); });
-  return bad.map(b=>b||'(원지 미지정)'); }
-function baseDataListHTML(d){ const s=new Set(baseSuggest()); baseList(d).forEach(b=>s.add(b));
-  return '<datalist id="basedl">'+Array.from(s).map(b=>'<option value="'+escA(b)+'">').join('')+'</datalist>'; }
-
 
 function computeCase(d,cs){
   let tp=0;ordered(d).forEach(ch=>tp+=partOf(d,ch.id,cs.id));
@@ -2588,7 +2522,7 @@ function computeCase(d,cs){
 function recalc(){
   const d=D(),chems=ordered(d),cup=appState.cupWeight;
   let totWater=0,totSum=0,totCup=0;const totCW={};chems.forEach(c=>totCW[c.id]=0);
-  const _rm9=refMap(d); const _ref9={}; d.cases.forEach(c=>{ const _r9=_rm9.ref[c.id]; _ref9[c.id]=(_r9&&_r9!==c.id)?_r9:null; });
+  const _ctrls9=(d.rctrls&&d.rctrls.length)?d.rctrls:[d.rctrl]; let _last9=null; const _ref9={}; d.cases.forEach(c=>{ if(_ctrls9.includes(c.id)){_last9=c.id;_ref9[c.id]=null;} else _ref9[c.id]=_last9; });
   d.cases.forEach(cs=>{
     let anryo=0;ordered(d).forEach(ch=>{if(ch.cat==='pig')anryo+=partOf(d,ch.id,cs.id);});
     const c=computeCase(d,cs);
@@ -2618,7 +2552,11 @@ function recalc(){
 }
 function updateDeltas(){
   const d=D(); if(!d.cases.length) return;
-  const refOf=refMap(d).ref;
+  const ctr=(d.rctrls&&d.rctrls.length)?d.rctrls:[d.rctrl||d.cases[0].id];
+  const refOf={}; let last=null;
+  d.cases.forEach(cs=>{ if(ctr.includes(cs.id)){ last=cs.id; refOf[cs.id]=cs.id; } else refOf[cs.id]=last; });
+  const first=d.cases.find(cs=>ctr.includes(cs.id));
+  d.cases.forEach(cs=>{ if(!refOf[cs.id]) refOf[cs.id]=first?first.id:d.cases[0].id; });
   ordered(d).forEach(ch=>d.cases.forEach(cs=>{
     const td=$id('ec-'+ch.id+'-'+cs.id);
     if(!td)return;
@@ -2751,7 +2689,7 @@ function mixSaveCase(caseId,name){
     return {name:String(ch.name).trim(),cat:(ch.cat==='pig'?'pig':'add'),solid:ch.solid,memo:ch.memo||'',pt:partOf(d,ch.id,cs.id)};});
   const ex=root.mixLib.find(function(x){return x.kind==='case'&&String(x.name||'').trim()===name;});
   const rec={id:(ex&&ex.id)||uid('mx'),kind:'case',name:name,caseName:String(cs.name||'').trim()||'T',
-    note:cs.note||'',base:cs.base||'',applied:cs.applied,mode:cs.mode||'fixed',at:Date.now(),
+    note:cs.note||'',applied:cs.applied,mode:cs.mode||'fixed',at:Date.now(),
     by:(typeof whoAmI==='function'?(whoAmI()||''):''),chems:chems};
   if(cs.dry!=null) rec.dry=cs.dry;
   if(ex) root.mixLib[root.mixLib.indexOf(ex)]=rec; else root.mixLib.unshift(rec);
@@ -2777,7 +2715,7 @@ function mixAddCase(rec){
   const used=new Set((d.cases||[]).map(function(c){return String(c.name||'').trim();}));
   if(used.has(nm)){ let k=2; while(used.has(nm+'-'+k))k++; nm=nm+'-'+k; }
   const kid=uid('k');
-  const nc={id:kid,name:nm,note:rec.note||'',base:rec.base||'',applied:(rec.applied!=null?rec.applied:(num(d.batchApplied)||64)),mode:rec.mode||'fixed'};
+  const nc={id:kid,name:nm,note:rec.note||'',applied:(rec.applied!=null?rec.applied:(num(d.batchApplied)||64)),mode:rec.mode||'fixed'};
   if(rec.dry!=null) nc.dry=rec.dry;
   d.cases.push(nc);
   (d.recipe||[]).forEach(function(cid){ if(!d.parts[cid])d.parts[cid]={}; if(d.parts[cid][kid]==null)d.parts[cid][kid]=0; });
@@ -2871,46 +2809,14 @@ function openLibraryPopup(kind){const ov=ensureLibraryPopup();ov.dataset.kind=(k
 function closeLibraryPopup(){const ov=$id('libov');if(ov)ov.hidden=true;document.body.style.overflow='';}
 document.addEventListener('click',e=>{const b=e.target&&e.target.closest?e.target.closest('[data-action]'):null;if(!b)return;if(b.dataset.action==='libpop-open'){openLibraryPopup(b.dataset.kind);return;}if(b.dataset.action==='libpop-close'){closeLibraryPopup();return;}});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){const ov=$id('libov');if(ov&&!ov.hidden){closeLibraryPopup();}}});
-/* 원지(기재) 선택 */
-document.addEventListener('change',function(e){
-  const t=e.target; if(!t||!t.dataset||t.dataset.role!=='casebase') return;
-  if(!appState) return;
-  const id=t.dataset.case, d=D(), cs=(d.cases||[]).find(c=>c.id===id); if(!cs) return;
-  if(t.value==='__new'){
-    askInput('새 원지(기재) 이름을 적어주세요. 예) CCK원지, 크라프트원지','',function(v){
-      const nv=String(v||'').trim(); const dd=D(); const c2=(dd.cases||[]).find(c=>c.id===id);
-      if(c2)c2.base=nv; render(); if(nv)toast('원지 '+nv+' 지정'); });
-    render(); return; }
-  cs.base=t.value; render();
-});
 
 function renderPlan(){
   const d=normalize(D()),ord=ordered(d),pig=ord.filter(c=>c.cat==='pig'),add=ord.filter(c=>c.cat!=='pig'),chems=ord;
   const nc=d.cases.length, recipeOne=chems.length<=1;
 
-  /* --- 원지(기재) 구분 --- */
-  const _bUse=baseUsed(d), _bCtl=(d.rctrls&&d.rctrls.length)?d.rctrls:[d.rctrl];
-  const _bSug=Array.from(new Set(baseSuggest().concat(baseList(d))));
-  const _bOpts=cur=>{ const L=_bSug.slice(); if(cur&&L.indexOf(cur)<0) L.unshift(cur);
-    let o=`<option value="">원지 –</option>`;
-    L.forEach(b=>{o+=`<option value="${escA(b)}"${b===cur?' selected':''}>${escT(b)}</option>`;});
-    o+=`<option value="__new">＋ 새 원지…</option>`; return o; };
-  const _ksOf=g=>escA(g.cases.map(c=>c.id).join(","));
-  let bh=`<thead>`;
-  if(_bUse){
-    bh+=`<tr class="baserow"><th class="bcorner stickL">원지 · 기재</th>`;
-    baseRuns(d).forEach(g=>{
-      const own=g.cases.filter(c=>_bCtl.includes(c.id)).map(c=>c.name);
-      bh+=`<th class="${g.base?'':'nb'}" colspan="${g.cases.length}"><input class="bnm" list="basedl" data-role="baserun" data-ks="${_ksOf(g)}" value="${escA(g.base)}" placeholder="원지명 (예: CCK원지)">`
-        +`<div class="bctl">${own.length?`<span class="bok">기준 ${escT(own.join(' · '))}</span>`:`<span class="bwarn">⚠ 이 원지에 기준 없음</span>`}`
-        +`<button class="bmini" data-action="base-dup" data-ks="${_ksOf(g)}" title="이 원지의 케이스·배합비를 그대로 복사해 다른 원지로 만듭니다">⧉ 다른 원지로 복제</button></div></th>`;
-    });
-    bh+=`</tr>`;
-  }
-  bh+=`<tr><th class="corner stickL">배합 (pt)</th>`;
+  let bh=`<thead><tr><th class="corner stickL">배합 (pt)</th>`;
   d.cases.forEach(cs=>{
-    bh+=`<th class="colhead${((d.rctrls&&d.rctrls.length)?d.rctrls:[d.rctrl]).includes(cs.id)?' iscb':''}"><button class="case-x" data-action="del-case" data-case="${cs.id}" ${nc<=1?'disabled':''} title="케이스 삭제">✕</button><button class="case-lib" data-action="mix-save-case" data-case="${cs.id}" title="이 케이스의 배합비를 라이브러리에 저장 — 다른 차수·실험에서 케이스로 불러올 수 있어요">💾</button><button class="cbase ${((d.rctrls&&d.rctrls.length)?d.rctrls:[d.rctrl]).includes(cs.id)?'on':''}" data-action="co-ctrl" data-case="${cs.id}" title="기준 지정/해제 — 여러 개 가능. 원지를 쓰면 같은 원지 안에서만 비교합니다">기준</button>
-      <select class="cbsel${caseBase(cs)?'':' nb'}" data-role="casebase" data-case="${cs.id}" title="이 케이스를 코팅한 원지(기재) — 원지별로 기준을 따로 잡아 비교합니다">${_bOpts(caseBase(cs))}</select>
+    bh+=`<th class="colhead${((d.rctrls&&d.rctrls.length)?d.rctrls:[d.rctrl]).includes(cs.id)?' iscb':''}"><button class="case-x" data-action="del-case" data-case="${cs.id}" ${nc<=1?'disabled':''} title="케이스 삭제">✕</button><button class="case-lib" data-action="mix-save-case" data-case="${cs.id}" title="이 케이스의 배합비를 라이브러리에 저장 — 다른 차수·실험에서 케이스로 불러올 수 있어요">💾</button><button class="cbase ${((d.rctrls&&d.rctrls.length)?d.rctrls:[d.rctrl]).includes(cs.id)?'on':''}" data-action="co-ctrl" data-case="${cs.id}" title="기준 지정/해제 — 여러 개 가능, 각 케이스는 왼쪽 가까운 기준과 비교">기준</button>
       <input class="cn" data-role="casename" data-case="${cs.id}" value="${escA(cs.name)}">
       <input class="note" data-role="casenote" data-case="${cs.id}" value="${escA(cs.note||'')}" placeholder="이 케이스의 목적"></th>`;});
   bh+=`</tr></thead>`;
@@ -2933,15 +2839,12 @@ function renderPlan(){
   let batch=`<section class="card">
     <div class="chead"><span class="num">1</span><h2>배합표</h2><span class="pill edit">입력</span>
       <span class="spacer"></span><span class="desc">기준 케이스는 헤더의 <b>기준</b> 버튼으로 지정 · 복수 가능</span></div>
-    <div class="toolbar"><span class="lbl">흰 칸에 배합비 입력 · <b>⠿ 드래그</b>로 순서 변경 · 케이스 머리의 <b>원지 –</b> 를 눌러 <b>원지(기재)</b>를 지정하면 원지별로 기준을 따로 잡습니다</span><div style="flex:1"></div>
+    <div class="toolbar"><span class="lbl">흰 칸에 배합비 입력 · <b>⠿ 드래그</b>로 순서 변경 · 약품/케이스는 추가·삭제 가능</span><div style="flex:1"></div>
       <button class="btn ghost sm" data-action="mixlib-open" title="저장한 케이스·배합 불러오기 (케이스 칸에 마우스를 올리면 뜨는 💾 로 저장)">🧪 배합 라이브러리</button>
-      ${_bUse?`<button class="btn ghost sm" data-action="base-sort" title="같은 원지 케이스끼리 나란히 모아 헤더를 합칩니다">▦ 원지끼리 모으기</button>`:``}
       <button class="btn ghost sm" data-action="add-case">+ 케이스 추가</button></div>
-    <div class="scroll-wrap"><div class="scroller"><table class="grid batch">${bh}${bb}</table></div></div>${baseDataListHTML(d)}${_pn(d,'mix','배합표')}</section>`;
+    <div class="scroll-wrap"><div class="scroller"><table class="grid batch">${bh}${bb}</table></div></div>${_pn(d,'mix','배합표')}</section>`;
 
-  let ih=`<thead>`;
-  if(_bUse){ ih+=`<tr class="baserow"><th class="bcorner stickL">원지 · 기재</th>`+baseRuns(d).map(g=>`<th class="${g.base?'':'nb'}" colspan="${g.cases.length*2}">${g.base?escT(g.base):'원지 미지정'}</th>`).join('')+`</tr>`; }
-  ih+=`<tr><th class="corner stickL" rowspan="2">투입량 (g)</th>`;
+  let ih=`<thead><tr><th class="corner stickL" rowspan="2">투입량 (g)</th>`;
   d.cases.forEach(cs=>ih+=`<th class="colhead${((d.rctrls&&d.rctrls.length)?d.rctrls:[d.rctrl]).includes(cs.id)?' iscb':''}" colspan="2"><span class="cn" id="cn-${cs.id}" style="border:none;background:none;display:inline-block;width:auto">${escT(cs.name)}</span></th>`);
   ih+=`</tr><tr>`;
   d.cases.forEach(()=>ih+=`<th class="subhead">DRY</th><th class="subhead">WET</th>`);
@@ -2982,7 +2885,7 @@ function renderPlan(){
   xh+=`<th class="colorhead k">합계<br>(g)</th><th class="colorhead k">컵포함<br>(g)</th><th class="colorhead">적용<br>농도</th></tr></thead>`;
   let xb="<tbody>";
   d.cases.forEach((cs,i)=>{
-    xb+=`<tr class="${i%2?'alt':''}"><td class="firstcol stickL"><span id="crl-${cs.id}">${escT(cs.name)}</span>${(_bUse&&caseBase(cs))?`<small class="crlb">${escT(caseBase(cs))}</small>`:``}</td><td class="ccell water"><span id="cwater-${cs.id}">0</span></td>`;
+    xb+=`<tr class="${i%2?'alt':''}"><td class="firstcol stickL"><span id="crl-${cs.id}">${escT(cs.name)}</span></td><td class="ccell water"><span id="cwater-${cs.id}">0</span></td>`;
     chems.forEach(ch=>xb+=`<td class="ccell"><span id="cw-${ch.id}-${cs.id}">0</span></td>`);
     xb+=`<td class="ccell sum"><span id="csum-${cs.id}">0</span></td><td class="ccell cup"><span id="ccup-${cs.id}">0</span></td><td class="ccell app"><span id="capp-${cs.id}">0</span></td></tr>`;
   });
@@ -3006,18 +2909,12 @@ function renderResult(){
   const cs=d.cases, M=d.rmetrics, G=d.rgroups;
   const rInput=d.rview!=='summary';
   const ctrls=(d.rctrls&&d.rctrls.length)?d.rctrls:[d.rctrl]; const ctrlName=cs.filter(c=>ctrls.includes(c.id)).map(c=>c.name).join(' · ')||'C';
-  const _bl=baseList(d);
-  const _bFil=(_bl.length>1)?(`<span class="rbf"><span class="rbf-l">원지</span><button class="rbfc ${d.rbaseF?'':'on'}" data-action="co-basef" data-b="">전체</button>`
-    +_bl.map(b=>`<button class="rbfc ${d.rbaseF===b?'on':''}" data-action="co-basef" data-b="${escA(b)}">${escT(b)}</button>`).join('')+`</span>`):``;
   let body;
   if(rInput){
     const mOn=!!d.rmemoOn;
     const ctrlRow='';
     const memoTh2=mOn?`<th class="memoh2">비고</th>`:'';
-    const _bRow2=baseUsed(d)?(`<tr class="brow"><th class="rcorner brl" colspan="2">원지</th>`
-      +baseRuns(d).map(g=>`<th class="${g.base?'':'nb'}" colspan="${g.cases.length}">${g.base?escT(g.base):'원지 미지정'}</th>`).join('')
-      +(mOn?`<th class="nb"></th>`:``)+`</tr>`):``;
-    const head=_bRow2+`<tr><th class="rcorner">항목</th><th class="runit">단위 · Δ</th>${cs.map(c=>`<th class="${ctrls.includes(c.id)?'ctrlh':''}">${escT(c.name)}</th>`).join('')}${memoTh2}</tr>`;
+    const head=`<tr><th class="rcorner">항목</th><th class="runit">단위 · Δ</th>${cs.map(c=>`<th class="${ctrls.includes(c.id)?'ctrlh':''}">${escT(c.name)}</th>`).join('')}${memoTh2}</tr>`;
     let rows='';
     G.forEach(g=>{ const gm=M.filter(m=>m.g===g.id);
       rows+=`<tr class="ggh"><td colspan="${cs.length+2+(mOn?1:0)}"><div class="gghw"><span class="gside" aria-hidden="true"></span><input class="gname" data-role="cgname" data-g="${g.id}" value="${escA(g.name)}"><div class="gactions"><button class="btn ghost sm" data-action="co-addmetric" data-g="${g.id}">+ 항목</button><button class="btn ghost sm" data-action="co-addnote" data-g="${g.id}">+ 비고 행</button><button class="btn ghost sm" data-action="co-memo">${mOn?'비고 열 ✓':'+ 비고 열'}</button>${G.length>1?`<button class="del-x" data-action="co-delgroup" data-g="${g.id}" title="그룹 삭제(항목 포함)">✕</button>`:''}</div></div></td></tr>`;
@@ -3034,7 +2931,7 @@ function renderResult(){
     const rsub=`기준 ${ctrlName} · 그룹별 측정값 입력 (배합비는 계획에서 자동)`;
     $id('content').innerHTML=`<div class="resultsheet"><div class="rhead"><div class="rtitle"><h1 class="rh1">${escT(expName)} <span class="rh1-sub">— 데이터 입력</span></h1><p class="rsub">${escT(rsub)}</p></div><div class="rspacer"></div></div>${commentsCard(d)}<div class="groupaddbar"><button class="btn groupadd-btn" data-action="co-addgroup">＋ 그룹 추가</button></div>${body}</div>`+attachCardHTML();
   }else{
-    $id('content').innerHTML=`<div class="resultsheet"><div class="rtoolbar"><span class="rmkr">기준 대비 변경 ○ · Δ = 증감 · 값 클릭 = 강조</span>${_bFil}<span class="rspacer"></span><button class="btn sm" data-action="co-xlsx" title="엑셀(.xlsx) 리포트 — 표 + 주석·점수 포함 이미지">📥 엑셀</button><button class="btn sm" data-action="sh-export-report" title="독립 HTML 리포트 저장">⬇ HTML</button></div><div class="rpaper">${letterheadHTML()}${commentsReportHTML(d,true)}${body}${reportFootHTML()}</div></div>`+attachCardHTML();
+    $id('content').innerHTML=`<div class="resultsheet"><div class="rtoolbar"><span class="rmkr">기준 대비 변경 ○ · Δ = 증감 · 값 클릭 = 강조</span><span class="rspacer"></span><button class="btn sm" data-action="co-xlsx" title="엑셀(.xlsx) 리포트 — 표 + 주석·점수 포함 이미지">📥 엑셀</button><button class="btn sm" data-action="sh-export-report" title="독립 HTML 리포트 저장">⬇ HTML</button></div><div class="rpaper">${letterheadHTML()}${commentsReportHTML(d,true)}${body}${reportFootHTML()}</div></div>`+attachCardHTML();
   }
 }
 
@@ -3414,13 +3311,14 @@ function buildSheetReport(d,ro){
   const body=`${cond0}<div class="rcard"><div class="rscroll">${tableHTML}</div></div>${chartsHTML}${noteHTML}`;
   return {tableHTML:tableHTML,tableDocHTML:tableDocHTML,chartsHTML:chartsHTML,noteHTML:noteHTML,body:body};
 }
-const REPORT_CSS=':root{--bg:#f4f4f2;--ink:#1f1e1c;--ink2:#5b5a54;--muted:#8d8b83;--line:#e6e5e0;--line2:#dcdad3;--head:#eef2f6;--blue:#3f6f9c;--gray:#6f6e68;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI","Pretendard","Apple SD Gothic Neo","Malgun Gothic",sans-serif;--mono:"SF Mono",ui-monospace,"JetBrains Mono","Roboto Mono",Menlo,Consolas,monospace}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased}.wrap{max-width:1220px;margin:0 auto;padding:28px 26px 56px}h1{font-size:19px;font-weight:800;letter-spacing:-.01em;margin:0 0 3px}.sub{font-size:13px;color:var(--ink2);margin:0 0 16px}.tablecard{background:#fff;border:1px solid var(--line2);border-radius:10px;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.04)}.scroll{overflow-x:auto}table.rreport{width:100%;border-collapse:collapse;font-size:14px}.rreport th,.rreport td{padding:10px 14px;border-bottom:1px solid var(--line);border-right:1px solid var(--line);text-align:right;white-space:nowrap}.rreport th:last-child,.rreport td:last-child{border-right:none}.rreport thead th{background:var(--head);font-size:12px;font-weight:700;color:var(--ink2);border-bottom:2px solid var(--line2)}.rreport thead th small{font-weight:500;color:var(--muted);font-size:10.5px}.rreport tbody td{font-family:var(--mono);font-weight:600}.rreport th.cs{text-align:center;font-weight:800;font-family:var(--mono);font-size:14px;background:#f7f8fa;color:var(--ink)}.rreport td.agent{text-align:center;font-family:var(--sans);font-weight:700}.rreport td.agent.new{color:var(--blue)}.rreport td.agent.old{color:var(--gray)}.rreport td.agent.none{color:var(--muted)}.rreport td.agent .kg{font-family:var(--mono);font-weight:600;margin-left:3px}.rreport td.dim{color:var(--muted)}.rreport td.rng{font-size:12.5px;color:var(--ink2);font-weight:500}.rreport tbody tr:nth-child(odd) td:not(.cs){background:#fafbfc}.rreport tbody tr.ctrl td,.rreport tbody tr.ctrl th{background:#f1f3f5;color:var(--ink2)}.rreport tbody tr:last-child td,.rreport tbody tr:last-child th{border-bottom:none}.rreport .mxhi{color:var(--blue);font-weight:800}.rnote{margin-top:13px;font-size:12px;color:var(--muted);line-height:1.6}.rnote b{color:var(--ink2)}.rcharts{margin-top:18px}.rch-h{font-size:14px;font-weight:800;color:var(--ink);margin:0 2px 9px}.rch-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}.rch{background:#fff;border:1px solid var(--line2);border-radius:10px;padding:12px 12px 6px;box-shadow:0 1px 2px rgba(0,0,0,.04)}.rch-t{font-size:13px;font-weight:800;color:var(--ink);margin-bottom:6px}.rch-t small{font-weight:500;color:var(--muted)}.rch-t small.rg{color:#5b6a79}.rch svg{width:100%;height:auto;display:block}.rc-v{font:700 12px var(--mono);fill:#37444f}.rc-c{font:700 12px var(--mono);fill:#6f6e68}.rch-leg{display:flex;gap:14px;margin-top:10px;font-size:11.5px;color:var(--ink2);flex-wrap:wrap}.rch-leg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}.rch-leg .lw{color:var(--muted)}.sec-h2{font-size:15.5px;font-weight:800;margin:30px 2px 10px;padding-top:20px;border-top:2px solid var(--line2)}h2.sec-h2:first-of-type{margin-top:6px;padding-top:0;border-top:none}.creport .gcell{background:#e9edf2;color:#3c4756;text-align:center;font-weight:800;font-size:12.5px;vertical-align:middle;border-right:2px solid var(--line2);min-width:64px}.creport .mname{text-align:left;font-family:var(--sans);font-weight:700;font-size:12.5px;white-space:nowrap}.creport .runit{text-align:center;font-family:var(--mono);font-size:11px;color:var(--muted)}.creport tr.gbreak td,.creport tr.gbreak th{border-top:2px solid var(--line2)}.chg{display:inline-block;min-width:30px;padding:1px 9px;border:1.8px solid #4a6e9e;border-radius:999px;color:var(--ink);font-weight:800}.creport thead th{vertical-align:middle;background:#dfe6ed;color:#344556;border-bottom-color:#aebdca}.cnote{display:block;margin-top:4px;font:600 12.5px var(--sans);color:#5b6c7d;white-space:normal;line-height:1.4;max-width:170px;margin-left:auto;margin-right:auto}.dlt{display:block;font-size:10.5px;font-weight:800;margin-top:2px;font-family:var(--mono)}.dlt.neg{color:#c0392b}.dlt.pos{color:#1d63b8}.dimv{color:var(--muted)}.notec{font-family:var(--sans)!important;font-size:11.5px!important;font-weight:500!important;text-align:center!important}.sech{font-size:14.5px;font-weight:800;margin:22px 2px 8px;display:flex;gap:8px;align-items:center}.sech::before{content:"";width:4px;height:14px;border-radius:2px;background:#4a6e9e}.sech small{font-weight:600;font-size:11px;color:var(--muted)}.sech:first-of-type{margin-top:4px}.rreport th,.rreport td,.creport .mname{text-align:center}.rreport td{position:relative}.rreport td.mk-ring .mkv{display:inline-block;min-width:30px;padding:1px 9px;border:1.9px solid #4a6e9e;border-radius:999px}.rreport td.mk-ring .mkv .chg{border:none;padding:0;min-width:0}.rreport td.mk-rr .mkv{border-color:#c0392b}.chg.down{border-color:#b0524e;color:var(--ink)}.rreport td.mk-b{color:#1d63b8!important;font-weight:800}.rreport td.mk-r{color:#c0392b!important;font-weight:800}.rreport td.mk-u{text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:2px}.rreport td.mk-bold{font-weight:900!important}@media(max-width:560px){.wrap{padding:22px 10px}.rphotos{grid-template-columns:1fr}.creport{table-layout:auto;width:auto;min-width:100%}.creport colgroup col{width:auto!important}.creport th.mname{min-width:88px;max-width:132px;white-space:normal;word-break:break-word;font-size:12px;line-height:1.3}.creport th.runit,.creport td.runit{min-width:34px;font-size:10px;padding:6px 3px}.rreport th,.rreport td{padding:7px 8px;font-size:12.5px}.rreport tbody td{min-width:54px}.creport .cnote{max-width:112px;font-size:11px}}.rphotos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:6px;align-items:start}.rph{margin:0;min-width:0;max-width:100%}.rph img{width:100%;height:auto;display:block;border:1px solid var(--line2);border-radius:10px}.rph figcaption{font:700 13px var(--sans);color:var(--ink);text-align:left;margin:0 1px 6px}.rph .rps{display:inline;color:var(--muted);font-weight:500;margin-left:8px;font-size:11.5px}.rph .attsc{border:1px solid var(--line2);border-bottom:none}.rph .attsc table{width:100%;border-collapse:collapse;table-layout:fixed}.rph .attsc th{background:#eef2f6;font:800 11px var(--mono);color:var(--ink2);padding:5px 3px;border-right:1px solid var(--line);text-align:center}.rph .attsc td{font:700 12.5px var(--mono);color:var(--ink);padding:6px 3px;border-top:1px solid var(--line);border-right:1px solid var(--line);text-align:center}.rph .attsc th:last-child,.rph .attsc td:last-child{border-right:none}.rph .attsc+img{border-top-left-radius:0;border-top-right-radius:0}.rph figcaption+.attsc{margin-top:0}*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}@media print{.tablecard,.rch,.rph{break-inside:avoid}.sech{break-after:avoid}}.creport{table-layout:auto;width:auto;min-width:100%}.creport thead th,.creport tbody td{min-width:80px}.creport th.mname{white-space:normal;line-height:1.3;min-width:120px;max-width:200px}.creport th.runit,.creport td.runit{min-width:48px;max-width:72px}.creport td.notewide{min-width:0}.creport th.memoh,.creport td.memoc{min-width:150px}.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}.scroll::-webkit-scrollbar{height:11px}.scroll::-webkit-scrollbar-track{background:#f1f3f5}.scroll::-webkit-scrollbar-thumb{background:#bcc3cb;border-radius:999px;border:3px solid #f1f3f5}@media print{.creport{width:100%;min-width:0}.creport thead th,.creport tbody td,.creport th.mname,.creport th.runit,.creport td.runit{min-width:0;max-width:none}.rreport th,.rreport td{padding:5px 5px;font-size:10.5px}.creport thead th:first-child,.creport tbody th.mname{position:static}}@media(max-width:640px){.creport thead th,.creport tbody td{min-width:70px;font-size:12.5px}.creport th.mname{min-width:92px;max-width:116px;font-size:12px}.creport th.runit,.creport td.runit{min-width:36px;max-width:54px;font-size:10.5px;padding:6px 3px}.rreport th,.rreport td{padding:8px 8px}}.creport tr.catrow td.catcell{background:#eef1f4;color:#46525e;font:800 12px var(--sans);letter-spacing:.12em;text-align:left;padding:8px 12px;border-top:2px solid #d5dce3;border-left:3px solid #26313d}.rreport td.memoc{font-family:var(--sans)!important;font-weight:500!important;font-size:11.5px!important;text-align:left!important;white-space:normal;line-height:1.45;padding:6px 10px}.creport thead th:first-child{position:sticky;left:0;background:#eef2f6;z-index:4}.creport tbody th.mname{position:sticky;left:0;background:#fff;z-index:3}.creport tr.catrow th.catlab{background:#eef1f4;color:#46525e;font:800 11.5px var(--sans);letter-spacing:.16em;text-align:center!important;border-top:2px solid #d5dce3}.creport tr.catrow td{border-top:2px solid #d5dce3;background:#f7f9fa;height:10px;padding:2px}.rreport td.mk-hly .mkv{background:#fdf0a8;border-radius:4px;padding:1px 5px;box-decoration-break:clone}.rreport td.mk-hlo .mkv{background:#ffdfae;border-radius:4px;padding:1px 5px;box-decoration-break:clone}.rreport td.mk-hlg .mkv{background:#e3f4b6;border-radius:4px;padding:1px 5px;box-decoration-break:clone}.dlt{position:absolute;right:5px;top:50%;transform:translateY(-50%);margin:0;font-weight:700;font-size:13px;line-height:1;letter-spacing:-.01em}.creport td:has(>.dlt)>.mkv{font-size:14px}.dlt.dc-b{color:#1d63b8!important}.dlt.dc-r{color:#c0392b!important}.creport td.runit,.creport th.runit{white-space:normal;word-break:keep-all;line-height:1.25}.cnote2{display:block;font:700 12.5px/1.4 var(--sans);color:#4a5560;white-space:normal}.creport tr.catrow.catnotes td{height:auto;padding:6px}.creport td.notewide{text-align:left;white-space:normal;font-weight:600;color:#4a5560;padding:7px 10px}.creport tr.brow th{background:#26313d!important;color:#fff!important;font-weight:800;font-size:11.5px;letter-spacing:.04em;border-bottom:1px solid #1b2530!important;text-align:center!important}.creport tr.brow th.nb{background:#8494a4!important}.creport tr.brow th.brl{background:#31404f!important;color:#b9cbdc!important;font-size:10px;letter-spacing:.16em}@page{size:A4 landscape;margin:10mm}'+':root{--bg:#eef1f5;--ink:#17232e;--ink2:#47586a;--muted:#8494a4;--line:#e6ebf0;--line2:#ccd6e0;--head:#eef2f6;--blue:#1b6cb5;--gray:#6f7e8d}body{background:var(--bg)}.wrap{background:#fff;border:1px solid #d3dbe4;border-radius:4px;box-shadow:0 2px 4px rgba(23,35,46,.05),0 22px 50px rgba(23,35,46,.1);padding:34px 38px 26px;margin:26px auto;position:relative}.wrap::before{content:\'\';position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,#26313d 0 68%,#15497c 68% 100%);border-radius:4px 4px 0 0}.rlh{padding:4px 0 13px;border-bottom:2px solid var(--ink);margin-bottom:16px}.rlh-top{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}.rlh-eyebrow{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.3em;color:#15497c;text-transform:uppercase}.rlh-no{margin-left:auto;font-family:var(--mono);font-size:10.5px;color:var(--muted);letter-spacing:.06em}.rlh h1{font-size:25px;font-weight:800;letter-spacing:-.025em;margin:7px 0 3px}.rlh .sub{margin:0;font-size:12.5px;color:var(--ink2)}.rcmts{margin:0 0 18px;display:flex;flex-direction:column;gap:9px}.rcmt-lbl{font-size:14px;font-weight:800;color:var(--ink);letter-spacing:-.01em;margin:0 0 1px}small.cnote.hl,.cnote2.hl{background:#ffef9e;color:#3a3405;border-radius:3px;padding:1px 4px}.rreport th.mk-ring .mkv,.rreport span.mk-ring>.mkv{display:inline-block;padding:1px 9px;border:1.9px solid #4a6e9e;border-radius:999px}.rreport th.mk-rr .mkv,.rreport span.mk-rr>.mkv{border-color:#c0392b}.rreport th.mk-b,.rreport span.mk-b{color:#1d63b8!important}.rreport th.mk-r,.rreport span.mk-r{color:#c0392b!important}.rreport th.mk-u,.rreport span.mk-u{text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:2px}.rreport th.mk-bold,.rreport th.mk-bold .mkv,.rreport span.mk-bold,.rreport span.mk-bold .mkv{font-weight:900!important}.rreport th.mk-hly .mkv,.rreport span.mk-hly>.mkv{background:#fdf0a8;border-radius:4px;padding:1px 5px}.rreport th.mk-hlo .mkv,.rreport span.mk-hlo>.mkv{background:#ffdfae;border-radius:4px;padding:1px 5px}.rreport th.mk-hlg .mkv,.rreport span.mk-hlg>.mkv{background:#e3f4b6;border-radius:4px;padding:1px 5px}.rbn.s{margin:7px 2px 14px;padding:8px 11px;border:1px solid #dde3e9;border-radius:8px;background:#fbfcfd;font:500 12px/1.6 var(--sans);color:#37444f}.rbn.s b{font-weight:800;margin-right:7px}.rcmt{border:1px solid #dde4eb;border-left:4px solid #26313d;border-radius:0 9px 9px 0;background:#f8fafb;padding:12px 16px 13px;break-inside:avoid}.rcmt-t{display:block;font-size:14px;font-weight:800;color:var(--ink);letter-spacing:-.01em;margin:0 0 3px}.rcmt-b{display:block;font-size:12.5px;line-height:1.75;color:#25313d;white-space:pre-wrap;word-break:break-word}.sech::before{background:#15497c}.sec-h2{border-top-color:var(--line2)}.rfoot{margin-top:24px;padding-top:11px;border-top:1px solid var(--line);display:flex;gap:10px;align-items:center;font-family:var(--mono);font-size:9.5px;color:var(--muted);letter-spacing:.05em}.rfoot .rfline{flex:1}.creport tr.catrow td.catcell,.creport tr.catrow th.catlab{border-left-color:#15497c}@media(max-width:640px){.wrap{padding:20px 12px;margin:10px auto}}.rph .rphlb{border:1px solid var(--line2);border-bottom:none}.rph .rphlb table{width:100%;border-collapse:collapse;table-layout:fixed}.rph .rphlb td{font:700 11px var(--sans);color:var(--ink);padding:5px 2px;border-right:1px solid var(--line);text-align:center;word-break:break-all}.rph .rphlb td:last-child{border-right:none}.rph .rphlb+.attsc{border-top:1px solid var(--line)}.rph .rphlb+img,.rph .rphlb+.attsc+img{border-top-left-radius:0;border-top-right-radius:0}';
+const REPORT_CSS=':root{--bg:#f4f4f2;--ink:#1f1e1c;--ink2:#5b5a54;--muted:#8d8b83;--line:#e6e5e0;--line2:#dcdad3;--head:#eef2f6;--blue:#3f6f9c;--gray:#6f6e68;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI","Pretendard","Apple SD Gothic Neo","Malgun Gothic",sans-serif;--mono:"SF Mono",ui-monospace,"JetBrains Mono","Roboto Mono",Menlo,Consolas,monospace}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased}.wrap{max-width:1220px;margin:0 auto;padding:28px 26px 56px}h1{font-size:19px;font-weight:800;letter-spacing:-.01em;margin:0 0 3px}.sub{font-size:13px;color:var(--ink2);margin:0 0 16px}.tablecard{background:#fff;border:1px solid var(--line2);border-radius:10px;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.04)}.scroll{overflow-x:auto}table.rreport{width:100%;border-collapse:collapse;font-size:14px}.rreport th,.rreport td{padding:10px 14px;border-bottom:1px solid var(--line);border-right:1px solid var(--line);text-align:right;white-space:nowrap}.rreport th:last-child,.rreport td:last-child{border-right:none}.rreport thead th{background:var(--head);font-size:12px;font-weight:700;color:var(--ink2);border-bottom:2px solid var(--line2)}.rreport thead th small{font-weight:500;color:var(--muted);font-size:10.5px}.rreport tbody td{font-family:var(--mono);font-weight:600}.rreport th.cs{text-align:center;font-weight:800;font-family:var(--mono);font-size:14px;background:#f7f8fa;color:var(--ink)}.rreport td.agent{text-align:center;font-family:var(--sans);font-weight:700}.rreport td.agent.new{color:var(--blue)}.rreport td.agent.old{color:var(--gray)}.rreport td.agent.none{color:var(--muted)}.rreport td.agent .kg{font-family:var(--mono);font-weight:600;margin-left:3px}.rreport td.dim{color:var(--muted)}.rreport td.rng{font-size:12.5px;color:var(--ink2);font-weight:500}.rreport tbody tr:nth-child(odd) td:not(.cs){background:#fafbfc}.rreport tbody tr.ctrl td,.rreport tbody tr.ctrl th{background:#f1f3f5;color:var(--ink2)}.rreport tbody tr:last-child td,.rreport tbody tr:last-child th{border-bottom:none}.rreport .mxhi{color:var(--blue);font-weight:800}.rnote{margin-top:13px;font-size:12px;color:var(--muted);line-height:1.6}.rnote b{color:var(--ink2)}.rcharts{margin-top:18px}.rch-h{font-size:14px;font-weight:800;color:var(--ink);margin:0 2px 9px}.rch-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}.rch{background:#fff;border:1px solid var(--line2);border-radius:10px;padding:12px 12px 6px;box-shadow:0 1px 2px rgba(0,0,0,.04)}.rch-t{font-size:13px;font-weight:800;color:var(--ink);margin-bottom:6px}.rch-t small{font-weight:500;color:var(--muted)}.rch-t small.rg{color:#5b6a79}.rch svg{width:100%;height:auto;display:block}.rc-v{font:700 12px var(--mono);fill:#37444f}.rc-c{font:700 12px var(--mono);fill:#6f6e68}.rch-leg{display:flex;gap:14px;margin-top:10px;font-size:11.5px;color:var(--ink2);flex-wrap:wrap}.rch-leg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}.rch-leg .lw{color:var(--muted)}.sec-h2{font-size:15.5px;font-weight:800;margin:30px 2px 10px;padding-top:20px;border-top:2px solid var(--line2)}h2.sec-h2:first-of-type{margin-top:6px;padding-top:0;border-top:none}.creport .gcell{background:#e9edf2;color:#3c4756;text-align:center;font-weight:800;font-size:12.5px;vertical-align:middle;border-right:2px solid var(--line2);min-width:64px}.creport .mname{text-align:left;font-family:var(--sans);font-weight:700;font-size:12.5px;white-space:nowrap}.creport .runit{text-align:center;font-family:var(--mono);font-size:11px;color:var(--muted)}.creport tr.gbreak td,.creport tr.gbreak th{border-top:2px solid var(--line2)}.chg{display:inline-block;min-width:30px;padding:1px 9px;border:1.8px solid #4a6e9e;border-radius:999px;color:var(--ink);font-weight:800}.creport thead th{vertical-align:middle;background:#dfe6ed;color:#344556;border-bottom-color:#aebdca}.cnote{display:block;margin-top:4px;font:600 12.5px var(--sans);color:#5b6c7d;white-space:normal;line-height:1.4;max-width:170px;margin-left:auto;margin-right:auto}.dlt{display:block;font-size:10.5px;font-weight:800;margin-top:2px;font-family:var(--mono)}.dlt.neg{color:#c0392b}.dlt.pos{color:#1d63b8}.dimv{color:var(--muted)}.notec{font-family:var(--sans)!important;font-size:11.5px!important;font-weight:500!important;text-align:center!important}.sech{font-size:14.5px;font-weight:800;margin:22px 2px 8px;display:flex;gap:8px;align-items:center}.sech::before{content:"";width:4px;height:14px;border-radius:2px;background:#4a6e9e}.sech small{font-weight:600;font-size:11px;color:var(--muted)}.sech:first-of-type{margin-top:4px}.rreport th,.rreport td,.creport .mname{text-align:center}.rreport td{position:relative}.rreport td.mk-ring .mkv{display:inline-block;min-width:30px;padding:1px 9px;border:1.9px solid #4a6e9e;border-radius:999px}.rreport td.mk-ring .mkv .chg{border:none;padding:0;min-width:0}.rreport td.mk-rr .mkv{border-color:#c0392b}.chg.down{border-color:#b0524e;color:var(--ink)}.rreport td.mk-b{color:#1d63b8!important;font-weight:800}.rreport td.mk-r{color:#c0392b!important;font-weight:800}.rreport td.mk-u{text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:2px}.rreport td.mk-bold{font-weight:900!important}@media(max-width:560px){.wrap{padding:22px 10px}.rphotos{grid-template-columns:1fr}.creport{table-layout:auto;width:auto;min-width:100%}.creport colgroup col{width:auto!important}.creport th.mname{min-width:88px;max-width:132px;white-space:normal;word-break:break-word;font-size:12px;line-height:1.3}.creport th.runit,.creport td.runit{min-width:34px;font-size:10px;padding:6px 3px}.rreport th,.rreport td{padding:7px 8px;font-size:12.5px}.rreport tbody td{min-width:54px}.creport .cnote{max-width:112px;font-size:11px}}.rphotos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:6px;align-items:start}.rph{margin:0;min-width:0;max-width:100%}.rph img{width:100%;height:auto;display:block;border:1px solid var(--line2);border-radius:10px}.rph figcaption{font:700 13px var(--sans);color:var(--ink);text-align:left;margin:0 1px 6px}.rph .rps{display:inline;color:var(--muted);font-weight:500;margin-left:8px;font-size:11.5px}.rph .attsc{border:1px solid var(--line2);border-bottom:none}.rph .attsc table{width:100%;border-collapse:collapse;table-layout:fixed}.rph .attsc th{background:#eef2f6;font:800 11px var(--mono);color:var(--ink2);padding:5px 3px;border-right:1px solid var(--line);text-align:center}.rph .attsc td{font:700 12.5px var(--mono);color:var(--ink);padding:6px 3px;border-top:1px solid var(--line);border-right:1px solid var(--line);text-align:center}.rph .attsc th:last-child,.rph .attsc td:last-child{border-right:none}.rph .attsc+img{border-top-left-radius:0;border-top-right-radius:0}.rph figcaption+.attsc{margin-top:0}*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}@media print{.tablecard,.rch,.rph{break-inside:avoid}.sech{break-after:avoid}}.creport{table-layout:auto;width:auto;min-width:100%}.creport thead th,.creport tbody td{min-width:80px}.creport th.mname{white-space:normal;line-height:1.3;min-width:120px;max-width:200px}.creport th.runit,.creport td.runit{min-width:48px;max-width:72px}.creport td.notewide{min-width:0}.creport th.memoh,.creport td.memoc{min-width:150px}.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}.scroll::-webkit-scrollbar{height:11px}.scroll::-webkit-scrollbar-track{background:#f1f3f5}.scroll::-webkit-scrollbar-thumb{background:#bcc3cb;border-radius:999px;border:3px solid #f1f3f5}@media print{.creport{width:100%;min-width:0}.creport thead th,.creport tbody td,.creport th.mname,.creport th.runit,.creport td.runit{min-width:0;max-width:none}.rreport th,.rreport td{padding:5px 5px;font-size:10.5px}.creport thead th:first-child,.creport tbody th.mname{position:static}}@media(max-width:640px){.creport thead th,.creport tbody td{min-width:70px;font-size:12.5px}.creport th.mname{min-width:92px;max-width:116px;font-size:12px}.creport th.runit,.creport td.runit{min-width:36px;max-width:54px;font-size:10.5px;padding:6px 3px}.rreport th,.rreport td{padding:8px 8px}}.creport tr.catrow td.catcell{background:#eef1f4;color:#46525e;font:800 12px var(--sans);letter-spacing:.12em;text-align:left;padding:8px 12px;border-top:2px solid #d5dce3;border-left:3px solid #26313d}.rreport td.memoc{font-family:var(--sans)!important;font-weight:500!important;font-size:11.5px!important;text-align:left!important;white-space:normal;line-height:1.45;padding:6px 10px}.creport thead th:first-child{position:sticky;left:0;background:#eef2f6;z-index:4}.creport tbody th.mname{position:sticky;left:0;background:#fff;z-index:3}.creport tr.catrow th.catlab{background:#eef1f4;color:#46525e;font:800 11.5px var(--sans);letter-spacing:.16em;text-align:center!important;border-top:2px solid #d5dce3}.creport tr.catrow td{border-top:2px solid #d5dce3;background:#f7f9fa;height:10px;padding:2px}.rreport td.mk-hly .mkv{background:#fdf0a8;border-radius:4px;padding:1px 5px;box-decoration-break:clone}.rreport td.mk-hlo .mkv{background:#ffdfae;border-radius:4px;padding:1px 5px;box-decoration-break:clone}.rreport td.mk-hlg .mkv{background:#e3f4b6;border-radius:4px;padding:1px 5px;box-decoration-break:clone}.dlt{position:absolute;right:5px;top:50%;transform:translateY(-50%);margin:0;font-weight:700;font-size:13px;line-height:1;letter-spacing:-.01em}.creport td:has(>.dlt)>.mkv{font-size:14px}.dlt.dc-b{color:#1d63b8!important}.dlt.dc-r{color:#c0392b!important}.creport td.runit,.creport th.runit{white-space:normal;word-break:keep-all;line-height:1.25}.cnote2{display:block;font:700 12.5px/1.4 var(--sans);color:#4a5560;white-space:normal}.creport tr.catrow.catnotes td{height:auto;padding:6px}.creport td.notewide{text-align:left;white-space:normal;font-weight:600;color:#4a5560;padding:7px 10px}@page{size:A4 landscape;margin:10mm}'+':root{--bg:#eef1f5;--ink:#17232e;--ink2:#47586a;--muted:#8494a4;--line:#e6ebf0;--line2:#ccd6e0;--head:#eef2f6;--blue:#1b6cb5;--gray:#6f7e8d}body{background:var(--bg)}.wrap{background:#fff;border:1px solid #d3dbe4;border-radius:4px;box-shadow:0 2px 4px rgba(23,35,46,.05),0 22px 50px rgba(23,35,46,.1);padding:34px 38px 26px;margin:26px auto;position:relative}.wrap::before{content:\'\';position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,#26313d 0 68%,#15497c 68% 100%);border-radius:4px 4px 0 0}.rlh{padding:4px 0 13px;border-bottom:2px solid var(--ink);margin-bottom:16px}.rlh-top{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}.rlh-eyebrow{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.3em;color:#15497c;text-transform:uppercase}.rlh-no{margin-left:auto;font-family:var(--mono);font-size:10.5px;color:var(--muted);letter-spacing:.06em}.rlh h1{font-size:25px;font-weight:800;letter-spacing:-.025em;margin:7px 0 3px}.rlh .sub{margin:0;font-size:12.5px;color:var(--ink2)}.rcmts{margin:0 0 18px;display:flex;flex-direction:column;gap:9px}.rcmt-lbl{font-size:14px;font-weight:800;color:var(--ink);letter-spacing:-.01em;margin:0 0 1px}small.cnote.hl,.cnote2.hl{background:#ffef9e;color:#3a3405;border-radius:3px;padding:1px 4px}.rreport th.mk-ring .mkv,.rreport span.mk-ring>.mkv{display:inline-block;padding:1px 9px;border:1.9px solid #4a6e9e;border-radius:999px}.rreport th.mk-rr .mkv,.rreport span.mk-rr>.mkv{border-color:#c0392b}.rreport th.mk-b,.rreport span.mk-b{color:#1d63b8!important}.rreport th.mk-r,.rreport span.mk-r{color:#c0392b!important}.rreport th.mk-u,.rreport span.mk-u{text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:2px}.rreport th.mk-bold,.rreport th.mk-bold .mkv,.rreport span.mk-bold,.rreport span.mk-bold .mkv{font-weight:900!important}.rreport th.mk-hly .mkv,.rreport span.mk-hly>.mkv{background:#fdf0a8;border-radius:4px;padding:1px 5px}.rreport th.mk-hlo .mkv,.rreport span.mk-hlo>.mkv{background:#ffdfae;border-radius:4px;padding:1px 5px}.rreport th.mk-hlg .mkv,.rreport span.mk-hlg>.mkv{background:#e3f4b6;border-radius:4px;padding:1px 5px}.rbn.s{margin:7px 2px 14px;padding:8px 11px;border:1px solid #dde3e9;border-radius:8px;background:#fbfcfd;font:500 12px/1.6 var(--sans);color:#37444f}.rbn.s b{font-weight:800;margin-right:7px}.rcmt{border:1px solid #dde4eb;border-left:4px solid #26313d;border-radius:0 9px 9px 0;background:#f8fafb;padding:12px 16px 13px;break-inside:avoid}.rcmt-t{display:block;font-size:14px;font-weight:800;color:var(--ink);letter-spacing:-.01em;margin:0 0 3px}.rcmt-b{display:block;font-size:12.5px;line-height:1.75;color:#25313d;white-space:pre-wrap;word-break:break-word}.sech::before{background:#15497c}.sec-h2{border-top-color:var(--line2)}.rfoot{margin-top:24px;padding-top:11px;border-top:1px solid var(--line);display:flex;gap:10px;align-items:center;font-family:var(--mono);font-size:9.5px;color:var(--muted);letter-spacing:.05em}.rfoot .rfline{flex:1}.creport tr.catrow td.catcell,.creport tr.catrow th.catlab{border-left-color:#15497c}@media(max-width:640px){.wrap{padding:20px 12px;margin:10px auto}}.rph .rphlb{border:1px solid var(--line2);border-bottom:none}.rph .rphlb table{width:100%;border-collapse:collapse;table-layout:fixed}.rph .rphlb td{font:700 11px var(--sans);color:var(--ink);padding:5px 2px;border-right:1px solid var(--line);text-align:center;word-break:break-all}.rph .rphlb td:last-child{border-right:none}.rph .rphlb+.attsc{border-top:1px solid var(--line)}.rph .rphlb+img,.rph .rphlb+.attsc+img{border-top-left-radius:0;border-top-right-radius:0}';
 function buildCoatReport(d){
-  const _bU=baseUsed(d), _allCs=d.cases||[];
-  const _bF=(_bU&&d.rbaseF&&baseList(d).indexOf(d.rbaseF)>=0)?d.rbaseF:'';
-  const cs=_bF?_allCs.filter(c=>caseBase(c)===_bF):_allCs;
-  const M=d.rmetrics||[], G=d.rgroups||[];
-  const _rmR=refMap(d,_allCs); const ctrlSet=_rmR.ctrlSet; const refOf=_rmR.ref;
+  const cs=d.cases, M=d.rmetrics||[], G=d.rgroups||[];
+  const ctrlSet=new Set((d.rctrls&&d.rctrls.length)?d.rctrls:[d.rctrl]);
+  const refOf={}; let _last=null;
+  cs.forEach(c=>{ if(ctrlSet.has(c.id)){ _last=c.id; refOf[c.id]=c.id; } else refOf[c.id]=_last; });
+  const _first=cs.find(c=>ctrlSet.has(c.id));
+  cs.forEach(c=>{ if(!refOf[c.id]) refOf[c.id]=_first?_first.id:null; });
   const chems=ordered(d).filter(ch=>(ch.name||'').trim());
   const hasBoth=chems.some(ch=>(ch.cat||'add')==='pig')&&chems.some(ch=>(ch.cat||'add')!=='pig');
   let _cnLab='';
@@ -3444,9 +3342,6 @@ function buildCoatReport(d){
   const lay=Object.assign({n:150,u:72,m:190},d.rlayout||{});
   lay.n=Math.min(+lay.n||150,260); lay.m=Math.min(+lay.m||190,300);
   const colg=`<colgroup><col style="width:${lay.n}px"><col style="width:${lay.u}px">${cs.map(()=>'<col>').join('')}${memoOn?`<col style="width:${lay.m}px">`:''}</colgroup>`;
-  const _bRow=_bU?(`<tr class="brow"><th class="rcorner brl" colspan="2">원지</th>`
-    +baseRuns(d,cs).map(g=>`<th class="${g.base?'':'nb'}" colspan="${g.cases.length}">${g.base?escT(g.base):'원지 미지정'}</th>`).join('')
-    +(memoOn?`<th class="nb"></th>`:``)+`</tr>`):``;
   const headRowFullB=`<tr><th class="rcorner">항목</th><th class="runit">단위</th>${cs.map(c=>headCell(c,false,true)).join('')}${memoTh}</tr>`;
   const headRowFullD=`<tr><th class="rcorner">항목</th><th class="runit">단위</th>${cs.map(c=>headCell(c,false,false)).join('')}${memoTh}</tr>`;
   const headRowB=`<tr><th class="rcorner">항목</th><th class="runit">단위</th>${cs.map(c=>headCell(c,false,true)).join('')}${memoTh}</tr>`;
@@ -3468,9 +3363,9 @@ function buildCoatReport(d){
     const _cnB=`<tr class="catrow catnotes"><th class="mname catlab">안료</th><td class="runit"></td>${cs.map(c=>`<td class="${ctrlSet.has(c.id)?'ctrlc':''} cnotec mkable ${mkCls(d,c.id,'__note')}" data-mk="${c.id}|__note" title="클릭 = 강조 팝업 · 글은 바로 수정"><span class="mkv"><input class="cnote-in" data-role="casenote" data-case="${c.id}" value="${escA(c.note||'')}" placeholder="목적"></span></td>`).join('')}${memoEmpty}</tr>`;
     const _cnD=`<tr class="catrow catnotes"><th class="mname catlab">안료</th><td class="runit"></td>${cs.map(c=>`<td class="${ctrlSet.has(c.id)?'ctrlc':''} ${mkCls(d,c.id,'__note')}">${(c.note||'').trim()?`<span class="mkv cnote2">${escT(c.note)}</span>`:''}</td>`).join('')}${memoEmpty}</tr>`;
     const rowsB=rows.replace('%%PIGNOTES%%',_cnB), rowsD=rows.replace('%%PIGNOTES%%',_cnD);
-    secs.push({name:'배합비',hint:`기준 ${escT(ctrlName)} 대비 변경 ○ · 감소는 빨강 (${_bU?'같은 원지 안의 기준과 비교':'왼쪽의 가까운 기준과 비교'})`,
-      table:`<table class="rreport creport bmix">${colg}<thead>${_bRow}${headRowFullB}</thead><tbody>${rowsB}</tbody></table>`,
-      tableDoc:`<table class="rreport creport bmix">${colg}<thead>${_bRow}${headRowFullD}</thead><tbody>${rowsD}</tbody></table>`,
+    secs.push({name:'배합비',hint:`기준 ${escT(ctrlName)} 대비 변경 ○ · 감소는 빨강 (왼쪽의 가까운 기준과 비교)`,
+      table:`<table class="rreport creport bmix">${colg}<thead>${headRowFullB}</thead><tbody>${rowsB}</tbody></table>`,
+      tableDoc:`<table class="rreport creport bmix">${colg}<thead>${headRowFullD}</thead><tbody>${rowsD}</tbody></table>`,
       after:`<div class="rbn"><span class="rbn-l">배합표 비고</span><textarea class="rbn-t" data-role="pnote" data-k="mix" rows="1" placeholder="배합표 비고 — 계획 탭과 실시간 연동">${escT(bv)}</textarea></div>`,
       afterDoc: bv.trim()?`<div class="rbn s"><b>배합표 비고</b> ${escT(bv)}</div>`:''});
   }
@@ -3483,12 +3378,11 @@ function buildCoatReport(d){
       const memoD=memoOn?`<td class="memoc memot">${escT(mv)}</td>`:'';
       return {b:`<tr>${core}${memoB}</tr>`, d:`<tr>${core}${memoD}</tr>`};
     });
-    secs.push({name:g.name,hint:gm.some(m=>m.delta)?'Δ = 기준 대비 증감 (감소 빨강 · 증가 파랑)':'',table:`<table class="rreport creport">${colg}<thead>${_bRow}${headRowB}</thead><tbody>${rows.map(r=>r.b).join('')}</tbody></table>`,tableDoc:`<table class="rreport creport">${colg}<thead>${_bRow}${headRowD}</thead><tbody>${rows.map(r=>r.d).join('')}</tbody></table>`});
+    secs.push({name:g.name,hint:gm.some(m=>m.delta)?'Δ = 기준 대비 증감 (감소 빨강 · 증가 파랑)':'',table:`<table class="rreport creport">${colg}<thead>${headRowB}</thead><tbody>${rows.map(r=>r.b).join('')}</tbody></table>`,tableDoc:`<table class="rreport creport">${colg}<thead>${headRowD}</thead><tbody>${rows.map(r=>r.d).join('')}</tbody></table>`});
   });
   const body=secs.map(x=>`<div class="rsec"><div class="rsec-h">${escT(x.name)}${x.hint?`<small>${x.hint}</small>`:''}</div><div class="rcard"><div class="rscroll cscroll">${x.table}</div></div>${x.after||''}</div>`).join('');
   const doc=secs.map(x=>`<h2 class="sech">${escT(x.name)}${x.hint?` <small>${x.hint}</small>`:''}</h2><div class="tablecard"><div class="scroll">${x.tableDoc||x.table}</div></div>${x.afterDoc||''}`).join('');
-  const _bWarn=_bU?baseNoCtrl(d):[];
-  const noteHTML=`<p class="rnote"><b>기준 ${escT(ctrlName)}</b> — 각 케이스는 <b>${_bU?'같은 원지(기재) 안의 기준':'자기 왼쪽의 가까운 기준'}</b>과 비교 · 배합 ○(감소=<b>빨강</b>) · Δ 증감 · 값 · 항목 · 케이스명을 클릭하면 강조 팝업${_bF?` · 지금은 <b>${escT(_bF)}</b> 원지만 보는 중`:``}${_bWarn.length?`<br><b style="color:#bd4a41">⚠ ${escT(_bWarn.join(' · '))}</b> 원지에는 기준이 지정되지 않아 비교가 표시되지 않습니다 — 계획 탭에서 해당 원지의 C 열에 <b>기준</b>을 눌러주세요`:``}</p>`;
+  const noteHTML=`<p class="rnote"><b>기준 ${escT(ctrlName)}</b> — 각 케이스는 <b>자기 왼쪽의 가까운 기준</b>과 비교 · 배합 ○(감소=<b>빨강</b>) · Δ 증감 · 값 · 항목 · 케이스명을 클릭하면 강조 팝업</p>`;
   return { body: body+noteHTML, doc: doc+noteHTML, ctrlName };
 }
 
@@ -3913,8 +3807,6 @@ document.addEventListener('input',e=>{
     case 'chemmemo':{const ch=d.chemicals.find(c=>c.id===chem);if(ch)ch.memo=t.value;break;}
     case 'casename':{const cs=d.cases.find(c=>c.id===k);if(cs){cs.name=t.value;setText('cn-'+k,t.value);setText('crl-'+k,t.value);}break;}
     case 'casenote':{const cs=d.cases.find(c=>c.id===k);if(cs)cs.note=t.value;break;}
-    case 'baserun':{const ids=String(ds.ks||'').split(',').filter(Boolean);
-      ids.forEach(function(id){const c=d.cases.find(x=>x.id===id);if(c)c.base=t.value;});break;}
     case 'cres': { if(!d.rresults)d.rresults={}; if(!d.rresults[k])d.rresults[k]={}; d.rresults[k][ds.m]=t.value;
       const _el=$id('cmean-'+k+'-'+ds.m);
       if(_el){ const _st=calcStat(t.value), _mm=(d.rmetrics||[]).find(function(x){return x.id===ds.m;});
@@ -4133,21 +4025,7 @@ document.addEventListener('click',e=>{
   else if(a==='pick-new'){const catv=btn.dataset.cat;const id=uid('c');d.chemicals.push({id,name:catv==='pig'?'새 안료':'새 부재료',cat:catv,solid:catv==='pig'?60:50,memo:""});if(!d.recipe)d.recipe=[];d.recipe.push(id);d.parts[id]={};d.cases.forEach(cs=>d.parts[id][cs.id]=0);$id('pickerOverlay').hidden=true;render();toast('새 약품 추가됨 · 라이브러리에도 등록');}
   else if(a==='recipe-remove'){const id=btn.dataset.chem;const dd=D();if((dd.recipe||[]).length<=1)return;dd.recipe=(dd.recipe||[]).filter(x=>x!==id);render();toast('배합에서 제외 · 라이브러리엔 유지');}
   else if(a==='del-chem'){if(d.chemicals.length<=1)return;const id=btn.dataset.chem;const ch=d.chemicals.find(c=>c.id===id);askConfirm(`'${ch?ch.name:''}' 약품을 라이브러리에서 삭제할까요?`,()=>{const dd=D();dd.chemicals=dd.chemicals.filter(c=>c.id!==id);dd.recipe=(dd.recipe||[]).filter(x=>x!==id);delete dd.parts[id];render();toast("삭제됨");});}
-  else if(a==='add-case'){const last=d.cases[d.cases.length-1];let n=1;const names=new Set(d.cases.map(c=>c.name));while(names.has('T'+n))n++;const id=uid('k');d.cases.push({id,name:'T'+n,note:"",base:(last&&last.base)||'',applied:num(d.batchApplied)||64,mode:"fixed"});d.chemicals.forEach(ch=>{if(!d.parts[ch.id])d.parts[ch.id]={};d.parts[ch.id][id]=last?partOf(d,ch.id,last.id):0;});render();toast('케이스 추가 (직전 값 복사)');}
-  else if(a==='base-sort'){ const seen=[]; d.cases.forEach(c=>{const b=caseBase(c); if(seen.indexOf(b)<0)seen.push(b);});
-    const ord=[]; seen.forEach(b=>d.cases.forEach(c=>{if(caseBase(c)===b)ord.push(c);})); d.cases=ord; render(); toast('▦ 원지끼리 모았어요'); }
-  else if(a==='base-dup'){ const ks=String(btn.dataset.ks||'').split(',').filter(Boolean);
-    const src=ks.map(id=>d.cases.find(c=>c.id===id)).filter(Boolean); if(!src.length){toast('복제할 케이스를 찾지 못했어요');return;}
-    askInput('이 원지의 케이스와 배합비를 그대로 복사합니다. 새 원지 이름을 적어주세요.','',function(v){
-      const nb=String(v||'').trim(); if(!nb){toast('원지 이름을 입력해주세요');return;}
-      const dd=D(); const ctr=new Set((dd.rctrls&&dd.rctrls.length)?dd.rctrls:[dd.rctrl]); const pair=[];
-      src.forEach(function(c){ const nid=uid('k'); const nc=Object.assign(clone(c),{id:nid,base:nb}); dd.cases.push(nc); pair.push({from:c.id,to:nid}); });
-      (dd.chemicals||[]).forEach(function(ch){ if(!dd.parts[ch.id])dd.parts[ch.id]={};
-        pair.forEach(function(p){ dd.parts[ch.id][p.to]=num(dd.parts[ch.id][p.from]); }); });
-      if(!Array.isArray(dd.rctrls))dd.rctrls=[];
-      pair.forEach(function(p){ if(ctr.has(p.from)&&dd.rctrls.indexOf(p.to)<0) dd.rctrls.push(p.to); });
-      render(); toast('⧉ '+nb+' 원지로 케이스 '+pair.length+'개 복제 (기준도 함께)'); }); }
-  else if(a==='co-basef'){ d.rbaseF=String(btn.dataset.b||''); render(); }
+  else if(a==='add-case'){const last=d.cases[d.cases.length-1];let n=1;const names=new Set(d.cases.map(c=>c.name));while(names.has('T'+n))n++;const id=uid('k');d.cases.push({id,name:'T'+n,note:"",applied:num(d.batchApplied)||64,mode:"fixed"});d.chemicals.forEach(ch=>{if(!d.parts[ch.id])d.parts[ch.id]={};d.parts[ch.id][id]=last?partOf(d,ch.id,last.id):0;});render();toast('케이스 추가 (직전 값 복사)');}
   else if(a==='del-case'){if(d.cases.length<=1)return;const id=btn.dataset.case;const cs=d.cases.find(c=>c.id===id);askConfirm(`'${cs?cs.name:''}' 케이스를 삭제할까요?`,()=>{const dd=D();dd.cases=dd.cases.filter(c=>c.id!==id);dd.chemicals.forEach(ch=>{if(dd.parts[ch.id])delete dd.parts[ch.id][id];});render();toast("케이스 삭제됨");});}
   else if(a==='dry-reset'){const cs=d.cases.find(c=>c.id===btn.dataset.case);if(cs){delete cs.dry;render();toast('일괄 목표 DRY로 되돌림');}}
   else if(a==='toggle-max'){const cs=d.cases.find(c=>c.id===btn.dataset.case);if(cs){cs.mode=cs.mode==='max'?'fixed':'max';if(cs.mode==='fixed'&&!cs.applied)cs.applied=num(d.batchApplied)||64;render();}}
@@ -4205,7 +4083,6 @@ function exportCSV(){
   lines.push([cc(appState.plans[appState.active.plan].label+' 계획'),cc('목표DRY'),cc(d.targetDry),cc('컵무게'),cc(cup)].join(','));
   lines.push('');lines.push(cc('[배합 pt]'));
   lines.push([cc('약품'),cc('구분'),cc('고형분%'),...d.cases.map(c=>cc(c.name))].join(','));
-  lines.push([cc('원지'),cc(''),cc(''),...d.cases.map(c=>cc(c.base||''))].join(','));
   lines.push([cc('목적'),cc(''),cc(''),...d.cases.map(c=>cc(c.note||''))].join(','));
   chems.forEach(ch=>lines.push([cc(ch.name),cc(ch.cat==='pig'?'안료':'부재료'),cc(ch.solid),...d.cases.map(c=>cc(partOf(d,ch.id,c.id)))].join(',')));
   lines.push([cc('합계'),cc(''),cc(''),...d.cases.map(c=>cc(fmt(calc[c.id].tp)))].join(','));
@@ -5169,7 +5046,11 @@ async function _buildXlsx(ex){
   const plan=appState.plans[appState.active.plan]||appState.plans[0];
   const d=normalize(plan.data);
   const cs=d.cases||[], M=d.rmetrics||[], G=d.rgroups||[];
-  const _rmX=refMap(d,cs); const ctrlSet=_rmX.ctrlSet; const refOf=_rmX.ref;
+  const ctrlSet=new Set((d.rctrls&&d.rctrls.length)?d.rctrls:[d.rctrl]);
+  const refOf={}; let _last=null;
+  cs.forEach(c=>{ if(ctrlSet.has(c.id)){ _last=c.id; refOf[c.id]=c.id; } else refOf[c.id]=_last; });
+  const _first=cs.find(c=>ctrlSet.has(c.id));
+  cs.forEach(c=>{ if(!refOf[c.id]) refOf[c.id]=_first?_first.id:null; });
   const ctrlName=cs.filter(c=>ctrlSet.has(c.id)).map(c=>c.name).join(' \u00b7 ');
   const nf=v=>{const _m=/-?(?:\d+(?:\.\d+)?|\.\d+)/.exec(String(v==null?'':v));return _m?parseFloat(_m[0]):null;};
   const memoOn=!!d.rmemoOn;
@@ -5193,20 +5074,7 @@ async function _buildXlsx(ex){
   function applyMk(cell,cid,key){ const mm=(d.rmarks&&d.rmarks[cid]&&d.rmarks[cid][key])||null; if(!mm) return;
     if(cell.value&&cell.value.richText){ if(mm.dc){ try{ const rt=cell.value.richText; const rn=rt[rt.length-1]; rn.font=Object.assign({},rn.font,{color:{argb:mm.dc==='r'?C.red:'FF1D63B8'}}); }catch(_e){} } } else { const f=Object.assign({},cell.font||{}); if(mm.col==='b'){f.color={argb:C.blue};f.bold=true;} if(mm.col==='r'){f.color={argb:C.red};f.bold=true;} if(mm.u)f.underline=true; if(mm.bd)f.bold=true; cell.font=f; }
     if(mm.ring){ const cc=(mm.ring==='r')?C.red:'FF4A6E9E'; const md={style:'medium',color:{argb:cc}}; cell.border={top:md,bottom:md,left:md,right:md}; } if(mm.hl){ const F={y:'FFFDEFA8',o:'FFFFE1B0',g:'FFE4F4BC'}[mm.hl]; if(F) cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:F}}; } }
-  function headerRow(){
-    if(baseUsed(d)){ let ci=3;
-      const bc0=ws.getCell(r,1); bc0.value='원지'; ws.mergeCells(r,1,r,2);
-      bc0.font={bold:true,size:8.5,color:{argb:'FFB9CBDC'}}; bc0.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF31404F'}};
-      bc0.border=bAll; bc0.alignment={horizontal:'center',vertical:'middle'};
-      baseRuns(d,cs).forEach(function(g){ const a=ci, b=ci+g.cases.length-1;
-        if(b>a) ws.mergeCells(r,a,r,b);
-        const ce=ws.getCell(r,a); ce.value=g.base||'원지 미지정';
-        ce.font={bold:true,size:9.5,color:{argb:'FFFFFFFF'}};
-        ce.fill={type:'pattern',pattern:'solid',fgColor:{argb:g.base?'FF26313D':'FF8494A4'}};
-        ce.border=bAll; ce.alignment={horizontal:'center',vertical:'middle'}; ci=b+1; });
-      if(memoOn){ const mc9=ws.getCell(r,NC); mc9.border=bAll; mc9.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF8494A4'}}; }
-      ws.getRow(r).height=16; r++; }
-    const row=ws.getRow(r); row.height=18;
+  function headerRow(){ const row=ws.getRow(r); row.height=18;
     let cell=ws.getCell(r,1); cell.value='\ud56d\ubaa9'; cell=ws.getCell(r,2); cell.value='\ub2e8\uc704';
     cs.forEach((cc,i)=>{ const ce=ws.getCell(r,3+i); ce.value=String(cc.name||''); });
     if(memoOn){ ws.getCell(r,NC).value='\ube44\uace0'; }
@@ -5321,7 +5189,6 @@ async function _buildXlsxSheet(ex){
 /* ---- 직접 조작 엔진 (열폭 · 순서 · 달성률) ---- */
 function colGrips(){
   document.querySelectorAll('.resultsheet table.creport thead tr, .resultsheet table.rinput thead tr').forEach(function(hr){
-    if(hr.classList.contains('brow')) return;   /* 원지 헤더 행은 열폭 조절 대상이 아님 */
     if(hr.dataset.grip) return; hr.dataset.grip='1';
     var hasM=!!hr.querySelector('th.memoh'); var total=hr.cells.length;
     Array.prototype.forEach.call(hr.cells,function(th,i){ if(_colKind(i,total,hasM)==='c') return; th.classList.add('gripth');
