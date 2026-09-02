@@ -4115,8 +4115,8 @@ let FB_CFG={databaseURL:'',apiKey:'',storageBucket:'',team:'paperlab'}, FB_AUTH=
 let _dirtyPlans=new Map(),_dirtyMeta=new Set(),_dirtyFull=new Set(),_deletedRemote=new Set();
 var DIRTY_KEY9='paperlab_dirty9',_newExpAt9=0,_loginToastAt9=0;
 /* [패치] 아직 서버에 못 올라간 변경 목록을 localStorage에 함께 저장한다. 탭이 닫히거나 앱이 죽어도 다음 실행 때 이어서 업로드하기 위함. */
-function _dirtySave9(){try{var o={m:Array.from(_dirtyMeta),f:Array.from(_dirtyFull),d:Array.from(_deletedRemote),p:{}};_dirtyPlans.forEach(function(v,k){o.p[k]=Array.from(v);});localStorage.setItem(DIRTY_KEY9,JSON.stringify(o));}catch(_e){}}
-function _dirtyLoad9(){try{var o=null;try{o=JSON.parse(localStorage.getItem(DIRTY_KEY9)||'null');}catch(_e){}if(o){(o.m||[]).forEach(function(x){_dirtyMeta.add(x);});(o.f||[]).forEach(function(x){_dirtyFull.add(x);});(o.d||[]).forEach(function(x){_deletedRemote.add(x);});var p=o.p||{};Object.keys(p).forEach(function(k){if(!_dirtyPlans.has(k))_dirtyPlans.set(k,new Set());(p[k]||[]).forEach(function(x){_dirtyPlans.get(k).add(x);});});}/* 저장기록이 없어도 updatedAt>syncedAt 이면 '업로드 안 된 수정'으로 보고 다시 더티 표시 */(root.experiments||[]).forEach(function(ex){if(!ex||ex.remoteOnly)return;var any=false;((((ex.state||{}).plans)||[])).forEach(function(pl){if(pl&&pl.id&&(+pl.updatedAt||0)>(+pl.syncedAt||0)){if(!_dirtyPlans.has(ex.id))_dirtyPlans.set(ex.id,new Set());_dirtyPlans.get(ex.id).add(pl.id);any=true;}});if(any||((+ex.updatedAt||0)>(+ex.planSyncedAt||0)))_dirtyMeta.add(ex.id);});if(_dirtyMeta.size||_dirtyPlans.size||_deletedRemote.size){try{scheduleCloudPush(2500);}catch(_e){}}}catch(_e){}}
+function _dirtySave9(){try{var o={m:Array.from(_dirtyMeta),f:Array.from(_dirtyFull),d:Array.from(_deletedRemote),p:{}};_dirtyPlans.forEach(function(v,k){o.p[k]=Array.from(v);});try{if(typeof _base9!=='undefined'){o.b={};_dirtyPlans.forEach(function(v,k){v.forEach(function(pid){var key=k+'|'+pid;if(_base9.has(key))o.b[key]=_base9.get(key);});});o.mb={};_dirtyMeta.forEach(function(k){if(_metaBase9.has(k))o.mb[k]=_metaBase9.get(k);});}}catch(_e){}localStorage.setItem(DIRTY_KEY9,JSON.stringify(o));}catch(_e){}}
+function _dirtyLoad9(){try{var o=null;try{o=JSON.parse(localStorage.getItem(DIRTY_KEY9)||'null');}catch(_e){}if(o){(o.m||[]).forEach(function(x){_dirtyMeta.add(x);});(o.f||[]).forEach(function(x){_dirtyFull.add(x);});(o.d||[]).forEach(function(x){_deletedRemote.add(x);});var p=o.p||{};Object.keys(p).forEach(function(k){if(!_dirtyPlans.has(k))_dirtyPlans.set(k,new Set());(p[k]||[]).forEach(function(x){_dirtyPlans.get(k).add(x);});});try{if(typeof _base9!=='undefined'){Object.keys(o.b||{}).forEach(function(k){if(!_base9.has(k))_base9.set(k,o.b[k]);});Object.keys(o.mb||{}).forEach(function(k){if(!_metaBase9.has(k))_metaBase9.set(k,o.mb[k]);});}}catch(_e){}}/* 저장기록이 없어도 updatedAt>syncedAt 이면 '업로드 안 된 수정'으로 보고 다시 더티 표시 */(root.experiments||[]).forEach(function(ex){if(!ex||ex.remoteOnly)return;var any=false;((((ex.state||{}).plans)||[])).forEach(function(pl){if(pl&&pl.id&&(+pl.updatedAt||0)>(+pl.syncedAt||0)){if(!_dirtyPlans.has(ex.id))_dirtyPlans.set(ex.id,new Set());_dirtyPlans.get(ex.id).add(pl.id);any=true;}});if(any||((+ex.updatedAt||0)>(+ex.planSyncedAt||0)))_dirtyMeta.add(ex.id);});if(_dirtyMeta.size||_dirtyPlans.size||_deletedRemote.size){try{scheduleCloudPush(2500);}catch(_e){}}}catch(_e){}}
 /* [패치] 같은 id 실험이 목록에 두 번 이상 들어오면 내용이 많은 쪽만 남기고 정리 */
 function _dedupExps9(){try{var L=root&&root.experiments;if(!Array.isArray(L)||L.length<2)return 0;var actId=null;try{if(root.screen==='sim'&&L[root.activeExp])actId=L[root.activeExp].id;}catch(_e){}function _pl9(e){try{return(((e.state||{}).plans)||[]).length;}catch(_e){return 0;}}function _bt9(a,b){var ar=a.remoteOnly?1:0,br=b.remoteOnly?1:0;if(ar!==br)return ar<br;var ap=_pl9(a),bp=_pl9(b);if(ap!==bp)return ap>bp;return((+a.updatedAt)||0)>=((+b.updatedAt)||0);}var idx={},out=[],drop=0;for(var i=0;i<L.length;i++){var e=L[i];if(!e||!e.id){out.push(e);continue;}var j=idx[e.id];if(j==null){idx[e.id]=out.length;out.push(e);}else{if(_bt9(e,out[j]))out[j]=e;drop++;}}if(drop){root.experiments=out;if(actId){var ni=-1;for(var k2=0;k2<out.length;k2++){if(out[k2]&&out[k2].id===actId){ni=k2;break;}}if(ni>=0){root.activeExp=ni;try{appState=out[ni].state;}catch(_e){}}}else if(root.activeExp>=out.length)root.activeExp=Math.max(0,out.length-1);try{toast('🧹 중복 실험 '+drop+'개를 정리했어요');}catch(_e){}}return drop;}catch(_e){return 0;}}
 function hasCloud(){try{return !!(window.storage&&typeof window.storage.get==='function'&&typeof window.storage.set==='function');}catch(e){return false;}}
@@ -4130,8 +4130,8 @@ function syncMode(){return fbConfigReady()?'fb':(hasCloud()?'claude':'none');}
 function cloudStat(mode,txt){const el=$id('cloudstat');if(!el)return;el.classList.remove('on','err','busy');if(mode)el.classList.add(mode);el.innerHTML='<i></i>'+txt;try{el.title=rtdbUsage();}catch(_e){}try{document.body.dataset.sync=syncMode();}catch(_e){}}
 function _saveCfg(){FB_CFG.databaseURL=_normDb(FB_CFG.databaseURL);FB_CFG.team=_safeKey(FB_CFG.team);FB_BASE=FB_CFG.databaseURL;try{localStorage.setItem(FB_CFG_KEY,JSON.stringify(FB_CFG));}catch(e){}}
 function _saveAuth(){try{localStorage.setItem(FB_AUTH_KEY,JSON.stringify(FB_AUTH));}catch(e){}}
-function _clearAuth(){FB_AUTH={idToken:'',refreshToken:'',expiresAt:0,email:''};try{localStorage.removeItem(FB_AUTH_KEY);}catch(e){}try{if(window.firebase&&firebase.apps&&firebase.apps.length)firebase.auth().signOut();}catch(e){}}
-async function fbSignIn(email,password){if(!FB_CFG.apiKey)throw new Error('API_KEY');const a=_fbAuth9();const cr=await a.signInWithEmailAndPassword(String(email||'').trim(),String(password||'')).catch(function(e){var c=String((e&&e.code)||'');if(/wrong-password|invalid-credential|invalid-login|user-not-found|missing-password/i.test(c))throw new Error('INVALID_LOGIN_CREDENTIALS');if(/too-many-requests/i.test(c))throw new Error('TOO_MANY_ATTEMPTS');if(/network-request-failed/i.test(c))throw new Error('NetworkError');throw new Error(c||String(e&&e.message||e));});const u=cr&&cr.user;FB_AUTH={idToken:'sdk-session',refreshToken:'',expiresAt:9e15,email:(u&&u.email)||email};_saveAuth();return FB_AUTH;}
+function _clearAuth(){FB_AUTH={idToken:'',refreshToken:'',expiresAt:0,email:''};try{localStorage.removeItem(FB_AUTH_KEY);}catch(e){}try{if(typeof _liveStop9==='function')_liveStop9();}catch(e){}try{if(window.firebase&&firebase.apps&&firebase.apps.length)firebase.auth().signOut();}catch(e){}}
+async function fbSignIn(email,password){if(!FB_CFG.apiKey)throw new Error('API_KEY');let a=null;try{a=_fbAuth9();}catch(e){throw new Error(/SDK_NOT_LOADED/.test(String(e&&e.message))?'Firebase 스크립트(www.gstatic.com)를 불러오지 못했어요 — 네트워크 차단 여부를 확인해 주세요':String(e&&e.message||e));}const cr=await a.signInWithEmailAndPassword(String(email||'').trim(),String(password||'')).catch(function(e){var c=String((e&&e.code)||'');if(/wrong-password|invalid-credential|invalid-login|user-not-found|missing-password/i.test(c))throw new Error('INVALID_LOGIN_CREDENTIALS');if(/too-many-requests/i.test(c))throw new Error('TOO_MANY_ATTEMPTS');if(/network-request-failed/i.test(c))throw new Error('NetworkError');throw new Error(c||String(e&&e.message||e));});const u=cr&&cr.user;FB_AUTH={idToken:'sdk-session',refreshToken:'sdk-session',expiresAt:9e15,email:(u&&u.email)||email};_saveAuth();return FB_AUTH;}
 async function fbRefresh(){const u=await _sdkUser9();return u.getIdToken();}
 async function fbToken(){const u=await _sdkUser9();return u.getIdToken();}
 async function fbDb(path,method,body,qs){await _sdkUser9();const ref=_teamRef9(path);const m=method||'GET';try{if(m==='GET'){const s=await ref.once('value');const v=s.val();try{_dlAdd(JSON.stringify(v===undefined?null:v).length);}catch(_e){}return (v===undefined)?null:v;}if(m==='PUT'){if(body&&typeof body==='object'&&body['.sv']==='timestamp'){await ref.set(firebase.database.ServerValue.TIMESTAMP);const s=await ref.once('value');return s.val();}await ref.set(body===undefined?null:body);return body;}if(m==='PATCH'){await ref.update(body||{});return body;}if(m==='DELETE'){await ref.remove();return null;}throw new Error('DB_METHOD');}catch(e){const s=String((e&&e.code)||(e&&e.message)||e);if(/PERMISSION_DENIED|permission-denied|auth/i.test(s)&&!_hasSdkUser9())throw new Error('LOGIN_REQUIRED');if(/LOGIN_REQUIRED/.test(s))throw e;throw new Error('DB '+s);}}
@@ -4326,7 +4326,7 @@ async function hydratePlanThumbs(pl){if(!pl)return;await Promise.all((pl.attach|
 async function hydratePlanFull(pl){if(!pl)return;await Promise.all((pl.attach||[]).map(a=>ensureAttachmentFull(a).catch(()=>null)));}
 function releaseExperimentImages(ex){try{((((ex||{}).state||{}).plans)||[]).forEach(pl=>(pl.attach||[]).forEach(a=>{if(!a||a.pendUpload||a.imageDirty)return;delete a.data;delete a.thumb;delete a._loading;delete a._fullLoading;if(a.id)_recentFull.delete(a.id);}));}catch(e){}}
 async function hydrateAllKnownImages(){for(const ex of (root.experiments||[])){if(ex.remoteOnly||!((ex.state||{}).plans||[]).length){try{const full=await fbLoadExperiment(ex.id,ex);_carryExperimentImages(ex,full);Object.assign(ex,full);}catch(e){continue;}}for(const pl of ((ex.state||{}).plans||[]))await hydratePlanFull(pl);}}
-async function hydrateVisibleAttachmentThumbs(){if(_thumbBusy||root.screen!=='sim'||!curPlan()||!fbConfigReady()||!FB_AUTH.refreshToken)return;const miss=(curPlan().attach||[]).filter(a=>a&&!a.thumb&&!a._imgErr&&(a.thumbPath||a.fullPath));if(!miss.length&&!((curPlan().attach||[]).some(a=>a&&a.pendUpload&&a.data)))return;_thumbBusy=true;let ch=false;try{
+async function hydrateVisibleAttachmentThumbs(){if(_thumbBusy||root.screen!=='sim'||!curPlan()||!fbConfigReady()||!(FB_AUTH.refreshToken||FB_AUTH.idToken))return;const miss=(curPlan().attach||[]).filter(a=>a&&!a.thumb&&!a._imgErr&&(a.thumbPath||a.fullPath));if(!miss.length&&!((curPlan().attach||[]).some(a=>a&&a.pendUpload&&a.data)))return;_thumbBusy=true;let ch=false;try{
   for(const a of miss){try{await ensureAttachmentThumb(a);ch=true;}catch(e){}}
   (curPlan().attach||[]).forEach(a=>{ if(a&&a.pendRot) delete a.pendRot; });
   if((curPlan().attach||[]).some(a=>a&&a.pendUpload&&a.data)){ch=true;try{markCurrentDirty();scheduleCloudPush(600);}catch(_e){}}
@@ -4360,9 +4360,11 @@ async function fbSaveExperiment(ex){
  if(!ex)return;const id=ex.id;
  if(!ex.delPlans||typeof ex.delPlans!=='object')ex.delPlans={};
  try{const _cut9=srvNow()-60*24*3600*1000;Object.keys(ex.delPlans).forEach(k=>{if((+ex.delPlans[k]||0)<_cut9)delete ex.delPlans[k];});}catch(_e){}
+ /* 서버에 이미 있는 실험인데 기준본이 없으면(부팅 직후·구독 전) 서버 현재본을 먼저 읽는다 → 오래된 로컬 복사본이 남의 최신값을 덮지 않음 */
+ try{await _seedBase9(ex);}catch(_e){}
  const plansAll=((ex.state||{}).plans)||[];
  const full=_dirtyFull.has(id),dset=_dirtyPlans.get(id)||new Set();
- const write=plansAll.filter(p=>p&&p.id&&(full||dset.has(p.id)||!_base9.has(id+'|'+p.id)));
+ const write=plansAll.filter(p=>p&&p.id&&(_base9.has(id+'|'+p.id)||!(+p.syncedAt>0)));
  const batch={},wrote=[],retry=new Set();
  for(const pl of write){
   const prep=await preparePlanAttachments(ex,pl);
@@ -4371,35 +4373,50 @@ async function fbSaveExperiment(ex){
   const key=id+'|'+pl.id,snap=_cleanPlan(pl,false);
   let base={};try{base=JSON.parse(_base9.get(key)||'{}')||{};}catch(_e){}
   const d={};_objDiff9(base,snap,'',d);delete d['updatedAt'];
-  if(!Object.keys(d).length&&_base9.has(key))continue;
+  if(!Object.keys(d).length)continue;
   Object.keys(d).forEach(p=>{batch['experiments/'+id+'/plans/'+pl.id+'/'+p]=d[p];});
   batch['experiments/'+id+'/plans/'+pl.id+'/updatedAt']='@@TS@@';
-  wrote.push({pl:pl,snap:snap,key:key});
+  wrote.push({pl:pl,snap:snap,key:key,snapStr:_jsonNoPriv9(snap)});
  }
- /* 삭제 확정된 차수는 서버 노드도 제거(묘비는 meta.delPlans 로 전파) */
+ /* 삭제 확정된 차수는 서버 노드도 제거 (묘비는 meta.delPlans 로 전파) */
  Object.keys(ex.delPlans).forEach(pid=>{if(plansAll.some(p=>p&&p.id===pid))return;
-  if(_base9.has(id+'|'+pid)){batch['experiments/'+id+'/plans/'+pid]=null;_base9.delete(id+'|'+pid);
+  if(_base9.has(id+'|'+pid)||full){batch['experiments/'+id+'/plans/'+pid]=null;_base9.delete(id+'|'+pid);
    try{queueImagePrefixDelete(_imgPrefix(id,pid));}catch(_e){}}});
- const m=_meta(ex);delete m.updatedAt;
- let mb={};try{mb=JSON.parse(_metaBase9.get(id)||'{}')||{};}catch(_e){}delete mb.updatedAt;
- const md={};_objDiff9(mb,m,'',md);
+ /* meta: 기준본 대비 diff (updatedAt 류 잡음은 비교에서 제외) */
+ const m=_meta(ex);delete m.updatedAt;const mStr=JSON.stringify(_normMeta9(m));
+ let mb={};try{mb=JSON.parse(_metaBase9.get(id)||'{}')||{};}catch(_e){}
+ const md0={};_objDiff9(_normMeta9(mb),_normMeta9(m),'',md0);
+ const md={};Object.keys(md0).forEach(p=>{const v=_pathGet9(m,p);md[p]=(v===undefined)?null:v;});
  const metaChanged=Object.keys(md).length>0;
- if(!wrote.length&&!metaChanged&&!full&&!_dirtyMeta.has(id)){_dirtyPlans.delete(id);return;}
+ /* summaries/{id}: 서버 캐시 대비 바뀐 키만 */
+ const sum=_summary(ex);delete sum.updatedAt;const sb=(_lastSum9&&_lastSum9[id])||{};
+ const sd={};Object.keys(sum).forEach(k=>{if(k==='updatedBy')return;let a='',b='';try{a=JSON.stringify(sum[k]);b=JSON.stringify(sb[k]);}catch(_e){}if(a!==b)sd[k]=sum[k];});
+ const sumChanged=Object.keys(sd).length>0;
+ const delChanged=Object.keys(batch).some(k=>batch[k]===null&&/\/plans\/[^/]+$/.test(k));
+ if(!wrote.length&&!metaChanged&&!sumChanged&&!delChanged){
+  if(!retry.size)_dirtyPlans.delete(id);_dirtyMeta.delete(id);_dirtyFull.delete(id);return;}
  Object.keys(md).forEach(p=>{batch['experiments/'+id+'/meta/'+p]=md[p];});
  batch['experiments/'+id+'/meta/updatedAt']='@@TS@@';
- const sum=_summary(ex);sum.updatedAt='@@TS@@';batch['summaries/'+id]=sum;
- const jr={j:uid('j'),exp:id,diffs:batch};_jrn9.push(jr);_jrnSave9();
+ Object.keys(sd).forEach(k=>{batch['summaries/'+id+'/'+k]=sd[k];});
+ batch['summaries/'+id+'/updatedBy']=sum.updatedBy||'';
+ batch['summaries/'+id+'/updatedAt']='@@TS@@';
+ const jr={j:uid('j'),exp:id,diffs:batch};_jrn9.push(jr);_jrnInflight9.add(jr.j);_jrnSave9();
  try{await fbDb('','PATCH',_jrnBuild9(batch));}
- catch(e){/* 저널에 남겨두면 재접속/다음 저장 때 자동 재전송 */throw e;}
- _jrnDrop9(jr.j);_jrnSave9();
- const now=srvNow();
- wrote.forEach(w=>{w.pl.updatedAt=now;w.pl.syncedAt=now;
+ catch(e){_jrnInflight9.delete(jr.j);/* 저널에 남겨두면 재접속/다음 저장 때 자동 재전송 */throw e;}
+ _jrnInflight9.delete(jr.j);_jrnDrop9(jr.j);_jrnSave9();
+ const now=srvNow();const keep=new Set(retry);
+ wrote.forEach(w=>{const changed=(_jsonNoPriv9(_cleanPlan(w.pl,false))!==w.snapStr);
+  w.pl.syncedAt=now;if(!changed)w.pl.updatedAt=now;else keep.add(w.pl.id);
   _base9.set(w.key,JSON.stringify(Object.assign({},w.snap,{updatedAt:now})));});
- ex.updatedAt=now;ex.planSyncedAt=now;
+ if(!(+ex.updatedAt>now))ex.updatedAt=now;ex.planSyncedAt=now;
  _metaBase9.set(id,JSON.stringify(Object.assign({},m,{updatedAt:now})));
+ if(_lastSum9){_lastSum9[id]=Object.assign({},sb,sum,{updatedAt:now});}
  _setRemoteFlags(ex,plansAll.map(p=>p&&p.id).filter(Boolean));
- if(retry.size){_dirtyPlans.set(id,retry);_scheduleImageRetry();}else _dirtyPlans.delete(id);
- _dirtyMeta.delete(id);_dirtyFull.delete(id);
+ const metaMoved=(JSON.stringify(_normMeta9(_meta(ex)))!==mStr);
+ if(keep.size){_dirtyPlans.set(id,keep);}else _dirtyPlans.delete(id);
+ if(metaMoved||keep.size){_dirtyMeta.add(id);try{scheduleCloudPush(800);}catch(_e){}}else _dirtyMeta.delete(id);
+ if(retry.size)_scheduleImageRetry();
+ _dirtyFull.delete(id);
 }
 async function fbLoadExperiment(id,prevEx){const meta=await fbDb('experiments/'+encodeURIComponent(id)+'/meta','GET');if(!meta)throw new Error('NOT_FOUND');
   const _tomb9=(meta.delPlans&&typeof meta.delPlans==='object')?meta.delPlans:{};
@@ -4430,9 +4447,9 @@ async function cloudLoadSummaries(silent,force,_data9){
   try{_dedupExps9();}catch(_e){}
   const _nowT=Date.now();
   let isFull=(!!force)||(!_sumMark)||(!_sumIdx)||((_nowT-_sumFullAt)>900000);
-  if(isFull&&!_data9){try{ const _ml=await fbDb('settings/metricLib','GET'); if(_ml&&Array.isArray(_ml.items)&&(+_ml.updatedAt||0)>((+root._mlibAt)||0)){ root.metricLib=_ml.items; root._mlibAt=(+_ml.updatedAt)||Date.now(); try{_mlibFill();}catch(_e){} try{persistNow();}catch(_e){} } }catch(_e){}
-    try{ const _xl=await fbDb('settings/mixLib','GET'); if(_xl&&Array.isArray(_xl.items)&&(+_xl.updatedAt||0)>((+root._xlibAt)||0)){ root.mixLib=_xl.items; root._xlibAt=(+_xl.updatedAt)||Date.now(); try{persistNow();}catch(_e){} try{refreshLibraryPopup();}catch(_e){} } }catch(_e){}
-    try{ const _ko=await fbDb('settings/uiKidOpen','GET'); if(_ko&&Array.isArray(_ko.ids)&&(+_ko.updatedAt||0)>((+root._kidAt)||0)&&!_kidDirty){ root.kidOpen=_ko.ids; root._kidAt=(+_ko.updatedAt)||Date.now(); try{persistNow();}catch(_e){} if(root.screen==='home'){ const L=$id('loglist'); if(L)L.innerHTML=homeListHTML(); } } }catch(_e){}
+  if(isFull&&!_data9){try{ const _ml=await fbDb('settings/metricLib','GET'); if(_ml&&Array.isArray(_ml.items)&&(+_ml.updatedAt||0)>((+root._mlibAt)||0)){ root.metricLib=_ml.items; root._mlibAt=(+_ml.updatedAt)||Date.now(); try{_mlibFill();}catch(_e){} try{_persistQuiet9();}catch(_e){} } }catch(_e){}
+    try{ const _xl=await fbDb('settings/mixLib','GET'); if(_xl&&Array.isArray(_xl.items)&&(+_xl.updatedAt||0)>((+root._xlibAt)||0)){ root.mixLib=_xl.items; root._xlibAt=(+_xl.updatedAt)||Date.now(); try{_persistQuiet9();}catch(_e){} try{refreshLibraryPopup();}catch(_e){} } }catch(_e){}
+    try{ const _ko=await fbDb('settings/uiKidOpen','GET'); if(_ko&&Array.isArray(_ko.ids)&&(+_ko.updatedAt||0)>((+root._kidAt)||0)&&!_kidDirty){ root.kidOpen=_ko.ids; root._kidAt=(+_ko.updatedAt)||Date.now(); try{_persistQuiet9();}catch(_e){} if(root.screen==='home'){ const L=$id('loglist'); if(L)L.innerHTML=homeListHTML(); } } }catch(_e){}
     try{ const _tr=await fbDb('trash','GET'); root.trash=root.trash||{};
       if(_tr&&typeof _tr==='object'){ for(const k in _tr){ const v=+_tr[k]||0; if(v>((+root.trash[k])||0)) root.trash[k]=v; } }
       const _cut=srvNow()-5184000000; for(const k in root.trash){ if(((+root.trash[k])||0)<_cut) delete root.trash[k]; }
@@ -4446,12 +4463,12 @@ async function cloudLoadSummaries(silent,force,_data9){
   if(!isFull&&!list.length)return list;
   const by=new Map((root.experiments||[]).map(e=>[e.id,e]));const remoteIds=new Set();const _zdel=new Set();for(const s of list){const _tt=(root.trash&&root.trash[s.id]!=null)?((+root.trash[s.id])||0):null;if(_tt!=null){if(_tt>=((+s.updatedAt)||0)){_zdel.add(s.id);try{_deletedRemote.add(s.id);}catch(_e){}continue;}else{try{delete root.trash[s.id];}catch(_e){}}}remoteIds.add(s.id);let ex=by.get(s.id);if(!ex){ex=(root.experiments||[]).find(function(e9){return e9&&e9.id===s.id;});if(ex)by.set(s.id,ex);}if(!ex){const _st9=_remoteStub(s);root.experiments.push(_st9);by.set(s.id,_st9);continue;}const _dty=_dirtyMeta.has(ex.id)||_dirtyFull.has(ex.id)||_dirtyPlans.has(ex.id);const _act=(root.screen==='sim'&&EXP()&&EXP().id===ex.id);const _stale=(+s.updatedAt||0)!==(+ex.planSyncedAt||0);if(!_dty){if(_act&&_stale&&!_editingNow()&&!_isWatching9(ex.id)){try{const fresh=await fbLoadExperiment(ex.id,ex);if(!_editingNow()&&!(_dirtyMeta.has(ex.id)||_dirtyFull.has(ex.id)||_dirtyPlans.has(ex.id))){_carryExperimentImages(ex,fresh);const i=root.experiments.indexOf(ex);root.experiments[i]=fresh;root.activeExp=i;appState=fresh.state;_queueLegacyImageCleanup(fresh);try{_renderSoon();hydrateVisibleAttachmentThumbs();}catch(_e){}}}catch(e){}}else if((+s.updatedAt||0)>(+ex.updatedAt||0)){Object.assign(ex,{name:s.name,type:s.type,kind:s.kind||'',linkTo:s.linkTo||'',date:s.date,updatedAt:s.updatedAt,status:s.status,owner:s.owner,note:s.note,noteEdited:s.noteEdited,notePreview:s.notePreview,prog:s.prog});}}}
   const activeId=(root.screen==='sim'&&EXP())?EXP().id:null;
-  if(_zdel.size){root.experiments=(root.experiments||[]).filter(e=>!(e&&_zdel.has(e.id)));try{scheduleCloudPush(600);}catch(_e){}try{toast('🗑 삭제했던 실험 '+_zdel.size+'개가 서버에 되살아나 있어 자동으로 다시 정리했어요');}catch(_e){}try{persistNow();}catch(_e){}}
+  if(_zdel.size){root.experiments=(root.experiments||[]).filter(e=>!(e&&_zdel.has(e.id)));try{scheduleCloudPush(600);}catch(_e){}try{toast('🗑 삭제했던 실험 '+_zdel.size+'개가 서버에 되살아나 있어 자동으로 다시 정리했어요');}catch(_e){}try{_persistQuiet9();}catch(_e){}}
   if(isFull)root.experiments=(root.experiments||[]).filter(ex=>{const _t9=(root.trash&&root.trash[ex.id]!=null)?((+root.trash[ex.id])||0):null;if(_t9!=null&&_t9>=((+ex.updatedAt)||0))return false;const known=(ex.remoteOnly||ex._remoteLoaded===true);const dirty=_dirtyMeta.has(ex.id)||_dirtyFull.has(ex.id)||_dirtyPlans.has(ex.id);return !(known&&!remoteIds.has(ex.id)&&!dirty);});
   if(activeId){const ni=root.experiments.findIndex(e=>e.id===activeId);if(ni>=0)root.activeExp=ni;else{root.screen='home';appState=null;root.activeExp=Math.max(0,root.experiments.length-1);}}
   if(isFull&&!list.length&&(root.experiments||[]).some(e=>!e.remoteOnly)&&!silent)toast('☁ 서버가 비어 있어요 — 설정에서 기존 데이터 이관을 눌러주세요');
   if(root.screen==='home')_renderSoon();return list;
-  }finally{_sumBusy9=false;if(_sumQ9){_sumQ9=false;setTimeout(function(){try{cloudLoadSummaries(true).catch(function(){});}catch(_e){}},500);}}}
+  }finally{_sumBusy9=false;if(_sumQ9){_sumQ9=false;if(typeof _lastSum9!=='undefined'&&_lastSum9){_sumSched9();}else setTimeout(function(){try{cloudLoadSummaries(true).catch(function(){});}catch(_e){}},500);}}}
 var _typeAt=0;try{['input','keydown','compositionupdate'].forEach(ev=>document.addEventListener(ev,()=>{_typeAt=Date.now();},true));}catch(_e){}
 /* 모바일은 키보드를 내려도 입력칸 포커스가 남아 갱신이 계속 막히는 일이 있어서,
    마지막 실제 타이핑 이후 20초가 지나면 '편집 중 아님'으로 본다. */
@@ -4519,8 +4536,8 @@ const _presId=(function(){const r=()=>Math.random().toString(36).slice(2,10);try
 var _presGcAt=0;
 function presenceDrop(){try{if(!fbConfigReady()||!FB_AUTH.idToken)return;const base=FB_CFG.databaseURL+'/teams/'+encodeURIComponent(_safeKey(FB_CFG.team))+'/presence/'+encodeURIComponent(_presId)+'.json?auth='+encodeURIComponent(FB_AUTH.idToken);fetch(base,{method:'DELETE',keepalive:true}).catch(()=>{});}catch(e){}}
 try{window.addEventListener('pagehide',presenceDrop);}catch(e){}
-async function presencePing(){if(!fbConfigReady()||(!FB_AUTH.refreshToken&&!FB_AUTH.idToken))return;try{const ex=(root.screen==='sim')?EXP():null;const pl=(root.screen==='sim')?curPlan():null;await fbDb('presence/'+_presId,'PUT',{n:whoAmI()||'팀원',e:ex?ex.id:'',p:pl?pl.id:'',at:Date.now()});}catch(e){}}
-async function presenceRead(){try{const el=$id('presence');if(!el)return;const o=(_presCache9&&typeof _presCache9==='object')?_presCache9:(await fbDb('presence','GET')||{});const now=Date.now();const ex=(root.screen==='sim')?EXP():null;
+async function presencePing(){if(!fbConfigReady()||(!FB_AUTH.refreshToken&&!FB_AUTH.idToken))return;try{const ex=(root.screen==='sim')?EXP():null;const pl=(root.screen==='sim')?curPlan():null;await fbDb('presence/'+_presId,'PUT',{n:whoAmI()||'팀원',e:ex?ex.id:'',p:pl?pl.id:'',at:srvNow()});}catch(e){}}
+async function presenceRead(){try{const el=$id('presence');if(!el)return;const o=(_presCache9&&typeof _presCache9==='object')?_presCache9:(await fbDb('presence','GET')||{});const now=srvNow();const ex=(root.screen==='sim')?EXP():null;
 if((now-_presGcAt)>600000){_presGcAt=now;const dead=Object.keys(o).filter(k=>k!==_presId&&(now-(+((o[k]||{}).at)||0))>600000).slice(0,40);
   if(dead.length){dead.forEach(k=>{delete o[k];});Promise.all(dead.map(k=>fbDb('presence/'+encodeURIComponent(k),'DELETE').catch(()=>null))).catch(()=>{});}}
 const list=Object.keys(o).filter(k=>k!==_presId).map(k=>o[k]).filter(x=>x&&(now-(+x.at||0))<90000);
@@ -4597,13 +4614,14 @@ function _fbAuth9(){_fbApp9();return firebase.auth();}
 function _fbDbSdk9(){_fbApp9();return firebase.database();}
 function _hasSdkUser9(){try{return !!(_fb9&&firebase.auth().currentUser);}catch(_e){return false;}}
 function _authReady9(){if(_authReadyP9)return _authReadyP9;
- _authReadyP9=new Promise(function(res){try{_fbAuth9().onAuthStateChanged(function(u){
+ var a=null;try{a=_fbAuth9();}catch(e){return Promise.resolve(null);}
+ _authReadyP9=new Promise(function(res){try{a.onAuthStateChanged(function(u){
   _authUser9=u;var first=!_authFired9;_authFired9=true;
-  if(u){FB_AUTH={idToken:'sdk-session',refreshToken:'',expiresAt:9e15,email:u.email||FB_AUTH.email||''};_saveAuth();try{_afterAuth9();}catch(_e){}}
-  else{FB_AUTH={idToken:'',refreshToken:'',expiresAt:0,email:''};try{localStorage.removeItem(FB_AUTH_KEY);}catch(_e){}}
+  if(u){FB_AUTH={idToken:'sdk-session',refreshToken:'sdk-session',expiresAt:9e15,email:u.email||FB_AUTH.email||''};_saveAuth();try{_afterAuth9();}catch(_e){}}
+  else{FB_AUTH={idToken:'',refreshToken:'',expiresAt:0,email:''};try{localStorage.removeItem(FB_AUTH_KEY);}catch(_e){}try{_liveStop9();}catch(_e){}if(!first&&syncMode()==='fb'){cloudStat('err','☁ 로그인 필요');try{gateShow('세션이 끝났어요 — 팀 비밀번호를 다시 입력해 주세요.');}catch(_e){}}}
   if(first)res(u);});}catch(e){_authFired9=true;res(null);}});
  return _authReadyP9;}
-async function _sdkUser9(){await _authReady9();var u=null;try{u=firebase.auth().currentUser;}catch(_e){}
+async function _sdkUser9(){if(!window.firebase||!firebase.initializeApp)throw new Error('SDK_NOT_LOADED');await _authReady9();var u=null;try{u=firebase.auth().currentUser;}catch(_e){}
  if(!u)throw new Error('LOGIN_REQUIRED');return u;}
 function _teamRef9(path){var base='teams/'+_safeKey(FB_CFG.team);var p=String(path||'').replace(/^\/+|\/+$/g,'');
  if(p){p=p.split('/').map(function(seg){try{return decodeURIComponent(seg);}catch(_e){return seg;}}).join('/');base+='/'+p;}
@@ -4623,10 +4641,13 @@ var _presCache9=null,_presWired9=false,_presKeepT9=null;
 function _presWire9(){if(!_hasSdkUser9())return;
  try{var r=_teamRef9('presence/'+_presId);r.onDisconnect().remove();}catch(_e){}
  if(_presWired9)return;_presWired9=true;
- try{_teamRef9('presence').on('value',function(s){_presCache9=s.val()||{};
+ try{_lon9(_teamRef9('presence'),'value',function(s){_presCache9=s.val()||{};
   if(root.screen==='sim'){try{presenceRead();}catch(_e){}}});}catch(_e){_presWired9=false;}
  clearInterval(_presKeepT9);_presKeepT9=setInterval(function(){
   if(document.visibilityState==='visible'&&root.screen==='sim'){try{presencePing();}catch(_e){}}},45000);}
+/* ── 조용한 로컬 저장: 원격 반영은 undo 기록·더티 표시 없이 localStorage 에만 ── */
+function _persistQuiet9(){try{if(_savePend)return;var cur=_undoSnapshot();_lastSnap=cur;localStorage.setItem(SAVE_KEY,cur);}catch(_e){}}
+function _commitPending9(){try{if(_savePend){clearTimeout(_saveT);persistNow();}}catch(_e){}}
 /* ── 경로 diff 유틸 ── */
 function _objDiff9(base,cur,pre,out){
  base=(base&&typeof base==='object'&&!Array.isArray(base))?base:{};
@@ -4643,34 +4664,54 @@ function _applyDiffPaths9(obj,diffs){Object.keys(diffs||{}).forEach(function(pat
  var parts=path.split('/'),o=obj;
  for(var i=0;i<parts.length-1;i++){var kk=parts[i];if(!o[kk]||typeof o[kk]!=='object')o[kk]={};o=o[kk];}
  var last=parts[parts.length-1];if(v===null)delete o[last];else o[last]=v;});return obj;}
+function _pathGet9(obj,path){var o=obj;var parts=path.split('/');for(var i=0;i<parts.length;i++){if(o==null||typeof o!=='object')return undefined;o=o[parts[i]];}return o;}
+function _jsonNoPriv9(x){try{return JSON.stringify(x,function(k,v){return (k&&k.charAt(0)==='_'&&isNaN(+k))?undefined:v;});}catch(_e){return '';}}
+/* meta 비교용 정규화: updatedAt 류 잡음 제거 (planOrder 안의 updatedAt 포함) */
+function _normMeta9(m){var x=JSON.parse(JSON.stringify(m||{}));delete x.updatedAt;delete x.planSyncedAt;delete x.syncedAt;
+ if(Array.isArray(x.planOrder))x.planOrder=x.planOrder.map(function(e){return {id:(e||{}).id,label:(e||{}).label||''};});return x;}
 /* ── 쓰기 저널: 서버 확인 전 변경을 localStorage에 보관, 재접속 시 재전송 ── */
-var JRN_KEY9='paperlab_jrn9',_jrn9=[],_jrnBusy9=false;
+var JRN_KEY9='paperlab_jrn9',_jrn9=[],_jrnBusy9=false,_jrnInflight9=new Set();
 try{_jrn9=JSON.parse(localStorage.getItem(JRN_KEY9)||'[]')||[];}catch(_e){_jrn9=[];}
 function _jrnSave9(){try{localStorage.setItem(JRN_KEY9,JSON.stringify(_jrn9.slice(-40)));}catch(_e){}}
 function _jrnDrop9(id){_jrn9=_jrn9.filter(function(x){return x&&x.j!==id;});}
-function _jrnBuild9(diffs){var o={};Object.keys(diffs).forEach(function(k){o[k]=(diffs[k]==='@@TS@@')?firebase.database.ServerValue.TIMESTAMP:diffs[k];});return o;}
+function _svDeep9(v){if(v==='@@TS@@')return firebase.database.ServerValue.TIMESTAMP;if(v&&typeof v==='object'){var o=Array.isArray(v)?[]:{};Object.keys(v).forEach(function(k){o[k]=_svDeep9(v[k]);});return o;}return v;}
+function _jrnBuild9(diffs){var o={};Object.keys(diffs).forEach(function(k){o[k]=_svDeep9(diffs[k]);});return o;}
 function _jrnPending9(expId,planId){var out={},pref='experiments/'+expId+'/plans/'+planId+'/';
  _jrn9.forEach(function(e){Object.keys((e&&e.diffs)||{}).forEach(function(k){if(k.indexOf(pref)===0)out[k.slice(pref.length)]=e.diffs[k];});});return out;}
 async function _jrnReplay9(){if(_jrnBusy9||!_jrn9.length)return;_jrnBusy9=true;
- try{for(var i=0;i<_jrn9.length;i++){var e=_jrn9[i];if(!e)continue;
-  try{await fbDb('','PATCH',_jrnBuild9(e.diffs||{}));_jrnDrop9(e.j);i--;_jrnSave9();}
-  catch(err){if(String(err&&err.message||'').indexOf('LOGIN_REQUIRED')>=0)break;break;}}}
+ try{var list=_jrn9.filter(function(e){return e&&!_jrnInflight9.has(e.j);});
+  for(var i=0;i<list.length;i++){var e=list[i];
+   try{await fbDb('','PATCH',_jrnBuild9(e.diffs||{}));_jrnDrop9(e.j);_jrnSave9();}
+   catch(err){break;}}}
  finally{_jrnBusy9=false;}}
 /* ── 실험 실시간 구독 ── */
-var _watchId9=null,_watchRefs9=[],_pendRecv9={},_pendT9=null,_adoptToastAt9=0;
+var _watchId9=null,_watchRefs9=[],_pendRecv9={},_pendMeta9=null,_pendT9=null,_adoptToastAt9=0,_delToastAt9=0,_recvT9=null;
 function _isWatching9(id){return !!id&&_watchId9===id;}
 function unwatchExp9(){_watchRefs9.forEach(function(x){try{x.ref.off(x.ev,x.fn);}catch(_e){}});
- _watchRefs9=[];_watchId9=null;_pendRecv9={};clearInterval(_pendT9);_pendT9=null;}
+ _watchRefs9=[];_watchId9=null;_pendRecv9={};_pendMeta9=null;clearInterval(_pendT9);_pendT9=null;}
+function _seedBaseLocal9(ex){try{if(!ex||!ex.id)return;var id=ex.id;
+ ((((ex.state||{}).plans)||[])).forEach(function(p){if(!p||!p.id)return;var key=id+'|'+p.id;if(_base9.has(key))return;
+  if(!(+p.syncedAt>0))return; /* 한 번도 동기화 안 된 새 차수 → 기준본 없음(=전체 업로드 대상) */
+  if((+p.updatedAt||0)>(+p.syncedAt||0))return; /* 미전송 수정이 있으면 마지막 동기화본을 모름 → 저장된 기준본/서버 시딩에 맡김 */
+  _base9.set(key,JSON.stringify(_cleanPlan(p,false)));});
+ if(!_metaBase9.has(id)&&!_dirtyMeta.has(id)&&(+ex.planSyncedAt>0)){var m=_meta(ex);m.updatedAt=+ex.planSyncedAt||0;_metaBase9.set(id,JSON.stringify(m));}}catch(_e){}}
 function watchExp9(id){if(!id||!fbConfigReady())return;if(_watchId9===id)return;unwatchExp9();_watchId9=id;
+ try{_seedBaseLocal9(_findExp9(id));}catch(_e){}
  function on(path,ev,fn){try{var r=_teamRef9(path);r.on(ev,fn);_watchRefs9.push({ref:r,ev:ev,fn:fn});}catch(_e){}}
  on('experiments/'+id+'/plans','child_added',function(s){_recvPlan9(id,s.key,s.val());});
  on('experiments/'+id+'/plans','child_changed',function(s){_recvPlan9(id,s.key,s.val());});
  on('experiments/'+id+'/plans','child_removed',function(s){_recvPlanGone9(id,s.key);});
  on('experiments/'+id+'/meta','value',function(s){_recvMeta9(id,s.val());});
  _pendT9=setInterval(_drainPend9,2000);}
-function _drainPend9(){if(_editingNow())return;var ks=Object.keys(_pendRecv9);if(!ks.length)return;
- ks.forEach(function(k){var v=_pendRecv9[k];delete _pendRecv9[k];var a=k.split('|');_recvPlan9(a[0],a[1],v,true);});}
+function _drainPend9(){if(_editingNow())return;var ks=Object.keys(_pendRecv9);
+ ks.forEach(function(k){var v=_pendRecv9[k];delete _pendRecv9[k];var a=k.split('|');_recvPlan9(a[0],a[1],v,true);});
+ if(_pendMeta9){var m=_pendMeta9;_pendMeta9=null;_recvMeta9(_watchId9,m,true);}}
 function _findExp9(id){return (root.experiments||[]).find(function(e){return e&&e.id===id;});}
+function _applyTombs9(ex){try{var plans=((ex.state||{}).plans)||[];var ch=false;
+ Object.keys(ex.delPlans||{}).forEach(function(pid){var li=plans.findIndex(function(p){return p&&p.id===pid;});if(li<0)return;
+  if(plans.length>1&&(+ex.delPlans[pid]||0)>=(+plans[li].updatedAt||0)){plans.splice(li,1);ch=true;
+   var ds=_dirtyPlans.get(ex.id);if(ds)ds.delete(pid);_base9.delete(ex.id+'|'+pid);delete _pendRecv9[ex.id+'|'+pid];}});
+ if(ch){var A=(ex.state||{}).active;if(A&&A.plan>=plans.length)A.plan=Math.max(0,plans.length-1);}return ch;}catch(_e){return false;}}
 function _recvPlan9(expId,pid,val,fromPend){try{
  if(_watchId9!==expId||!val||!pid)return;var ex=_findExp9(expId);if(!ex)return;
  if(!ex.state||typeof ex.state!=='object')ex.state={plans:[]};if(!Array.isArray(ex.state.plans))ex.state.plans=[];
@@ -4679,18 +4720,19 @@ function _recvPlan9(expId,pid,val,fromPend){try{
  /* 지금 편집 중인 차수면 잠시 보류했다가 손 뗐을 때 반영 */
  if(!fromPend&&lp&&root.screen==='sim'&&EXP()===ex){var cp=null;try{cp=curPlan();}catch(_e){}
   if(cp&&cp.id===pid&&_editingNow()){_pendRecv9[key]=val;return;}}
+ _commitPending9();
  var tomb=(ex.delPlans&&ex.delPlans[pid]!=null)?(+ex.delPlans[pid]||0):null;
  if(!lp&&tomb!=null&&tomb>=(+val.updatedAt||0))return;
  var pend=_jrnPending9(expId,pid),hasPend=Object.keys(pend).length>0;
  var dset=_dirtyPlans.get(expId),isDirty=!!(dset&&dset.has(pid));
  if(!lp){_base9.set(key,JSON.stringify(val));var nv=JSON.parse(JSON.stringify(val));if(hasPend)_applyDiffPaths9(nv,pend);
   nv.syncedAt=+val.updatedAt||0;plans.push(nv);_orderPlans9(ex);
-  var _n=Date.now();if(_n-_adoptToastAt9>8000){_adoptToastAt9=_n;try{toast('\ud83d\udc65 \ub2e4\ub978 \ud300\uc6d0\uc774 \ucd94\uac00\ud55c \ucc28\uc218\ub97c \ubc18\uc601\ud588\uc5b4\uc694');}catch(_e){}}
+  var _n=Date.now();if(_n-_adoptToastAt9>8000){_adoptToastAt9=_n;try{toast('👥 다른 팀원이 추가한 차수를 반영했어요');}catch(_e){}}
   _afterRecv9(ex);return;}
  if(isDirty){try{_mergePlanInto(lp,val);}catch(_e){}try{scheduleCloudPush(900);}catch(_e){}_afterRecv9(ex);return;}
+ /* 로컬이 깨끗하면 서버본 채택. 기준본(base)은 이때만 갱신 — 더티 병합 중엔 손대지 않음 */
  _base9.set(key,JSON.stringify(val));var nv2=JSON.parse(JSON.stringify(val));if(hasPend)_applyDiffPaths9(nv2,pend);
- try{var have=new Map((lp.attach||[]).filter(function(x){return x&&x.id;}).map(function(x){return [x.id,x];}));
-  (nv2.attach||[]).forEach(function(x){if(x&&x.id&&have.has(x.id))_carryAttachmentImage(have.get(x.id),x);});}catch(_e){}
+ try{_carryPlanImages(lp,nv2);}catch(_e){}
  nv2.syncedAt=+val.updatedAt||0;plans[li]=nv2;
  if(root.screen==='sim'&&EXP()===ex)appState=ex.state;
  _afterRecv9(ex);}catch(_e){}}
@@ -4699,22 +4741,25 @@ function _recvPlanGone9(expId,pid){try{if(_watchId9!==expId)return;var ex=_findE
  _base9.delete(expId+'|'+pid);delete _pendRecv9[expId+'|'+pid];
  if(li<0)return;if(plans.length<=1)return;
  var dset=_dirtyPlans.get(expId);if(dset&&dset.has(pid)&&!(ex.delPlans&&ex.delPlans[pid]!=null))return;
+ _commitPending9();
  plans.splice(li,1);if(dset)dset.delete(pid);
  try{var A=(ex.state||{}).active;if(A&&A.plan>=plans.length)A.plan=Math.max(0,plans.length-1);}catch(_e){}
- try{toast('\ud83d\uddd1 \ub2e4\ub978 \ud300\uc6d0\uc774 \ucc28\uc218\ub97c \uc0ad\uc81c\ud588\uc5b4\uc694');}catch(_e){}
+ var _n=Date.now();if(_n-_delToastAt9>8000){_delToastAt9=_n;try{toast('🗑 다른 팀원이 차수를 삭제했어요');}catch(_e){}}
  _afterRecv9(ex);}catch(_e){}}
-function _recvMeta9(expId,meta){try{if(_watchId9!==expId||!meta)return;var ex=_findExp9(expId);if(!ex)return;
+function _recvMeta9(expId,meta,fromPend){try{if(_watchId9!==expId||!meta)return;var ex=_findExp9(expId);if(!ex)return;
+ /* 묘비(삭제 기록)는 즉시 적용 */
  if(!ex.delPlans||typeof ex.delPlans!=='object')ex.delPlans={};
  var dp=meta.delPlans||{};Object.keys(dp).forEach(function(k){if((+dp[k]||0)>(+ex.delPlans[k]||0))ex.delPlans[k]=+dp[k];});
+ var removed=_applyTombs9(ex);
+ if(removed){var _n=Date.now();if(_n-_delToastAt9>8000){_delToastAt9=_n;try{toast('🗑 다른 팀원이 차수를 삭제했어요');}catch(_e){}}}
+ /* 나머지(이름·상태·순서)는 편집 중이면 보류 */
+ if(!fromPend&&_editingNow()){_pendMeta9=meta;if(removed)_afterRecv9(ex);return;}
+ _commitPending9();
  var plans=((ex.state||{}).plans)||[];
- Object.keys(ex.delPlans).forEach(function(pid){var li=plans.findIndex(function(p){return p&&p.id===pid;});
-  if(li<0)return;var lp=plans[li];
-  if(plans.length>1&&(+ex.delPlans[pid]||0)>=(+lp.updatedAt||0)){plans.splice(li,1);
-   var ds=_dirtyPlans.get(expId);if(ds)ds.delete(pid);_base9.delete(expId+'|'+pid);}});
- if(!_dirtyMeta.has(expId)){['name','type','kind','linkTo','date','status','owner','note','noteEdited','notePreview','prog'].forEach(function(k){if(meta[k]!==undefined)ex[k]=meta[k];});}
+ if(!_dirtyMeta.has(expId)){['name','type','kind','linkTo','date','status','owner','note','noteEdited','notePreview','prog'].forEach(function(k){if(meta[k]!==undefined)ex[k]=meta[k];});
+  _metaBase9.set(expId,JSON.stringify(meta));}
  if(+meta.updatedAt>(+ex.updatedAt||0))ex.updatedAt=+meta.updatedAt;
  ex.planSyncedAt=+meta.updatedAt||ex.planSyncedAt||0;
- var mm=Object.assign({},meta);_metaBase9.set(expId,JSON.stringify(mm));
  if(!_dirtyFull.has(expId)&&Array.isArray(meta.planOrder))_orderPlans9(ex,meta.planOrder);
  try{var A=(ex.state||{}).active;if(A&&A.plan>=plans.length)A.plan=Math.max(0,plans.length-1);}catch(_e){}
  _afterRecv9(ex);}catch(_e){}}
@@ -4728,32 +4773,64 @@ function _orderPlans9(ex,order){try{var plans=((ex.state||{}).plans)||[];if(plan
  ex.state.plans=withPos.map(function(x){return x.p;});
  if(curId){var ni=ex.state.plans.findIndex(function(p){return p&&p.id===curId;});if(ni>=0)ex.state.active.plan=ni;}
 }catch(_e){}}
-function _afterRecv9(ex){try{if(root.screen==='sim'&&EXP()===ex){appState=ex.state;_renderSoon();try{hydrateVisibleAttachmentThumbs();}catch(_e){}}
- else if(root.screen==='home'){_renderSoon();}try{persistNow();}catch(_e){}}catch(_e){}}
+/* 수신 후처리는 150ms 모아서 한 번만: 재바인딩 → 렌더 → 조용한 저장 */
+function _afterRecv9(ex){clearTimeout(_recvT9);_recvT9=setTimeout(function(){try{
+ var cur=(root.screen==='sim')?EXP():null;
+ if(cur&&ex&&cur.id===ex.id){appState=cur.state;_renderSoon();try{hydrateVisibleAttachmentThumbs();}catch(_e){}}
+ else if(root.screen==='home'){_renderSoon();}
+ _persistQuiet9();}catch(_e){}},150);}
+/* ── 기준본 시딩: 서버에 이미 있는 실험을 기준본 없이 저장하려 할 때, 서버 현재본을 먼저 읽어 기준으로 삼는다 ── */
+async function _seedBase9(ex){var id=ex.id;var plans=((ex.state||{}).plans)||[];
+ var dset=_dirtyPlans.get(id)||new Set(),full=_dirtyFull.has(id);
+ var needPl=plans.some(function(p){return p&&p.id&&!_base9.has(id+'|'+p.id)&&(+p.syncedAt>0)&&(full||dset.has(p.id)||((+p.updatedAt||0)>(+p.syncedAt||0)));});
+ var needMeta=!_metaBase9.has(id)&&(+ex.planSyncedAt>0);
+ if(!needPl&&!needMeta)return;
+ var rp=null,rm=null;
+ if(needPl){try{rp=await fbDb('experiments/'+id+'/plans','GET');}catch(_e){}}
+ if(needMeta){try{rm=await fbDb('experiments/'+id+'/meta','GET');}catch(_e){}}
+ if(rp&&typeof rp==='object')Object.keys(rp).forEach(function(pid){var v=rp[pid];if(v&&typeof v==='object'&&!_base9.has(id+'|'+pid))_base9.set(id+'|'+pid,JSON.stringify(v));});
+ if(rm&&typeof rm==='object'){_metaBase9.set(id,JSON.stringify(rm));
+  if(rm.delPlans&&typeof rm.delPlans==='object'){if(!ex.delPlans||typeof ex.delPlans!=='object')ex.delPlans={};
+   Object.keys(rm.delPlans).forEach(function(k){if((+rm.delPlans[k]||0)>(+ex.delPlans[k]||0))ex.delPlans[k]=+rm.delPlans[k];});_applyTombs9(ex);}}}
 /* ── 요약·설정·휴지통 리스너 ── */
-var _liveOn9=false,_lastSum9=null,_sumDebT9=null,_liveP9=null;
+var _liveOn9=false,_lastSum9=null,_sumDebT9=null,_liveP9=null,_liveRefs9=[];
+function _liveStop9(){_liveRefs9.forEach(function(x){try{x.ref.off(x.ev,x.fn);}catch(_e){}});_liveRefs9=[];
+ try{unwatchExp9();}catch(_e){}_liveOn9=false;_liveP9=null;_presWired9=false;clearInterval(_presKeepT9);_presKeepT9=null;}
+function _lon9(ref,ev,fn){ref.on(ev,fn);_liveRefs9.push({ref:ref,ev:ev,fn:fn});}
+/* 구 빌드가 남긴 잘못된 값(updatedAt 이 '@@TS@@' 문자열 등) 정리 — 접속 시 1회 */
+async function _repairSum9(){if(!_lastSum9)return;var b={},n=0;
+ Object.keys(_lastSum9).forEach(function(id){var sm=_lastSum9[id];if(!sm||typeof sm!=='object')return;
+  if(typeof sm.updatedAt==='number'&&sm.updatedAt>0)return;
+  var ex=_findExp9(id);var v=(ex&&+ex.updatedAt>0)?+ex.updatedAt:'@@TS@@';
+  b['summaries/'+id+'/updatedAt']=v;_lastSum9[id]=Object.assign({},sm,{updatedAt:(v==='@@TS@@')?srvNow():v});n++;});
+ if(n){await fbDb('','PATCH',_jrnBuild9(b));}}
+function _sumSched9(){clearTimeout(_sumDebT9);_sumDebT9=setTimeout(function(){
+ if(!_lastSum9)return;cloudLoadSummaries(true,false,Object.assign({},_lastSum9)).catch(function(){});},250);}
 function _afterAuth9(){try{_wireClock9();}catch(_e){}try{_wireConn9();}catch(_e){}try{_presWire9();}catch(_e){}}
 function _liveStart9(){if(_liveP9)return _liveP9;
  _liveP9=new Promise(function(res,rej){(async function(){
   try{await _sdkUser9();}catch(e){_liveP9=null;rej(e);return;}
   try{await _jrnReplay9();}catch(_e){}
   if(_liveOn9){res(true);return;}_liveOn9=true;
-  var first=true;
-  try{_teamRef9('summaries').on('value',function(s){_lastSum9=s.val()||{};
-   clearTimeout(_sumDebT9);_sumDebT9=setTimeout(function(){
-    cloudLoadSummaries(true,false,_lastSum9).then(function(){if(first){first=false;res(true);}}).catch(function(){if(first){first=false;res(true);}});
-   },200);});}catch(e){_liveOn9=false;_liveP9=null;rej(e);return;}
-  try{_teamRef9('trash').on('value',function(s){var v=s.val()||{};root.trash=root.trash||{};var chg=false;
+  var sref;
+  try{sref=_teamRef9('summaries');var s0=await sref.once('value');_lastSum9=s0.val()||{};}catch(e){_liveOn9=false;_liveP9=null;rej(e);return;}
+  try{await _repairSum9();}catch(_e){}
+  try{await cloudLoadSummaries(true,false,Object.assign({},_lastSum9));}catch(_e){}
+  res(true);
+  /* 이후 변경은 바뀐 항목만 수신 (전체 목록 재다운로드 없음) */
+  try{_lon9(sref,'child_added',function(s){_lastSum9[s.key]=s.val();_sumSched9();});
+   _lon9(sref,'child_changed',function(s){_lastSum9[s.key]=s.val();_sumSched9();});
+   _lon9(sref,'child_removed',function(s){delete _lastSum9[s.key];_sumSched9();});}catch(_e){}
+  try{_lon9(_teamRef9('trash'),'value',function(s){var v=s.val()||{};root.trash=root.trash||{};var chg=false;
    Object.keys(v).forEach(function(k){var n=+v[k]||0;if(n>((+root.trash[k])||0)){root.trash[k]=n;chg=true;}});
-   if(chg&&_lastSum9){clearTimeout(_sumDebT9);_sumDebT9=setTimeout(function(){cloudLoadSummaries(true,false,_lastSum9).catch(function(){});},200);}});}catch(_e){}
-  function lset(path,fn){try{_teamRef9(path).on('value',function(s){try{fn(s.val());}catch(_e){}});}catch(_e){}}
-  lset('settings/metricLib',function(v){if(v&&Array.isArray(v.items)&&(+v.updatedAt||0)>((+root._mlibAt)||0)&&!_mlibDirty){root.metricLib=v.items;root._mlibAt=(+v.updatedAt)||Date.now();try{_mlibFill();}catch(_e){}try{persistNow();}catch(_e){}}});
-  lset('settings/mixLib',function(v){if(v&&Array.isArray(v.items)&&(+v.updatedAt||0)>((+root._xlibAt)||0)&&!_xlibDirty){root.mixLib=v.items;root._xlibAt=(+v.updatedAt)||Date.now();try{persistNow();}catch(_e){}try{refreshLibraryPopup();}catch(_e){}}});
-  lset('settings/uiKidOpen',function(v){if(v&&Array.isArray(v.ids)&&(+v.updatedAt||0)>((+root._kidAt)||0)&&!_kidDirty){root.kidOpen=v.ids;root._kidAt=(+v.updatedAt)||Date.now();try{persistNow();}catch(_e){}if(root.screen==='home'){var L=$id('loglist');if(L)L.innerHTML=homeListHTML();}}});
+   if(chg)_sumSched9();});}catch(_e){}
+  function lset(path,fn){try{_lon9(_teamRef9(path),'value',function(s){try{fn(s.val());}catch(_e){}});}catch(_e){}}
+  lset('settings/metricLib',function(v){if(v&&Array.isArray(v.items)&&(+v.updatedAt||0)>((+root._mlibAt)||0)&&!_mlibDirty){root.metricLib=v.items;root._mlibAt=(+v.updatedAt)||Date.now();try{_mlibFill();}catch(_e){}_persistQuiet9();}});
+  lset('settings/mixLib',function(v){if(v&&Array.isArray(v.items)&&(+v.updatedAt||0)>((+root._xlibAt)||0)&&!_xlibDirty){root.mixLib=v.items;root._xlibAt=(+v.updatedAt)||Date.now();_persistQuiet9();try{refreshLibraryPopup();}catch(_e){}}});
+  lset('settings/uiKidOpen',function(v){if(v&&Array.isArray(v.ids)&&(+v.updatedAt||0)>((+root._kidAt)||0)&&!_kidDirty){root.kidOpen=v.ids;root._kidAt=(+v.updatedAt)||Date.now();_persistQuiet9();if(root.screen==='home'){var L=$id('loglist');if(L)L.innerHTML=homeListHTML();}}});
   try{if(root.screen==='sim'&&EXP())watchExp9(EXP().id);}catch(_e){}
   try{presencePing();}catch(_e){}
   try{scheduleCloudPush(1500);}catch(_e){}
-  setTimeout(function(){if(first){first=false;res(true);}},8000);
  })();});return _liveP9;}
 var _base9=new Map(),_metaBase9=new Map();
 function cloudInit(){
